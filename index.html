@@ -10,6 +10,7 @@
 <!-- Firebase (compat SDK) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 <style>
 
   :root {
@@ -29,7 +30,7 @@
   body {
     background: #0B0F1C; color: var(--text-primary);
     font-family: 'Crimson Pro', 'EB Garamond', Georgia, serif;
-    font-size: 16px; line-height: 1.6; overflow-x: hidden; min-height: 100vh; padding: 0 0 60px;
+    font-size: 16px; line-height: 1.6; overflow-x: hidden; min-height: 100vh; padding: 0 0 110px;
   }
   body::before {
     content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
@@ -303,9 +304,206 @@
   .footer { text-align: center; color: var(--text-muted); font-size: 12px; margin-top: 28px; }
   .footer .ornament { color: var(--gold); letter-spacing: 8px; opacity: 0.5; margin-bottom: 8px; }
 
+  /* ── 주사위 기록 사이드바 ── */
+  .dice-log-sidebar {
+    position: fixed; top: 0; right: 0; height: 100vh; z-index: 300;
+    pointer-events: none;
+  }
+  .dice-log-tab {
+    position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+    width: 28px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 5px; padding: 16px 0; border-radius: 10px 0 0 10px;
+    background: linear-gradient(180deg, #1c2540, #141b30);
+    border: 1px solid var(--border-strong); border-right: none;
+    cursor: pointer; pointer-events: all;
+    box-shadow: -4px 0 18px rgba(0,0,0,0.5);
+    transition: right 0.32s cubic-bezier(0.16,1,0.3,1), background 0.2s, border-color 0.2s;
+  }
+  .dice-log-sidebar:hover .dice-log-tab { right: 320px; }
+  .dice-log-tab:hover { background: linear-gradient(180deg, #232d50, #1a2240); border-color: var(--gold); }
+  .dice-log-tab .tab-icon { font-size: 15px; line-height: 1; }
+  .dice-log-tab .tab-label {
+    writing-mode: vertical-rl; text-orientation: mixed; transform: rotate(180deg);
+    font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 1.5px;
+    color: var(--gold-light); white-space: nowrap;
+  }
+  .dice-log-tab .tab-count {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--arcane); color: #fff; font-size: 10px; font-family: 'Cinzel', serif;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; transform: scale(0); transition: all 0.2s;
+  }
+  .dice-log-tab .tab-count.has-items { opacity: 1; transform: scale(1); }
+
+  .dice-log-panel {
+    position: absolute; right: 0; top: 0; height: 100%;
+    width: 320px;
+    background: linear-gradient(160deg, #0f1626, #0c1220);
+    border-left: 1px solid var(--border-strong);
+    box-shadow: -8px 0 40px rgba(0,0,0,0.6);
+    display: flex; flex-direction: column;
+    pointer-events: all;
+    transform: translateX(100%);
+    transition: transform 0.32s cubic-bezier(0.16,1,0.3,1);
+  }
+  .dice-log-sidebar:hover .dice-log-panel { transform: translateX(0); }
+
+  .dlp-header {
+    padding: 16px 16px 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+    background: linear-gradient(160deg, rgba(123,92,196,0.12), rgba(212,175,82,0.06));
+  }
+  .dlp-title {
+    font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 1.5px;
+    color: var(--gold-light); display: flex; align-items: center; gap: 8px;
+  }
+  .dlp-actions { display: flex; gap: 6px; }
+  .dlp-btn {
+    background: none; border: 1px solid var(--border); border-radius: 6px;
+    color: var(--text-muted); font-size: 10px; font-family: 'Cinzel', serif;
+    padding: 4px 8px; cursor: pointer; transition: all 0.15s; letter-spacing: 0.5px;
+  }
+  .dlp-btn:hover { border-color: var(--gold); color: var(--gold-light); }
+
+  .dlp-list {
+    flex: 1; overflow-y: auto; padding: 10px 10px;
+    display: flex; flex-direction: column; gap: 8px;
+    scrollbar-width: thin; scrollbar-color: rgba(212,175,82,0.2) transparent;
+  }
+  .dlp-list::-webkit-scrollbar { width: 4px; }
+  .dlp-list::-webkit-scrollbar-track { background: transparent; }
+  .dlp-list::-webkit-scrollbar-thumb { background: rgba(212,175,82,0.2); border-radius: 4px; }
+
+  .dlp-empty {
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    color: var(--text-muted); font-size: 13px; font-style: italic; gap: 8px; padding: 20px; text-align: center;
+  }
+  .dlp-empty-icon { font-size: 36px; opacity: 0.3; }
+
+  .dl-entry {
+    background: linear-gradient(160deg, rgba(255,255,255,0.03), rgba(0,0,0,0.2));
+    border: 1px solid var(--border); border-radius: 10px;
+    padding: 10px 12px; position: relative; overflow: hidden;
+    animation: dlEntryIn 0.35s cubic-bezier(0.16,1,0.3,1);
+  }
+  @keyframes dlEntryIn { from { opacity:0; transform: translateX(20px); } to { opacity:1; transform:none; } }
+  .dl-entry::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; border-radius:3px 0 0 3px; }
+  .dl-entry.fumble::before { background: var(--hp); }
+  .dl-entry.crit::before   { background: var(--gold); }
+  .dl-entry.normal::before { background: var(--arcane); }
+
+  .dl-meta { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
+  .dl-time { font-size: 10px; color: var(--text-muted); font-family: 'Cinzel', serif; }
+  .dl-badge {
+    font-size: 10px; font-family: 'Cinzel', serif; letter-spacing: 0.5px;
+    padding: 2px 7px; border-radius: 4px;
+  }
+  .dl-entry.fumble .dl-badge { background: rgba(168,40,40,0.25); color: #FF8080; border: 1px solid rgba(168,40,40,0.4); }
+  .dl-entry.crit   .dl-badge { background: rgba(212,175,82,0.2); color: var(--gold-bright); border: 1px solid rgba(212,175,82,0.4); }
+  .dl-entry.normal .dl-badge { background: rgba(123,92,196,0.15); color: var(--arcane-light); border: 1px solid rgba(123,92,196,0.3); }
+
+  .dl-attrs { font-family: 'Cinzel', serif; font-size: 11px; color: var(--text-secondary); margin-bottom: 5px; }
+
+  .dl-dice-row { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; flex-wrap: wrap; }
+  .dl-die {
+    width: 36px; height: 36px; border-radius: 7px;
+    display: flex; align-items: center; justify-content: center; flex-direction: column;
+    font-family: 'Cinzel Decorative', serif; font-weight: 700; font-size: 14px;
+    border: 1px solid var(--border); background: rgba(0,0,0,0.35);
+  }
+  .dl-die.hr { border-color: var(--gold); color: var(--gold-bright); box-shadow: 0 0 8px rgba(212,175,82,0.3); }
+  .dl-die-lbl { font-size: 8px; font-family: 'Cinzel', serif; color: var(--text-muted); letter-spacing: 0.3px; margin-top: 1px; }
+  .dl-mod { font-family: 'Cinzel', serif; font-size: 13px; font-weight: 700; padding: 0 4px; }
+  .dl-result-row { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+  .dl-total { font-family: 'Cinzel Decorative', serif; font-size: 22px; color: var(--gold-bright); line-height: 1; }
+  .dl-hr-info { font-size: 11px; color: var(--text-muted); font-family: 'Cinzel', serif; }
+  .dl-effects { display: flex; flex-direction: column; gap: 3px; margin-top: 5px; }
+  .dl-fx { font-size: 11px; color: var(--arcane-light); font-style: italic; padding: 3px 7px; background: rgba(123,92,196,0.1); border-radius: 4px; border-left: 2px solid var(--arcane); }
+  .dl-entry-num { position: absolute; top: 8px; right: 8px; font-size: 9px; font-family: 'Cinzel', serif; color: rgba(168,150,110,0.25); letter-spacing: 0.5px; }
+
+  /* ── 포트레이트 ── */
+  .portrait-wrap {
+    display: flex; align-items: flex-start; gap: 18px; margin-bottom: 2px;
+  }
+  .portrait-frame {
+    flex-shrink: 0; position: relative;
+    width: 112px; height: 140px; border-radius: 10px;
+    cursor: pointer; overflow: visible;
+    --portrait-color: #D4AF52;
+  }
+  .portrait-img-box {
+    width: 100%; height: 100%; border-radius: 10px; overflow: hidden;
+    border: 2px solid var(--portrait-color);
+    background: rgba(0,0,0,0.35);
+    display: flex; align-items: center; justify-content: center;
+    position: relative; z-index: 1;
+    box-shadow:
+      0 0 10px color-mix(in srgb, var(--portrait-color) 55%, transparent),
+      0 0 28px color-mix(in srgb, var(--portrait-color) 28%, transparent),
+      inset 0 0 12px color-mix(in srgb, var(--portrait-color) 12%, transparent);
+    transition: box-shadow 0.35s, border-color 0.35s;
+    animation: portraitGlow 3s ease-in-out infinite;
+  }
+  @keyframes portraitGlow {
+    0%,100% {
+      box-shadow:
+        0 0 8px color-mix(in srgb, var(--portrait-color) 50%, transparent),
+        0 0 22px color-mix(in srgb, var(--portrait-color) 22%, transparent),
+        inset 0 0 10px color-mix(in srgb, var(--portrait-color) 10%, transparent);
+    }
+    50% {
+      box-shadow:
+        0 0 18px color-mix(in srgb, var(--portrait-color) 80%, transparent),
+        0 0 44px color-mix(in srgb, var(--portrait-color) 42%, transparent),
+        inset 0 0 18px color-mix(in srgb, var(--portrait-color) 18%, transparent);
+    }
+  }
+  .portrait-img-box img { width:100%; height:100%; object-fit:cover; border-radius:8px; display:block; }
+  .portrait-placeholder {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+    color: var(--text-muted); font-size: 11px; font-family: 'Cinzel', serif;
+    letter-spacing: 0.5px; text-align: center; padding: 8px;
+    pointer-events: none; user-select: none;
+  }
+  .portrait-placeholder-icon { font-size: 28px; opacity: 0.45; }
+  .portrait-corner {
+    position: absolute; width: 10px; height: 10px; pointer-events: none; z-index: 2;
+    border-color: var(--portrait-color); opacity: 0.8;
+  }
+  .portrait-corner.tl { top:-3px; left:-3px; border-top:2px solid; border-left:2px solid; border-radius:2px 0 0 0; }
+  .portrait-corner.tr { top:-3px; right:-3px; border-top:2px solid; border-right:2px solid; border-radius:0 2px 0 0; }
+  .portrait-corner.bl { bottom:-3px; left:-3px; border-bottom:2px solid; border-left:2px solid; border-radius:0 0 0 2px; }
+  .portrait-corner.br { bottom:-3px; right:-3px; border-bottom:2px solid; border-right:2px solid; border-radius:0 0 2px 0; }
+  .portrait-color-row {
+    display: flex; gap: 5px; flex-wrap: wrap; margin-top: 7px; justify-content: center;
+  }
+  .portrait-color-dot {
+    width: 16px; height: 16px; border-radius: 50%; cursor: pointer;
+    border: 2px solid transparent; transition: all 0.15s; flex-shrink: 0;
+  }
+  .portrait-color-dot:hover { transform: scale(1.2); }
+  .portrait-color-dot.active { border-color: #fff; transform: scale(1.15); box-shadow: 0 0 6px currentColor; }
+  .portrait-color-input {
+    width: 22px; height: 22px; padding: 0; border: none; border-radius: 50%;
+    background: none; cursor: pointer; flex-shrink: 0; overflow: hidden;
+    outline: 2px solid var(--border); transition: outline-color 0.15s;
+  }
+  .portrait-color-input:hover { outline-color: var(--gold); }
+  .portrait-fields { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+  .portrait-remove {
+    position: absolute; top: 4px; right: 4px; z-index: 3;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: rgba(168,40,40,0.7); border: 1px solid rgba(255,100,100,0.5);
+    color: #fff; font-size: 11px; display: none; align-items: center; justify-content: center;
+    cursor: pointer; line-height: 1;
+  }
+  .portrait-frame:hover .portrait-remove { display: flex; }
+  .portrait-input-hidden { display: none; }
+
   /* ── 판정 FAB ── */
   .dice-fab {
-    position: fixed; bottom: 28px; right: 24px; z-index: 400;
+    position: fixed; bottom: 52px; right: 60px; z-index: 400;
     width: 58px; height: 58px; border-radius: 50%;
     background: linear-gradient(145deg, rgba(212,175,82,0.35), rgba(212,175,82,0.15));
     border: 1.5px solid var(--gold);
@@ -395,8 +593,238 @@
   .sync-note { text-align:center; font-size:11px; color: var(--text-muted); padding: 6px; font-style:italic; }
   .readonly-banner { background: rgba(168,40,40,0.15); border:1px solid rgba(168,40,40,0.4); border-radius:8px; padding:8px 14px; margin: 0 16px 12px; text-align:center; color: var(--crimson-light); font-size:13px; max-width:920px; margin-left:auto; margin-right:auto; }
 
+  /* ════════════════════════════════
+     채팅 패널
+  ════════════════════════════════ */
+  .chat-panel {
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: min(480px, 98vw); z-index: 350;
+    display: flex; flex-direction: column;
+    filter: drop-shadow(0 -4px 24px rgba(0,0,0,0.5));
+  }
+
+  /* 탭 헤더 */
+  .chat-tab-bar {
+    display: flex; align-items: center; gap: 0;
+    background: linear-gradient(90deg, #10192e, #0d1425);
+    border: 1px solid var(--border-strong); border-bottom: none;
+    border-radius: 12px 12px 0 0; padding: 0 12px;
+    cursor: pointer; user-select: none;
+  }
+  .chat-tab-title {
+    font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 1.5px;
+    color: var(--gold-light); padding: 9px 0; display: flex; align-items: center; gap: 7px; flex: 1;
+  }
+  .chat-tab-title .chat-unread {
+    background: var(--arcane); color: #fff; border-radius: 10px;
+    padding: 1px 6px; font-size: 10px; display: none;
+  }
+  .chat-tab-title .chat-unread.show { display: inline; }
+  .chat-chevron {
+    font-size: 11px; color: var(--text-muted); transition: transform 0.25s; margin-left: 4px;
+  }
+  .chat-panel.open .chat-chevron { transform: rotate(180deg); }
+  .chat-tab-actions { display: flex; gap: 6px; }
+  .chat-tab-btn {
+    background: none; border: 1px solid var(--border); border-radius: 6px;
+    color: var(--text-muted); font-size: 10px; font-family: 'Cinzel', serif;
+    padding: 3px 8px; cursor: pointer; transition: all 0.15s; letter-spacing: 0.5px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .chat-tab-btn:hover { border-color: var(--gold); color: var(--gold-light); }
+  .chat-tab-btn.danger:hover { border-color: var(--crimson-light); color: var(--crimson-light); }
+
+  /* 채팅 바디 */
+  .chat-body {
+    background: linear-gradient(180deg, #0c1220, #080e1a);
+    border: 1px solid var(--border-strong); border-top: none;
+    border-radius: 0 0 0 0;
+    height: 0; overflow: hidden;
+    transition: height 0.3s cubic-bezier(0.16,1,0.3,1);
+    display: flex; flex-direction: column;
+  }
+  .chat-panel.open .chat-body { height: 360px; }
+
+  /* 메시지 목록 */
+  .chat-messages {
+    flex: 1; overflow-y: auto; padding: 12px 12px 8px;
+    display: flex; flex-direction: column; gap: 8px;
+    scrollbar-width: thin; scrollbar-color: rgba(212,175,82,0.15) transparent;
+  }
+  .chat-messages::-webkit-scrollbar { width: 4px; }
+  .chat-messages::-webkit-scrollbar-thumb { background: rgba(212,175,82,0.15); border-radius: 4px; }
+
+  /* 날짜 구분선 */
+  .chat-date-divider {
+    text-align: center; font-family: 'Cinzel', serif; font-size: 10px;
+    color: var(--text-muted); letter-spacing: 1px;
+    display: flex; align-items: center; gap: 8px; margin: 4px 0;
+  }
+  .chat-date-divider::before, .chat-date-divider::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+
+  /* 메시지 버블 */
+  .chat-msg {
+    display: flex; flex-direction: column; gap: 2px; max-width: 85%;
+    animation: chatMsgIn 0.25s cubic-bezier(0.16,1,0.3,1);
+  }
+  @keyframes chatMsgIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+  .chat-msg.mine { align-self: flex-end; align-items: flex-end; }
+  .chat-msg.theirs { align-self: flex-start; align-items: flex-start; }
+  .chat-msg.system { align-self: center; align-items: center; max-width: 100%; }
+
+  .chat-msg-meta {
+    font-family: 'Cinzel', serif; font-size: 10px; color: var(--text-muted);
+    display: flex; gap: 6px; align-items: center;
+  }
+  .chat-msg-name { color: var(--gold-light); }
+
+  .chat-bubble {
+    padding: 8px 12px; border-radius: 12px; font-size: 14px; line-height: 1.5;
+    font-family: 'Crimson Pro', serif; word-break: break-word;
+    position: relative;
+  }
+  .chat-msg.mine .chat-bubble {
+    background: linear-gradient(135deg, rgba(123,92,196,0.35), rgba(123,92,196,0.18));
+    border: 1px solid rgba(123,92,196,0.4); color: var(--text-primary);
+    border-bottom-right-radius: 4px;
+  }
+  .chat-msg.theirs .chat-bubble {
+    background: linear-gradient(135deg, rgba(255,255,255,0.07), rgba(255,255,255,0.03));
+    border: 1px solid var(--border); color: var(--text-primary);
+    border-bottom-left-radius: 4px;
+  }
+  .chat-msg.system .chat-bubble {
+    background: rgba(212,175,82,0.08); border: 1px solid rgba(212,175,82,0.2);
+    color: var(--text-muted); font-size: 12px; font-style: italic; text-align: center;
+    border-radius: 8px;
+  }
+
+  /* 미디어 메시지 */
+  .chat-media {
+    max-width: 260px; border-radius: 10px; overflow: hidden;
+    border: 1px solid var(--border); cursor: pointer; display: block;
+    transition: border-color 0.2s;
+  }
+  .chat-media:hover { border-color: var(--gold); }
+  .chat-media img, .chat-media video {
+    display: block; width: 100%; height: auto; max-height: 300px;
+    object-fit: contain; background: rgba(0,0,0,0.4);
+  }
+  .chat-media video { max-height: 260px; }
+  /* 미디어 전체화면 뷰어 */
+  .chat-lightbox {
+    position: fixed; inset: 0; z-index: 900;
+    background: rgba(0,0,0,0.92); display: none;
+    align-items: center; justify-content: center; cursor: zoom-out;
+    backdrop-filter: blur(8px);
+  }
+  .chat-lightbox.open { display: flex; }
+  .chat-lightbox img, .chat-lightbox video {
+    max-width: 92vw; max-height: 88vh; border-radius: 8px;
+    object-fit: contain; box-shadow: 0 0 60px rgba(0,0,0,0.8);
+  }
+  .chat-lightbox-close {
+    position: absolute; top: 16px; right: 20px;
+    background: rgba(255,255,255,0.12); border: none; border-radius: 50%;
+    width: 36px; height: 36px; font-size: 18px; color: #fff;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+
+  /* 업로드 미리보기 */
+  .chat-preview-wrap {
+    padding: 6px 12px; border-top: 1px solid var(--border);
+    display: none; gap: 8px; align-items: center; flex-wrap: wrap;
+  }
+  .chat-preview-wrap.show { display: flex; }
+  .chat-preview-thumb {
+    position: relative; width: 52px; height: 52px; border-radius: 6px; overflow: hidden;
+    border: 1px solid var(--border-strong); background: rgba(0,0,0,0.4);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .chat-preview-thumb img, .chat-preview-thumb video {
+    width: 100%; height: 100%; object-fit: cover;
+  }
+  .chat-preview-thumb .rm {
+    position: absolute; inset: 0; background: rgba(168,40,40,0.7);
+    color: #fff; font-size: 16px; display: none;
+    align-items: center; justify-content: center; cursor: pointer;
+    border-radius: 6px;
+  }
+  .chat-preview-thumb:hover .rm { display: flex; }
+  .chat-preview-name {
+    font-size: 11px; color: var(--text-muted); font-family: 'Cinzel', serif;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;
+  }
+  .chat-upload-progress {
+    font-size: 11px; color: var(--arcane-light); font-family: 'Cinzel', serif;
+    display: none; align-items: center; gap: 6px;
+  }
+  .chat-upload-progress.show { display: flex; }
+
+  /* 입력창 */
+  .chat-input-row {
+    display: flex; gap: 8px; align-items: flex-end;
+    padding: 8px 10px 10px; border-top: 1px solid var(--border);
+    background: rgba(0,0,0,0.2);
+  }
+  .chat-attach-btn {
+    flex-shrink: 0; width: 34px; height: 34px; border-radius: 8px;
+    border: 1px solid var(--border); background: rgba(0,0,0,0.3);
+    color: var(--text-muted); font-size: 17px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s; -webkit-tap-highlight-color: transparent;
+  }
+  .chat-attach-btn:hover { border-color: var(--gold); color: var(--gold-light); }
+  .chat-text-input {
+    flex: 1; background: rgba(0,0,0,0.3); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text-primary); font-family: 'Crimson Pro', serif;
+    font-size: 14px; padding: 7px 10px; resize: none; min-height: 34px; max-height: 90px;
+    transition: border-color 0.2s; line-height: 1.4; overflow-y: auto;
+  }
+  .chat-text-input:focus { outline: none; border-color: var(--arcane); }
+  .chat-send-btn {
+    flex-shrink: 0; width: 34px; height: 34px; border-radius: 8px;
+    border: 1px solid rgba(123,92,196,0.5); background: rgba(123,92,196,0.2);
+    color: var(--arcane-light); font-size: 16px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s; -webkit-tap-highlight-color: transparent;
+  }
+  .chat-send-btn:hover { background: rgba(123,92,196,0.4); border-color: var(--arcane-light); }
+  .chat-send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .chat-file-hidden { display: none; }
+
+  /* 청소 확인 모달 */
+  .chat-clean-modal-bg {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 600;
+    display: none; align-items: center; justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+  .chat-clean-modal-bg.open { display: flex; }
+  .chat-clean-modal {
+    background: linear-gradient(160deg, #16203a, #0e1628);
+    border: 1px solid var(--border-strong); border-radius: 14px;
+    padding: 26px 24px; width: min(360px, 92vw);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+    text-align: center; display: flex; flex-direction: column; gap: 14px;
+  }
+  .chat-clean-modal h3 {
+    font-family: 'Cinzel', serif; color: var(--gold-light); font-size: 15px; letter-spacing: 1px;
+  }
+  .chat-clean-modal p { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+  .chat-clean-modal p b { color: var(--crimson-light); }
+  .chat-clean-modal-btns { display: flex; gap: 10px; justify-content: center; margin-top: 4px; }
+  .chat-clean-modal-btns button {
+    padding: 9px 22px; border-radius: 8px; font-family: 'Cinzel', serif;
+    font-size: 12px; letter-spacing: 1px; cursor: pointer; transition: all 0.15s;
+  }
+  .ccm-cancel { background: none; border: 1px solid var(--border); color: var(--text-muted); }
+  .ccm-cancel:hover { border-color: var(--gold); color: var(--gold-light); }
+  .ccm-confirm { background: rgba(168,40,40,0.2); border: 1px solid rgba(168,40,40,0.5); color: var(--crimson-light); }
+  .ccm-confirm:hover { background: rgba(168,40,40,0.35); }
+
 </style>
-</head>
 <body>
 
 
@@ -433,15 +861,45 @@
   <!-- ═══════ IDENTITY ═══════ -->
   <section class="panel">
     <div class="panel-label"><span class="ico">✦</span> 정체성</div>
-    <div class="id-grid">
-      <label class="field full"><span class="field-name">이름</span><input type="text" data-key="name" placeholder="영웅의 이름"></label>
-      <label class="field"><span class="field-name">정체성</span><input type="text" data-key="identity" placeholder="예: 기억을 잃은 노년의 마법사"></label>
-      <label class="field"><span class="field-name">주제</span><input type="text" data-key="theme" placeholder="예: 복수, 희망, 의무"></label>
-      <label class="field"><span class="field-name">출신</span><input type="text" data-key="origin" placeholder="비롯된 장소"></label>
-      <label class="field"><span class="field-name">대명사</span><input type="text" data-key="pronoun" placeholder="그/그녀/그들..."></label>
-      <div class="field two">
-        <label class="field"><span class="field-name">레벨 (총합)</span><input type="number" data-key="level" id="level" value="5" min="5" max="50"></label>
-        <label class="field"><span class="field-name">경험치 (XP)</span><input type="number" data-key="xp" value="0" min="0"></label>
+    <div class="portrait-wrap">
+      <!-- 포트레이트 -->
+      <div class="portrait-frame" id="portraitFrame" title="클릭하여 이미지 업로드">
+        <div class="portrait-img-box" id="portraitBox">
+          <div class="portrait-placeholder" id="portraitPlaceholder">
+            <span class="portrait-placeholder-icon">🖼</span>
+            <span>포트레이트</span>
+          </div>
+          <img id="portraitImg" src="" alt="포트레이트" style="display:none;">
+          <button class="portrait-remove" id="portraitRemove" title="이미지 제거">✕</button>
+        </div>
+        <div class="portrait-corner tl"></div>
+        <div class="portrait-corner tr"></div>
+        <div class="portrait-corner bl"></div>
+        <div class="portrait-corner br"></div>
+        <div class="portrait-color-row" id="portraitColorRow">
+          <span class="portrait-color-dot active" data-color="#D4AF52" style="background:#D4AF52;" title="금"></span>
+          <span class="portrait-color-dot" data-color="#7B5CC4" style="background:#7B5CC4;" title="보라"></span>
+          <span class="portrait-color-dot" data-color="#3FA67C" style="background:#3FA67C;" title="에메랄드"></span>
+          <span class="portrait-color-dot" data-color="#C8342E" style="background:#C8342E;" title="빨강"></span>
+          <span class="portrait-color-dot" data-color="#3A78C8" style="background:#3A78C8;" title="파랑"></span>
+          <span class="portrait-color-dot" data-color="#D4D4D4" style="background:#D4D4D4;" title="은색"></span>
+          <input type="color" class="portrait-color-input" id="portraitColorCustom" value="#D4AF52" title="커스텀 색상">
+        </div>
+        <input type="file" class="portrait-input-hidden" id="portraitFileInput" accept="image/*">
+      </div>
+      <!-- 나머지 정체성 필드 -->
+      <div class="portrait-fields">
+        <div class="id-grid">
+          <label class="field full"><span class="field-name">이름</span><input type="text" data-key="name" placeholder="영웅의 이름"></label>
+          <label class="field"><span class="field-name">정체성</span><input type="text" data-key="identity" placeholder="예: 기억을 잃은 노년의 마법사"></label>
+          <label class="field"><span class="field-name">주제</span><input type="text" data-key="theme" placeholder="예: 복수, 희망, 의무"></label>
+          <label class="field"><span class="field-name">출신</span><input type="text" data-key="origin" placeholder="비롯된 장소"></label>
+          <label class="field"><span class="field-name">대명사</span><input type="text" data-key="pronoun" placeholder="그/그녀/그들..."></label>
+          <div class="field two">
+            <label class="field"><span class="field-name">레벨 (총합)</span><input type="number" data-key="level" id="level" value="5" min="5" max="50"></label>
+            <label class="field"><span class="field-name">경험치 (XP)</span><input type="number" data-key="xp" value="0" min="0"></label>
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -669,6 +1127,83 @@
 </div>
 
 <button class="dice-fab" id="rollShortcutBtn" title="판정 굴림">⚄</button>
+
+<!-- ═══════ DICE LOG SIDEBAR ═══════ -->
+<div class="dice-log-sidebar" id="diceLogSidebar">
+  <div class="dice-log-tab" id="diceLogTab">
+    <span class="tab-icon">⚄</span>
+    <span class="tab-label">굴림 기록</span>
+    <span class="tab-count" id="diceLogCount">0</span>
+  </div>
+  <div class="dice-log-panel">
+    <div class="dlp-header">
+      <div class="dlp-title">⚄ 굴림 기록</div>
+      <div class="dlp-actions">
+        <button class="dlp-btn" id="diceLogClear">초기화</button>
+      </div>
+    </div>
+    <div class="dlp-list" id="diceLogList">
+      <div class="dlp-empty" id="diceLogEmpty">
+        <div class="dlp-empty-icon">🎲</div>
+        <div>아직 굴림이 없습니다<br>주사위를 굴려보세요!</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ CHAT PANEL ═══════ -->
+<div class="chat-panel" id="chatPanel">
+  <div class="chat-tab-bar" id="chatTabBar">
+    <div class="chat-tab-title">
+      💬 파티 채팅
+      <span class="chat-unread" id="chatUnread">0</span>
+    </div>
+    <div class="chat-tab-actions" id="chatTabActions" style="display:none;">
+      <button class="chat-tab-btn danger" id="chatCleanBtn" title="오래된 메시지 정리">🧹 청소</button>
+    </div>
+    <span class="chat-chevron" id="chatChevron">▲</span>
+  </div>
+  <div class="chat-body" id="chatBody">
+    <div class="chat-messages" id="chatMessages">
+      <div class="chat-msg system">
+        <div class="chat-bubble">방에 입장하면 파티원과 채팅할 수 있습니다</div>
+      </div>
+    </div>
+    <!-- 업로드 미리보기 -->
+    <div class="chat-preview-wrap" id="chatPreviewWrap">
+      <div class="chat-preview-thumb" id="chatPreviewThumb">
+        <span style="font-size:20px;">📎</span>
+        <div class="rm" id="chatPreviewRm">✕</div>
+      </div>
+      <span class="chat-preview-name" id="chatPreviewName"></span>
+      <div class="chat-upload-progress" id="chatUploadProgress">⏳ 업로드 중...</div>
+    </div>
+    <!-- 입력 -->
+    <div class="chat-input-row">
+      <button class="chat-attach-btn" id="chatAttachBtn" title="이미지/GIF/영상 첨부">📎</button>
+      <input type="file" class="chat-file-hidden" id="chatFileInput" accept="image/*,video/*,.gif">
+      <textarea class="chat-text-input" id="chatTextInput" placeholder="메시지 입력... (Enter 전송, Shift+Enter 줄바꿈)" rows="1"></textarea>
+      <button class="chat-send-btn" id="chatSendBtn">➤</button>
+    </div>
+  </div>
+</div>
+
+<!-- 미디어 라이트박스 -->
+<div class="chat-lightbox" id="chatLightbox">
+  <button class="chat-lightbox-close" id="chatLightboxClose">✕</button>
+</div>
+
+<!-- 채팅 청소 확인 모달 -->
+<div class="chat-clean-modal-bg" id="chatCleanModalBg">
+  <div class="chat-clean-modal">
+    <h3>🧹 오래된 메시지 청소</h3>
+    <p id="chatCleanDesc">한 달보다 오래된 메시지와 미디어 파일을 삭제합니다.<br>이 작업은 <b>되돌릴 수 없습니다.</b></p>
+    <div class="chat-clean-modal-btns">
+      <button class="ccm-cancel" id="chatCleanCancel">취소</button>
+      <button class="ccm-confirm" id="chatCleanConfirm">삭제</button>
+    </div>
+  </div>
+</div>
 
 <div class="toast" id="toast"></div>
 
@@ -1131,6 +1666,13 @@
     });
 
     $('rollResult').classList.add('show');
+
+    // 사이드바 기록 추가
+    addDiceLogEntry({
+      attr1: selectedAttr1, attr2: selectedAttr2,
+      sides1, sides2, r1, r2, totalMod, finalSum, hr,
+      isFumble, isCrit, checkedItems
+    });
   });
 
   // 모달 닫기
@@ -1141,7 +1683,153 @@
   // 툴바 버튼
   $('rollShortcutBtn').addEventListener('click', () => openDiceModal(null));
 
-  /* ---------- INIT ---------- */
+  /* ════════════════════════════════
+     주사위 기록 사이드바
+  ════════════════════════════════ */
+  let diceLogEntries = [];
+  let diceLogCounter = 0;
+
+  function addDiceLogEntry({ attr1, attr2, sides1, sides2, r1, r2, totalMod, finalSum, hr, isFumble, isCrit, checkedItems }) {
+    diceLogCounter++;
+    const now = new Date();
+    const timeStr = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0') + ':' + now.getSeconds().toString().padStart(2,'0');
+
+    const entry = { id: diceLogCounter, timeStr, attr1, attr2, sides1, sides2, r1, r2, totalMod, finalSum, hr, isFumble, isCrit, checkedItems };
+    diceLogEntries.unshift(entry);
+
+    renderDiceLogEntry(entry, true);
+    updateDiceLogCount();
+
+    /* Firebase 공유 */
+    if (window.DICE_PUSH) window.DICE_PUSH(entry);
+  }
+
+  function renderDiceLogEntry(entry, prepend, isRemote) {
+    const list = $('diceLogList');
+    $('diceLogEmpty').style.display = 'none';
+
+    const typeClass = entry.isFumble ? 'fumble' : (entry.isCrit ? 'crit' : 'normal');
+    const badgeText = entry.isFumble ? '💀 실패' : (entry.isCrit ? '✨ 대성공' : '⚔ 판정');
+
+    const div = document.createElement('div');
+    div.className = 'dl-entry ' + typeClass;
+    if (isRemote) div.style.opacity = '0.88';
+    div.dataset.id = entry.id;
+
+    // 번호
+    const numSpan = document.createElement('span');
+    numSpan.className = 'dl-entry-num';
+    numSpan.textContent = '#' + entry.id;
+
+    // 메타행
+    const meta = document.createElement('div');
+    meta.className = 'dl-meta';
+    const timeEl = document.createElement('span');
+    timeEl.className = 'dl-time';
+    timeEl.textContent = (entry.rolledBy ? entry.rolledBy + ' · ' : '') + entry.timeStr;
+    const badge = document.createElement('span');
+    badge.className = 'dl-badge'; badge.textContent = badgeText;
+    meta.appendChild(timeEl); meta.appendChild(badge);
+
+    // 능력치
+    const attrs = document.createElement('div');
+    attrs.className = 'dl-attrs';
+    attrs.textContent = ATTR_KO[entry.attr1] + ' + ' + ATTR_KO[entry.attr2];
+
+    // 주사위 행
+    const diceRow = document.createElement('div');
+    diceRow.className = 'dl-dice-row';
+    [[entry.r1, 'd'+entry.sides1, entry.r1 >= entry.r2], [entry.r2, 'd'+entry.sides2, entry.r2 >= entry.r1]].forEach(([val, lbl, isHr]) => {
+      const d = document.createElement('div');
+      d.className = 'dl-die' + (isHr ? ' hr' : '');
+      d.innerHTML = val + '<div class="dl-die-lbl">' + lbl + '</div>';
+      diceRow.appendChild(d);
+    });
+    if (entry.totalMod !== 0) {
+      const mod = document.createElement('span');
+      mod.className = 'dl-mod';
+      mod.style.color = entry.totalMod > 0 ? 'var(--emerald-light)' : 'var(--hp-light)';
+      mod.textContent = (entry.totalMod > 0 ? '+' : '') + entry.totalMod;
+      diceRow.appendChild(mod);
+    }
+
+    // 결과행
+    const resultRow = document.createElement('div');
+    resultRow.className = 'dl-result-row';
+    const total = document.createElement('span');
+    total.className = 'dl-total'; total.textContent = entry.finalSum;
+    const hrInfo = document.createElement('span');
+    hrInfo.className = 'dl-hr-info'; hrInfo.textContent = 'HR ' + entry.hr;
+    resultRow.appendChild(total); resultRow.appendChild(hrInfo);
+
+    div.appendChild(numSpan);
+    div.appendChild(meta);
+    div.appendChild(attrs);
+    div.appendChild(diceRow);
+    div.appendChild(resultRow);
+
+    // 효과
+    const fxItems = entry.checkedItems.filter(i => i.fx);
+    if (fxItems.length > 0) {
+      const fxDiv = document.createElement('div');
+      fxDiv.className = 'dl-effects';
+      fxItems.forEach(i => {
+        const fx = document.createElement('div');
+        fx.className = 'dl-fx';
+        fx.textContent = '⚡ [' + i.name + '] ' + i.fx;
+        fxDiv.appendChild(fx);
+      });
+      div.appendChild(fxDiv);
+    }
+
+    if (prepend && list.firstChild) {
+      list.insertBefore(div, list.firstChild);
+    } else {
+      list.appendChild(div);
+    }
+  }
+
+  function updateDiceLogCount() {
+    const countEl = $('diceLogCount');
+    const n = diceLogEntries.length;
+    countEl.textContent = n > 99 ? '99+' : n;
+    countEl.classList.toggle('has-items', n > 0);
+  }
+
+  $('diceLogClear').addEventListener('click', () => {
+    if (diceLogEntries.length === 0) return;
+    if (!confirm('굴림 기록을 모두 지울까요?')) return;
+    diceLogEntries = [];
+    const list = $('diceLogList');
+    list.querySelectorAll('.dl-entry').forEach(e => e.remove());
+    $('diceLogEmpty').style.display = '';
+    updateDiceLogCount();
+  });
+
+  /* 원격(다른 플레이어)에서 받은 굴림 기록 렌더 */
+  function receiveRemote(raw) {
+    diceLogCounter++;
+    const now = new Date(raw.ts || Date.now());
+    const timeStr = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0') + ':' + now.getSeconds().toString().padStart(2,'0');
+    const entry = {
+      id: diceLogCounter,
+      timeStr,
+      attr1: raw.attr1, attr2: raw.attr2,
+      sides1: raw.sides1, sides2: raw.sides2,
+      r1: raw.r1, r2: raw.r2,
+      totalMod: raw.totalMod, finalSum: raw.finalSum, hr: raw.hr,
+      isFumble: raw.isFumble, isCrit: raw.isCrit,
+      checkedItems: raw.checkedItems || [],
+      rolledBy: raw.rolledBy || '???'
+    };
+    diceLogEntries.unshift(entry);
+    renderDiceLogEntry(entry, true, true);
+    updateDiceLogCount();
+  }
+
+  window.DICE_LOG = { receiveRemote };
+
+  /* ── INIT ── */
   function seedRows() {
     addRow('class'); addRow('class');
     for (let i=0;i<2;i++) addRow('equip');
@@ -1179,6 +1867,75 @@
       setTimeout(() => { if (window.SHEET_ONCHANGE) window.SHEET_ONCHANGE(); }, 30);
     }
   });
+
+  /* ════════════════════════════════
+     포트레이트
+  ════════════════════════════════ */
+  let portraitColor = '#D4AF52';
+  let portraitDataUrl = null;
+
+  function setPortraitColor(color) {
+    portraitColor = color;
+    $('portraitFrame').style.setProperty('--portrait-color', color);
+    document.querySelectorAll('.portrait-color-dot').forEach(d => {
+      d.classList.toggle('active', d.dataset.color === color);
+    });
+    // 커스텀 색이면 dot 모두 해제
+    const known = ['#D4AF52','#7B5CC4','#3FA67C','#C8342E','#3A78C8','#D4D4D4'];
+    if (!known.includes(color)) document.querySelectorAll('.portrait-color-dot').forEach(d => d.classList.remove('active'));
+    if (window.SHEET_ONCHANGE) window.SHEET_ONCHANGE();
+  }
+
+  function setPortraitImage(dataUrl) {
+    portraitDataUrl = dataUrl;
+    if (dataUrl) {
+      $('portraitImg').src = dataUrl;
+      $('portraitImg').style.display = 'block';
+      $('portraitPlaceholder').style.display = 'none';
+    } else {
+      $('portraitImg').src = '';
+      $('portraitImg').style.display = 'none';
+      $('portraitPlaceholder').style.display = '';
+    }
+    if (window.SHEET_ONCHANGE) window.SHEET_ONCHANGE();
+  }
+
+  $('portraitFrame').addEventListener('click', e => {
+    if (e.target.id === 'portraitRemove') return;
+    if (e.target.classList.contains('portrait-color-dot') || e.target.id === 'portraitColorCustom') return;
+    $('portraitFileInput').click();
+  });
+  $('portraitFileInput').addEventListener('change', e => {
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => setPortraitImage(ev.target.result);
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  });
+  $('portraitRemove').addEventListener('click', e => { e.stopPropagation(); setPortraitImage(null); });
+  document.querySelectorAll('.portrait-color-dot').forEach(dot => {
+    dot.addEventListener('click', e => { e.stopPropagation(); dot.dataset.color && setPortraitColor(dot.dataset.color); });
+  });
+  $('portraitColorCustom').addEventListener('input', e => { e.stopPropagation(); setPortraitColor(e.target.value); });
+  $('portraitColorCustom').addEventListener('click', e => e.stopPropagation());
+
+  /* collect/apply에 portrait 포함 */
+  const _collectOrig = collect;
+  collect = function() {
+    const d = _collectOrig();
+    d.portrait = { color: portraitColor, img: portraitDataUrl };
+    return d;
+  };
+  const _applyOrig = apply;
+  apply = function(d) {
+    _applyOrig(d);
+    if (d && d.portrait) {
+      setPortraitColor(d.portrait.color || '#D4AF52');
+      setPortraitImage(d.portrait.img || null);
+    }
+  };
+  window.SHEET.collect = collect;
+  window.SHEET.apply   = apply;
 
 })();
 
@@ -1283,6 +2040,18 @@
       /* ★ 내 탭이 활성 상태면 절대 덮어쓰지 않음 — 포커스 보존 */
       if (activeId !== myCharId) applyToSheet(activeId);
     });
+
+    /* ── 주사위 기록 실시간 구독 ── */
+    subscribeDiceLog(roomCode);
+    /* ── 채팅 초기화 ── */
+    if (window.CHAT_INIT) window.CHAT_INIT(roomCode);
+
+    /* 입장 알림 */
+    setTimeout(() => {
+      if (window.CHAT_INIT && chatRef) {
+        chatRef.push({ type: 'system', text: '⚔ ' + userName + ' 이(가) 방에 입장했습니다', ts: Date.now() });
+      }
+    }, 1200);
   }
 
   /* ── 탭 렌더링 ── */
@@ -1408,6 +2177,42 @@
 
   function escapeHtml(s) { return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
+  /* ════════════════════════════════
+     주사위 기록 Firebase 공유
+  ════════════════════════════════ */
+  let diceLogRef = null;
+  let seenDiceLogIds = new Set();
+
+  function subscribeDiceLog(room) {
+    if (!db) return;
+    diceLogRef = db.ref('rooms/' + room + '/diceLog');
+    /* 최신 50개만 구독, 새로 추가되는 항목만 처리 */
+    diceLogRef.limitToLast(50).on('child_added', snap => {
+      const entry = snap.val();
+      if (!entry || seenDiceLogIds.has(snap.key)) return;
+      seenDiceLogIds.add(snap.key);
+      /* 내가 방금 굴린 것은 이미 로컬에서 렌더했으므로 스킵 */
+      if (entry._local) return;
+      window.DICE_LOG && window.DICE_LOG.receiveRemote(entry);
+    });
+  }
+
+  function pushDiceLog(entry) {
+    if (!configured || !db || !roomCode || !diceLogRef) return;
+    const payload = Object.assign({}, entry);
+    /* checkedItems의 row 참조(DOM)는 직렬화 불가 — 제거 */
+    payload.checkedItems = (entry.checkedItems || []).map(i => ({ name: i.name, mod: i.mod, fx: i.fx }));
+    payload.rolledBy = userName || '익명';
+    payload.ts = Date.now();
+    delete payload._local;
+    const ref = diceLogRef.push(payload);
+    /* 로컬 엔트리에 Firebase key 부여 (중복 방지용) */
+    seenDiceLogIds.add(ref.key);
+  }
+
+  /* SHEET 스크립트에서 호출할 수 있도록 전역 노출 */
+  window.DICE_PUSH = pushDiceLog;
+
   $('roomBadge').addEventListener('click', () => {
     if (!roomCode) return;
     const url = location.origin + location.pathname + '#' + roomCode;
@@ -1423,6 +2228,279 @@
 
   if (configured) initFirebase();
   else setStatus(false, 'Firebase 미설정 — 오프라인 단일 시트로 사용 가능');
+
+  /* ════════════════════════════════════════════════════════
+     💬 채팅 시스템
+  ════════════════════════════════════════════════════════ */
+  let storage = null;
+  let chatRef  = null;
+  let chatOpen = false;
+  let unreadCount = 0;
+  let pendingFile = null;    // { file, dataUrl, type:'image'|'video' }
+  let uploading   = false;
+
+  /* 채팅은 입장 후 활성화 */
+  function initChat(room) {
+    if (!configured || !db) return;
+    try { storage = firebase.storage(); } catch(e) { storage = null; }
+    chatRef = db.ref('rooms/' + room + '/chat');
+
+    /* 최근 100개 로드 후 실시간 스트리밍 */
+    chatRef.limitToLast(100).on('child_added', snap => {
+      const msg = snap.val();
+      if (!msg) return;
+      appendChatMsg(msg, snap.key);
+      if (!chatOpen) {
+        unreadCount++;
+        const el = $('chatUnread');
+        el.textContent = unreadCount > 99 ? '99+' : unreadCount;
+        el.classList.add('show');
+      }
+    });
+
+    /* 탭 액션 버튼 표시 */
+    $('chatTabActions').style.display = 'flex';
+  }
+  window.CHAT_INIT = initChat;
+
+  /* ── 패널 토글 ── */
+  $('chatTabBar').addEventListener('click', () => {
+    chatOpen = !chatOpen;
+    $('chatPanel').classList.toggle('open', chatOpen);
+    if (chatOpen) {
+      unreadCount = 0;
+      const el = $('chatUnread');
+      el.textContent = '0'; el.classList.remove('show');
+      setTimeout(() => scrollChatBottom(), 320);
+    }
+  });
+
+  function scrollChatBottom() {
+    const el = $('chatMessages');
+    el.scrollTop = el.scrollHeight;
+  }
+
+  /* ── 메시지 렌더 ── */
+  const renderedKeys = new Set();
+  let lastDateLabel = '';
+
+  function appendChatMsg(msg, key) {
+    if (key && renderedKeys.has(key)) return;
+    if (key) renderedKeys.add(key);
+
+    const container = $('chatMessages');
+
+    /* 시스템 초기 안내 메시지 제거 */
+    const hint = container.querySelector('.chat-msg.system');
+    if (hint && hint.textContent.includes('방에 입장')) hint.remove();
+
+    /* 날짜 구분선 */
+    const d = new Date(msg.ts || Date.now());
+    const dateLabel = d.getFullYear() + '.' + String(d.getMonth()+1).padStart(2,'0') + '.' + String(d.getDate()).padStart(2,'0');
+    if (dateLabel !== lastDateLabel) {
+      lastDateLabel = dateLabel;
+      const div = document.createElement('div');
+      div.className = 'chat-date-divider'; div.textContent = dateLabel;
+      container.appendChild(div);
+    }
+
+    if (msg.type === 'system') {
+      const wrap = document.createElement('div'); wrap.className = 'chat-msg system';
+      const bubble = document.createElement('div'); bubble.className = 'chat-bubble';
+      bubble.textContent = msg.text;
+      wrap.appendChild(bubble); container.appendChild(wrap);
+    } else {
+      const isMine = msg.sender === userName;
+      const wrap = document.createElement('div');
+      wrap.className = 'chat-msg ' + (isMine ? 'mine' : 'theirs');
+
+      const meta = document.createElement('div'); meta.className = 'chat-msg-meta';
+      const timeStr = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+      if (!isMine) {
+        const name = document.createElement('span'); name.className = 'chat-msg-name';
+        name.textContent = msg.sender || '???';
+        meta.appendChild(name);
+      }
+      const time = document.createElement('span'); time.textContent = timeStr;
+      meta.appendChild(time);
+
+      if (msg.mediaUrl) {
+        const mediaWrap = document.createElement('div'); mediaWrap.className = 'chat-media';
+        if (msg.mediaType === 'video') {
+          const vid = document.createElement('video');
+          vid.src = msg.mediaUrl; vid.controls = true; vid.preload = 'metadata';
+          vid.style.maxHeight = '260px';
+          mediaWrap.appendChild(vid);
+        } else {
+          const img = document.createElement('img');
+          img.src = msg.mediaUrl; img.alt = '미디어'; img.loading = 'lazy';
+          mediaWrap.appendChild(img);
+        }
+        mediaWrap.addEventListener('click', () => openLightbox(msg.mediaUrl, msg.mediaType));
+        wrap.appendChild(meta); wrap.appendChild(mediaWrap);
+        if (msg.text) {
+          const bubble = document.createElement('div'); bubble.className = 'chat-bubble';
+          bubble.textContent = msg.text; wrap.appendChild(bubble);
+        }
+      } else {
+        const bubble = document.createElement('div'); bubble.className = 'chat-bubble';
+        bubble.textContent = msg.text;
+        wrap.appendChild(meta); wrap.appendChild(bubble);
+      }
+
+      container.appendChild(wrap);
+    }
+
+    if (chatOpen) scrollChatBottom();
+  }
+
+  /* ── 라이트박스 ── */
+  function openLightbox(url, type) {
+    const lb = $('chatLightbox');
+    lb.innerHTML = '<button class="chat-lightbox-close" id="chatLightboxClose">✕</button>';
+    if (type === 'video') {
+      const vid = document.createElement('video');
+      vid.src = url; vid.controls = true; vid.autoplay = true;
+      lb.appendChild(vid);
+    } else {
+      const img = document.createElement('img'); img.src = url;
+      lb.appendChild(img);
+    }
+    lb.classList.add('open');
+    lb.querySelector('#chatLightboxClose').addEventListener('click', e => { e.stopPropagation(); lb.classList.remove('open'); });
+    lb.addEventListener('click', () => lb.classList.remove('open'), { once: true });
+  }
+
+  /* ── 파일 첨부 ── */
+  $('chatAttachBtn').addEventListener('click', () => $('chatFileInput').click());
+  $('chatFileInput').addEventListener('change', e => {
+    const file = e.target.files[0]; if (!file) return;
+    e.target.value = '';
+    const isVideo = file.type.startsWith('video/');
+    const isImage = file.type.startsWith('image/') || file.name.toLowerCase().endsWith('.gif');
+    if (!isVideo && !isImage) { window.SHEET && window.SHEET.toast('이미지 또는 영상 파일만 첨부할 수 있어요'); return; }
+
+    const reader = new FileReader();
+    reader.onload = ev => {
+      pendingFile = { file, dataUrl: ev.target.result, type: isVideo ? 'video' : 'image' };
+      const thumb = $('chatPreviewThumb');
+      thumb.innerHTML = '';
+      if (isVideo) {
+        const vid = document.createElement('video');
+        vid.src = ev.target.result; vid.style.cssText = 'width:100%;height:100%;object-fit:cover;';
+        thumb.appendChild(vid);
+      } else {
+        const img = document.createElement('img');
+        img.src = ev.target.result;
+        thumb.appendChild(img);
+      }
+      const rm = document.createElement('div'); rm.className = 'rm'; rm.textContent = '✕';
+      rm.addEventListener('click', clearPendingFile);
+      thumb.appendChild(rm);
+      $('chatPreviewName').textContent = file.name;
+      $('chatPreviewWrap').classList.add('show');
+    };
+    reader.readAsDataURL(file);
+  });
+
+  function clearPendingFile() {
+    pendingFile = null;
+    $('chatPreviewWrap').classList.remove('show');
+    $('chatPreviewThumb').innerHTML = '<span style="font-size:20px;">📎</span><div class="rm" id="chatPreviewRm">✕</div>';
+    $('chatPreviewName').textContent = '';
+    document.getElementById('chatPreviewRm') && document.getElementById('chatPreviewRm').addEventListener('click', clearPendingFile);
+  }
+
+  /* ── 전송 ── */
+  async function sendChatMsg() {
+    if (uploading) return;
+    if (!chatRef) { window.SHEET && window.SHEET.toast('채팅은 방 입장 후 사용 가능합니다'); return; }
+
+    const text = $('chatTextInput').value.trim();
+    if (!text && !pendingFile) return;
+
+    $('chatSendBtn').disabled = true;
+    $('chatTextInput').value = '';
+    autoResizeTextarea();
+
+    let mediaUrl = null, mediaType = null, storagePath = null;
+
+    if (pendingFile && storage) {
+      uploading = true;
+      $('chatUploadProgress').classList.add('show');
+      try {
+        const ext  = pendingFile.file.name.split('.').pop();
+        storagePath = 'rooms/' + roomCode + '/chat/' + Date.now() + '_' + Math.random().toString(36).slice(2,6) + '.' + ext;
+        const ref  = storage.ref(storagePath);
+        await ref.put(pendingFile.file);
+        mediaUrl  = await ref.getDownloadURL();
+        mediaType = pendingFile.type;
+      } catch(err) {
+        window.SHEET && window.SHEET.toast('업로드 실패: ' + err.message);
+        $('chatSendBtn').disabled = false;
+        $('chatUploadProgress').classList.remove('show');
+        uploading = false;
+        return;
+      }
+      $('chatUploadProgress').classList.remove('show');
+      uploading = false;
+      clearPendingFile();
+    }
+
+    const payload = {
+      sender: userName || '익명',
+      text: text || null,
+      mediaUrl: mediaUrl || null,
+      mediaType: mediaType || null,
+      storagePath: storagePath || null,
+      ts: Date.now()
+    };
+    chatRef.push(payload);
+    $('chatSendBtn').disabled = false;
+  }
+
+  $('chatSendBtn').addEventListener('click', sendChatMsg);
+  $('chatTextInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMsg(); }
+  });
+
+  function autoResizeTextarea() {
+    const ta = $('chatTextInput');
+    ta.style.height = 'auto';
+    ta.style.height = Math.min(ta.scrollHeight, 90) + 'px';
+  }
+  $('chatTextInput').addEventListener('input', autoResizeTextarea);
+
+  /* ── 🧹 청소 (한 달 이상 된 메시지+Storage) ── */
+  $('chatCleanBtn').addEventListener('click', () => {
+    const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    const cutDate = new Date(cutoff);
+    const label = cutDate.getFullYear() + '년 ' + (cutDate.getMonth()+1) + '월 ' + cutDate.getDate() + '일';
+    $('chatCleanDesc').innerHTML = '<b>' + label + '</b> 이전 메시지와 미디어 파일을 삭제합니다.<br>이 작업은 <b style="color:var(--crimson-light)">되돌릴 수 없습니다.</b>';
+    $('chatCleanModalBg').classList.add('open');
+  });
+  $('chatCleanCancel').addEventListener('click',  () => $('chatCleanModalBg').classList.remove('open'));
+  $('chatCleanConfirm').addEventListener('click', async () => {
+    $('chatCleanModalBg').classList.remove('open');
+    if (!chatRef) return;
+    const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    window.SHEET && window.SHEET.toast('🧹 청소 중...');
+    const snap = await chatRef.orderByChild('ts').endAt(cutoff).once('value');
+    const toDelete = snap.val() || {};
+    const keys = Object.keys(toDelete);
+    let deleted = 0;
+    for (const k of keys) {
+      const msg = toDelete[k];
+      /* Storage 파일도 함께 삭제 */
+      if (msg.storagePath && storage) {
+        try { await storage.ref(msg.storagePath).delete(); } catch(_) {}
+      }
+      await chatRef.child(k).remove();
+      deleted++;
+    }
+    window.SHEET && window.SHEET.toast('🧹 완료 — ' + deleted + '개 메시지 삭제됨');
+  });
+
 })();
 
 </script>
