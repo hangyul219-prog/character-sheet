@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#080B14">
+<meta name="color-scheme" content="dark">
+<title>파뷸라 울티마 — 파티 캐릭터 시트</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<!-- Firebase (compat SDK) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<style>
+
+  :root {
+    color-scheme: dark only;
+    --gold: #D4AF52; --gold-light: #F2D88A; --gold-bright: #FFE9A8; --gold-dark: #9A7420;
+    --crimson: #A82828; --crimson-light: #D14B3A;
+    --ink: #0B0F1C; --ink-panel: #121829; --ink-panel-2: #161D31;
+    --arcane: #7B5CC4; --arcane-light: #B79CF0;
+    --emerald: #3FA67C; --emerald-light: #6FD6A8;
+    --hp: #C8342E; --hp-light: #FF6B5E;
+    --mp: #3A78C8; --mp-light: #6FB4FF;
+    --text-primary: #F4ECD8; --text-secondary: #D8C99A; --text-muted: #A8966E;
+    --border: rgba(212, 175, 82, 0.28); --border-strong: rgba(212, 175, 82, 0.6);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; background: #0B0F1C; background-color: #0B0F1C; }
+  body {
+    background: #0B0F1C; color: var(--text-primary);
+    font-family: 'Crimson Pro', 'EB Garamond', Georgia, serif;
+    font-size: 16px; line-height: 1.6; overflow-x: hidden; min-height: 100vh; padding: 0 0 60px;
+  }
+  body::before {
+    content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background:
+      radial-gradient(ellipse at 15% 10%, rgba(123,92,196,0.14) 0%, transparent 48%),
+      radial-gradient(ellipse at 85% 90%, rgba(168,40,40,0.1) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% -10%, rgba(212,175,82,0.1) 0%, transparent 45%);
+  }
+  body::after {
+    content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+    opacity: 0.03; mix-blend-mode: overlay;
+  }
+  .sheet { max-width: 920px; margin: 0 auto; padding: 0 16px; position: relative; z-index: 1; }
+
+  /* ── HEADER ── */
+  .sheet-header { text-align: center; padding: 36px 16px 18px; position: relative; }
+  .sh-eyebrow { font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 5px; text-transform: uppercase; color: var(--gold); opacity: 0.8; margin-bottom: 8px; }
+  .sh-eyebrow::before, .sh-eyebrow::after { content: '✦'; margin: 0 12px; font-size: 8px; vertical-align: middle; opacity: 0.7; }
+  .sh-title {
+    font-family: 'Cinzel Decorative', serif; font-size: clamp(26px, 5vw, 40px); letter-spacing: 2px; line-height: 1.1;
+    background: linear-gradient(175deg, #FFF4D6, var(--gold-light) 35%, var(--gold) 60%, var(--gold-dark));
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 2px 1px rgba(0,0,0,0.5)) drop-shadow(0 0 24px rgba(242,216,138,0.35));
+  }
+
+  /* ── PANEL / CARD ── */
+  .panel {
+    background: linear-gradient(160deg, var(--ink-panel), var(--ink-panel-2));
+    border: 1px solid var(--border); border-radius: 10px;
+    padding: 18px 20px; margin-bottom: 16px; position: relative;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 6px 22px rgba(0,0,0,0.32);
+  }
+  .panel::before, .panel::after { content: ''; position: absolute; width: 14px; height: 14px; pointer-events: none; opacity: 0.55; }
+  .panel::before { top: 6px; left: 6px; border-top: 1px solid var(--gold); border-left: 1px solid var(--gold); border-top-left-radius: 4px; }
+  .panel::after { bottom: 6px; right: 6px; border-bottom: 1px solid var(--gold); border-right: 1px solid var(--gold); border-bottom-right-radius: 4px; }
+  .panel-label {
+    font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--gold-light); margin-bottom: 14px; padding-bottom: 8px;
+    border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px;
+  }
+  .panel-label .ico { font-size: 15px; }
+
+  /* ── INPUTS ── */
+  label.field { display: block; }
+  .field-name { font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; }
+  input, select, textarea {
+    width: 100%; background: rgba(0,0,0,0.28); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text-primary); font-family: 'Crimson Pro', serif;
+    font-size: 15px; padding: 8px 10px; transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+  }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 2px rgba(212,175,82,0.18), inset 0 0 8px rgba(212,175,82,0.06); background: rgba(0,0,0,0.4); }
+  input::placeholder, textarea::placeholder { color: rgba(168,150,110,0.5); font-style: italic; }
+  select { appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23D4AF52'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 28px; cursor: pointer; }
+  textarea { resize: vertical; min-height: 64px; line-height: 1.5; }
+
+  /* ── IDENTITY GRID ── */
+  .id-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .id-grid .full { grid-column: 1 / -1; }
+  .id-grid .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* ── ATTRIBUTES ── */
+  .attr-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .attr-cell { text-align: center; background: rgba(0,0,0,0.22); border: 1px solid var(--border); border-radius: 10px; padding: 14px 8px; position: relative; transition: border-color 0.25s, box-shadow 0.25s; }
+  .attr-cell:hover { border-color: var(--gold); box-shadow: 0 0 18px rgba(212,175,82,0.16); }
+  .attr-abbr { font-family: 'Cinzel', serif; font-weight: 700; font-size: 13px; color: var(--gold-light); letter-spacing: 1px; }
+  .attr-full { font-size: 10px; color: var(--text-muted); margin-bottom: 8px; }
+  .attr-cell select { font-family: 'Cinzel', serif; font-weight: 700; font-size: 20px; text-align: center; color: var(--gold-bright); background-position: right 8px center; padding-right: 22px; text-align-last: center; }
+
+  /* ── VITALS (HP/MP) — special effects ── */
+  .vitals { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 640px) { .vitals { grid-template-columns: 1fr; } }
+  .vital {
+    position: relative; border-radius: 12px; padding: 16px 18px; overflow: hidden;
+    border: 1px solid var(--border);
+    background: linear-gradient(160deg, rgba(0,0,0,0.3), rgba(0,0,0,0.15));
+  }
+  .vital.hp { box-shadow: inset 0 0 30px rgba(200,52,46,0.12), 0 4px 18px rgba(0,0,0,0.3); }
+  .vital.mp { box-shadow: inset 0 0 30px rgba(58,120,200,0.12), 0 4px 18px rgba(0,0,0,0.3); }
+  .vital-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .vital-name { font-family: 'Cinzel', serif; font-weight: 700; font-size: 16px; letter-spacing: 1px; display: flex; align-items: center; gap: 8px; }
+  .vital.hp .vital-name { color: var(--hp-light); }
+  .vital.mp .vital-name { color: var(--mp-light); }
+  .vital-icon { font-size: 18px; filter: drop-shadow(0 0 6px currentColor); }
+  .vital-max { font-family: 'Cinzel', serif; font-size: 12px; color: var(--text-muted); }
+  .vital-max b { font-size: 18px; }
+  .vital.hp .vital-max b { color: var(--hp-light); }
+  .vital.mp .vital-max b { color: var(--mp-light); }
+
+  /* gauge bar */
+  .gauge { position: relative; height: 26px; border-radius: 13px; background: rgba(0,0,0,0.45); border: 1px solid rgba(255,255,255,0.08); overflow: hidden; margin-bottom: 12px; }
+  .gauge-fill { position: absolute; inset: 0; width: 100%; border-radius: 13px; transition: width 0.5s cubic-bezier(0.16,1,0.3,1); }
+  .vital.hp .gauge-fill { background: linear-gradient(90deg, #7a1410, var(--hp) 50%, var(--hp-light)); box-shadow: 0 0 18px rgba(255,107,94,0.5); }
+  .vital.mp .gauge-fill { background: linear-gradient(90deg, #163e7a, var(--mp) 50%, var(--mp-light)); box-shadow: 0 0 18px rgba(111,180,255,0.5); }
+  /* animated sheen sweeping across the gauge */
+  .gauge-fill::after { content: ''; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,0.35) 50%, transparent 70%); transform: translateX(-130%); animation: sheen 3.2s ease-in-out infinite; }
+  @keyframes sheen { 0%, 60% { transform: translateX(-130%); } 100% { transform: translateX(130%); } }
+  .gauge-text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'Cinzel', serif; font-weight: 700; font-size: 13px; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.9); letter-spacing: 0.5px; z-index: 2; }
+
+  /* current value control */
+  .vital-ctrl { display: flex; align-items: center; gap: 8px; }
+  .vital-ctrl input { text-align: center; font-family: 'Cinzel', serif; font-weight: 700; font-size: 18px; padding: 6px; }
+  .stepper { width: 34px; height: 34px; flex-shrink: 0; border-radius: 8px; border: 1px solid var(--border); background: rgba(0,0,0,0.3); color: var(--gold-light); font-size: 18px; font-weight: 700; cursor: pointer; transition: all 0.18s; -webkit-tap-highlight-color: transparent; line-height: 1; }
+  .stepper:hover { border-color: var(--gold); background: rgba(212,175,82,0.14); transform: translateY(-1px); }
+  .stepper:active { transform: scale(0.92); }
+
+  /* CRISIS pulsing effect */
+  .vital.hp.crisis { animation: crisisPulse 1.3s ease-in-out infinite; }
+  .vital.hp.crisis .vital-name::after { content: ' ⚠ 위기'; color: var(--hp-light); font-size: 11px; letter-spacing: 1px; animation: crisisBlink 1s steps(2) infinite; }
+  @keyframes crisisPulse {
+    0%, 100% { box-shadow: inset 0 0 30px rgba(200,52,46,0.15), 0 4px 18px rgba(0,0,0,0.3), 0 0 0 rgba(255,60,50,0); border-color: var(--border); }
+    50% { box-shadow: inset 0 0 44px rgba(255,60,50,0.4), 0 4px 18px rgba(0,0,0,0.3), 0 0 26px rgba(255,60,50,0.55); border-color: var(--hp-light); }
+  }
+  @keyframes crisisBlink { 0% { opacity: 1; } 50% { opacity: 0.25; } }
+
+  /* derived stats row */
+  .derived { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  @media (max-width: 640px) { .derived { grid-template-columns: repeat(2, 1fr); } }
+  .derived-cell { text-align: center; background: rgba(0,0,0,0.22); border: 1px solid var(--border); border-radius: 10px; padding: 12px 6px; transition: border-color 0.2s, box-shadow 0.2s; }
+  .derived-cell:hover { border-color: var(--gold); box-shadow: 0 0 14px rgba(212,175,82,0.14); }
+  .derived-label { font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
+  .derived-val { font-family: 'Cinzel Decorative', serif; font-weight: 700; font-size: 26px; color: var(--gold-bright); line-height: 1; text-shadow: 0 0 14px rgba(242,216,138,0.4); }
+  .derived-val .add { font-size: 13px; color: var(--text-secondary); }
+  .derived-cell input.bonus { width: 54px; margin: 6px auto 0; text-align: center; font-size: 13px; padding: 4px; }
+
+  /* IP pips */
+  .ip-track { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .ip-pip { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--emerald); background: rgba(0,0,0,0.3); cursor: pointer; transition: all 0.2s; position: relative; -webkit-tap-highlight-color: transparent; }
+  .ip-pip.filled { background: radial-gradient(circle at 35% 30%, var(--emerald-light), var(--emerald)); box-shadow: 0 0 12px rgba(111,214,168,0.6), inset 0 1px 2px rgba(255,255,255,0.3); }
+  .ip-pip:hover { transform: scale(1.12); }
+  .ip-count { margin-left: 10px; font-family: 'Cinzel', serif; color: var(--emerald-light); font-size: 14px; }
+
+  /* fabula points */
+  .fp-track { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .fp-star { font-size: 26px; color: rgba(168,150,110,0.35); cursor: pointer; transition: all 0.2s; -webkit-tap-highlight-color: transparent; user-select: none; }
+  .fp-star.lit { color: var(--gold-light); text-shadow: 0 0 14px rgba(242,216,138,0.8); transform: scale(1.05); }
+  .fp-star:hover { transform: scale(1.18); }
+
+  /* repeatable rows (skills, equipment, items) */
+  .rows { display: flex; flex-direction: column; gap: 8px; }
+  .row { display: grid; gap: 8px; align-items: start; }
+  .row.skill { grid-template-columns: 1fr; }
+  .row.equip { grid-template-columns: 1.4fr 1fr; }
+  .row.item { grid-template-columns: 1fr auto; }
+  .row .qty { width: 64px; }
+  .add-btn {
+    margin-top: 10px; width: 100%; padding: 9px; background: rgba(212,175,82,0.08);
+    border: 1px dashed var(--border-strong); border-radius: 7px; color: var(--gold-light);
+    font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 1px; cursor: pointer; transition: all 0.2s;
+  }
+  .add-btn:hover { background: rgba(212,175,82,0.16); border-style: solid; }
+  .del-btn { width: 34px; flex-shrink: 0; background: rgba(168,40,40,0.12); border: 1px solid rgba(168,40,40,0.3); border-radius: 6px; color: var(--crimson-light); cursor: pointer; font-size: 15px; transition: all 0.18s; }
+  .del-btn:hover { background: rgba(168,40,40,0.28); }
+
+  .equip-slots { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  @media (max-width: 640px) { .equip-slots { grid-template-columns: 1fr; } }
+  .slot { background: rgba(0,0,0,0.22); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+  .slot-name { font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--gold); margin-bottom: 5px; }
+
+  /* toolbar */
+  .toolbar { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 8px 0 24px; }
+  .tool-btn { padding: 10px 20px; background: linear-gradient(160deg, var(--ink-panel), var(--ink-panel-2)); border: 1px solid var(--border-strong); border-radius: 9px; color: var(--gold-light); font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 1px; cursor: pointer; transition: all 0.22s; -webkit-tap-highlight-color: transparent; }
+  .tool-btn:hover { border-color: var(--gold); box-shadow: 0 4px 16px rgba(0,0,0,0.4), 0 0 18px rgba(212,175,82,0.25); transform: translateY(-2px); }
+  .tool-btn:active { transform: translateY(0) scale(0.97); }
+  .tool-btn.danger { color: var(--crimson-light); border-color: rgba(168,40,40,0.4); }
+  .tool-btn.danger:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.4), 0 0 18px rgba(168,40,40,0.3); }
+
+  .hint { font-size: 12px; color: var(--text-muted); font-style: italic; margin-top: 8px; }
+  .footer { text-align: center; color: var(--text-muted); font-size: 12px; margin-top: 28px; }
+  .footer .ornament { color: var(--gold); letter-spacing: 8px; opacity: 0.5; margin-bottom: 8px; }
+
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); background: linear-gradient(160deg, #1a2236, #0e1322); border: 1px solid var(--border-strong); border-radius: 10px; padding: 12px 22px; color: var(--gold-light); font-family: 'Cinzel', serif; font-size: 13px; box-shadow: 0 8px 30px rgba(0,0,0,0.6), 0 0 20px rgba(212,175,82,0.2); opacity: 0; visibility: hidden; transition: all 0.3s; z-index: 300; }
+  .toast.show { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .gauge-fill::after, .vital.hp.crisis { animation: none; }
+  }
+  @media (max-width: 520px) {
+    .attr-row { grid-template-columns: repeat(2, 1fr); }
+    .id-grid { grid-template-columns: 1fr; }
+    .id-grid .two { grid-template-columns: 1fr 1fr; }
+    .row.equip { grid-template-columns: 1fr; }
+  }
+
+
+  /* ════════ MULTIPLAYER LAYER ════════ */
+  .setup-screen {
+    max-width: 560px; margin: 60px auto; padding: 0 20px; position: relative; z-index: 2;
+  }
+  .setup-card {
+    background: linear-gradient(160deg, var(--ink-panel), var(--ink-panel-2));
+    border: 1px solid var(--border-strong); border-radius: 14px; padding: 32px 28px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 12px 40px rgba(0,0,0,0.5), 0 0 30px rgba(212,175,82,0.12);
+  }
+  .setup-card h2 { font-family:'Cinzel',serif; color: var(--gold-light); font-size: 18px; letter-spacing:1px; margin-bottom: 6px; text-align:center; }
+  .setup-card .sub { text-align:center; color: var(--text-muted); font-size: 13px; margin-bottom: 22px; }
+  .setup-card .field-name { margin-top: 14px; }
+  .setup-row { display:flex; gap:10px; }
+  .setup-row .tool-btn { flex:1; }
+  .status-dot { display:inline-block; width:8px; height:8px; border-radius:50%; background:#666; margin-right:6px; vertical-align:middle; transition: background 0.3s, box-shadow 0.3s; }
+  .status-dot.on { background: var(--emerald-light); box-shadow: 0 0 8px var(--emerald-light); }
+  .status-dot.off { background: var(--crimson-light); }
+
+  /* player tab bar */
+  .player-bar {
+    position: sticky; top: 0; z-index: 90;
+    display: flex; align-items: center; gap: 6px;
+    padding: 10px 12px; overflow-x: auto;
+    background: linear-gradient(180deg, rgba(10,13,24,0.95), rgba(10,13,24,0.82));
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border-strong);
+    box-shadow: 0 6px 24px -8px rgba(0,0,0,0.7);
+    -webkit-overflow-scrolling: touch;
+  }
+  .player-bar::-webkit-scrollbar { height: 4px; }
+  .player-bar::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 2px; }
+  .ptab {
+    flex-shrink: 0; display:flex; align-items:center; gap:7px;
+    padding: 9px 14px; border-radius: 9px; cursor: pointer;
+    background: linear-gradient(160deg, var(--ink-panel), var(--ink-panel-2));
+    border: 1px solid var(--border); color: var(--text-secondary);
+    font-family:'Cinzel',serif; font-size: 13px; white-space: nowrap;
+    transition: all 0.2s; -webkit-tap-highlight-color: transparent;
+  }
+  .ptab:hover { border-color: var(--gold); color: var(--gold-light); transform: translateY(-2px); }
+  .ptab.active { border-color: var(--gold); color: var(--gold-bright); background: linear-gradient(160deg, rgba(212,175,82,0.22), rgba(212,175,82,0.06)); box-shadow: 0 4px 14px rgba(0,0,0,0.4), 0 0 16px rgba(212,175,82,0.3); }
+  .ptab .dot { width:7px; height:7px; border-radius:50%; background: var(--emerald-light); box-shadow:0 0 6px var(--emerald-light); flex-shrink:0; }
+  .ptab .close { margin-left:2px; opacity:0.5; font-size:14px; padding:0 2px; }
+  .ptab .close:hover { opacity:1; color: var(--crimson-light); }
+  .ptab-add { flex-shrink:0; padding: 9px 14px; border-radius:9px; cursor:pointer; background: rgba(212,175,82,0.08); border:1px dashed var(--border-strong); color: var(--gold-light); font-family:'Cinzel',serif; font-size:13px; transition:all 0.2s; }
+  .ptab-add:hover { background: rgba(212,175,82,0.18); border-style:solid; }
+  .room-badge { flex-shrink:0; margin-left:auto; padding: 7px 12px; border-radius:8px; background: rgba(0,0,0,0.3); border:1px solid var(--border); font-family:'Cinzel',serif; font-size:11px; color: var(--text-muted); letter-spacing:0.5px; cursor:pointer; }
+  .room-badge:hover { border-color: var(--gold); color: var(--gold-light); }
+  .room-badge b { color: var(--gold-light); }
+
+  .sync-note { text-align:center; font-size:11px; color: var(--text-muted); padding: 6px; font-style:italic; }
+  .readonly-banner { background: rgba(168,40,40,0.15); border:1px solid rgba(168,40,40,0.4); border-radius:8px; padding:8px 14px; margin: 0 16px 12px; text-align:center; color: var(--crimson-light); font-size:13px; max-width:920px; margin-left:auto; margin-right:auto; }
+
+</style>
+</head>
+<body>
+
+
+<!-- ═══════ SETUP / CONNECT SCREEN ═══════ -->
+<div class="setup-screen" id="setupScreen">
+  <div class="setup-card">
+    <h2>⚜ 파티 캐릭터 시트</h2>
+    <p class="sub">같은 <b>방 코드</b>를 입력하면 파티원들과 실시간으로 시트를 공유합니다</p>
+    <label class="field"><span class="field-name">방 코드 (파티 이름 등 자유롭게)</span><input type="text" id="roomInput" placeholder="예: dragons-of-relde" autocomplete="off"></label>
+    <label class="field"><span class="field-name">내 이름 (GM 또는 플레이어)</span><input type="text" id="userInput" placeholder="예: 리즈 (GM)" autocomplete="off"></label>
+    <div class="setup-row" style="margin-top:20px;">
+      <button class="tool-btn" id="enterBtn" style="flex:2;">🚪 입장 / 방 만들기</button>
+    </div>
+    <p class="sync-note" id="setupStatus"><span class="status-dot" id="setupDot"></span> Firebase 설정을 기다리는 중...</p>
+    <p class="sync-note">방 코드를 파티원에게 알려주면 같은 방으로 모입니다.</p>
+  </div>
+</div>
+
+<!-- ═══════ PLAYER TAB BAR ═══════ -->
+<nav class="player-bar" id="playerBar" style="display:none;">
+  <div class="room-badge" id="roomBadge" title="클릭하면 방 코드 복사">방 <b id="roomLabel">—</b></div>
+</nav>
+<div class="readonly-banner" id="readonlyBanner" style="display:none;">👀 다른 플레이어의 시트를 보는 중입니다 (읽기 전용). 내 탭에서만 편집할 수 있어요.</div>
+
+
+<div class="sheet" id="sheetRoot">
+
+
+  <header class="sheet-header">
+    <div class="sh-eyebrow">Fabula Ultima · Character Sheet</div>
+    <h1 class="sh-title">캐릭터 시트</h1>
+  </header>
+
+  <!-- ═══════ IDENTITY ═══════ -->
+  <section class="panel">
+    <div class="panel-label"><span class="ico">✦</span> 정체성</div>
+    <div class="id-grid">
+      <label class="field full"><span class="field-name">이름</span><input type="text" data-key="name" placeholder="영웅의 이름"></label>
+      <label class="field"><span class="field-name">정체성</span><input type="text" data-key="identity" placeholder="예: 기억을 잃은 노년의 마법사"></label>
+      <label class="field"><span class="field-name">주제</span><input type="text" data-key="theme" placeholder="예: 복수, 희망, 의무"></label>
+      <label class="field"><span class="field-name">출신</span><input type="text" data-key="origin" placeholder="비롯된 장소"></label>
+      <label class="field"><span class="field-name">대명사</span><input type="text" data-key="pronoun" placeholder="그/그녀/그들..."></label>
+      <div class="field two">
+        <label class="field"><span class="field-name">레벨 (총합)</span><input type="number" data-key="level" id="level" value="5" min="5" max="50"></label>
+        <label class="field"><span class="field-name">경험치 (XP)</span><input type="number" data-key="xp" value="0" min="0"></label>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════ CLASSES ═══════ -->
+  <section class="panel">
+    <div class="panel-label"><span class="ico">⚜</span> 직업 (레벨 분배)</div>
+    <div class="rows" id="classRows"></div>
+    <button class="add-btn" data-add="class">+ 직업 추가</button>
+    <p class="hint">레벨 5 캐릭터는 보통 2~3개의 직업에 레벨을 나눠 투자합니다.</p>
+  </section>
+
+  <!-- ═══════ ATTRIBUTES ═══════ -->
+  <section class="panel">
+    <div class="panel-label"><span class="ico">🎲</span> 능력치 (기본 주사위)</div>
+    <div class="attr-row">
+      <div class="attr-cell">
+        <div class="attr-abbr">민첩 DEX</div><div class="attr-full">Dexterity</div>
+        <select class="attr-die" data-attr="dex"><option>d6</option><option selected>d8</option><option>d10</option><option>d12</option></select>
+      </div>
+      <div class="attr-cell">
+        <div class="attr-abbr">통찰 INS</div><div class="attr-full">Insight</div>
+        <select class="attr-die" data-attr="ins"><option>d6</option><option selected>d8</option><option>d10</option><option>d12</option></select>
+      </div>
+      <div class="attr-cell">
+        <div class="attr-abbr">근력 MIG</div><div class="attr-full">Might</div>
+        <select class="attr-die" data-attr="mig"><option>d6</option><option selected>d8</option><option>d10</option><option>d12</option></select>
+      </div>
+      <div class="attr-cell">
+        <div class="attr-abbr">의지력 WLP</div><div class="attr-full">Willpower</div>
+        <select class="attr-die" data-attr="wlp"><option>d6</option><option selected>d8</option><option>d10</option><option>d12</option></select>
+      </div>
+    </div>
+    <p class="hint">배열 — 균형 d8·d8·d8·d8 / 평균 d10·d8·d8·d6 / 전문화 d10·d10·d6·d6</p>
+  </section>
+
+  <!-- ═══════ VITALS (HP / MP) ═══════ -->
+  <section class="panel">
+    <div class="panel-label"><span class="ico">❤</span> 생명점 &amp; 마력</div>
+    <div class="vitals">
+      <!-- HP -->
+      <div class="vital hp" id="hpVital">
+        <div class="vital-head">
+          <span class="vital-name"><span class="vital-icon">❤</span> 생명점 HP</span>
+          <span class="vital-max">최대 <b id="hpMax">45</b></span>
+        </div>
+        <div class="gauge"><div class="gauge-fill" id="hpFill"></div><div class="gauge-text" id="hpText">45 / 45</div></div>
+        <div class="vital-ctrl">
+          <button class="stepper" data-vital="hp" data-step="-5">−5</button>
+          <button class="stepper" data-vital="hp" data-step="-1">−</button>
+          <input type="number" id="hpCur" value="45">
+          <button class="stepper" data-vital="hp" data-step="1">+</button>
+          <button class="stepper" data-vital="hp" data-step="5">+5</button>
+        </div>
+      </div>
+      <!-- MP -->
+      <div class="vital mp" id="mpVital">
+        <div class="vital-head">
+          <span class="vital-name"><span class="vital-icon">✦</span> 마력 MP</span>
+          <span class="vital-max">최대 <b id="mpMax">45</b></span>
+        </div>
+        <div class="gauge"><div class="gauge-fill" id="mpFill"></div><div class="gauge-text" id="mpText">45 / 45</div></div>
+        <div class="vital-ctrl">
+          <button class="stepper" data-vital="mp" data-step="-5">−5</button>
+          <button class="stepper" data-vital="mp" data-step="-1">−</button>
+          <input type="number" id="mpCur" value="45">
+          <button class="stepper" data-vital="mp" data-step="1">+</button>
+          <button class="stepper" data-vital="mp" data-step="5">+5</button>
+        </div>
+      </div>
+    </div>
+    <p class="hint" id="crisisHint">위기 수치: <b id="crisisVal" style="color:var(--hp-light)">22</b> 이하일 때 위기 상태 (많은 기술이 강해집니다)</p>
+  </section>
+
+  <!-- ═══════ DERIVED STATS ═══════ -->
+  <section class="panel">
+    <div class="panel-label"><span class="ico">🛡</span> 파생 수치 <span style="font-size:10px;color:var(--text-muted);letter-spacing:0;text-transform:none;">(능력치로 자동 계산 · 장비 보너스 입력 가능)</span></div>
+    <div class="derived">
+      <div class="derived-cell">
+        <div class="derived-label">방어 DEF</div>
+        <div class="derived-val"><span id="defBase">8</span><span class="add" id="defAddTxt"></span></div>
+        <input type="number" class="bonus" id="defBonus" value="0" title="갑옷/방패 보너스">
+      </div>
+      <div class="derived-cell">
+        <div class="derived-label">마법 방어 MDEF</div>
+        <div class="derived-val"><span id="mdefBase">8</span><span class="add" id="mdefAddTxt"></span></div>
+        <input type="number" class="bonus" id="mdefBonus" value="0" title="장비 보너스">
+      </div>
+      <div class="derived-cell">
+        <div class="derived-label">선제권 INIT</div>
+        <div class="derived-val"><span id="initSign">+</span><span id="initVal">0</span></div>
+        <input type="number" class="bonus" id="initBonus" value="0" title="갑옷 선제권 수정">
+      </div>
+      <div class="derived-cell">
+        <div class="derived-label">제닛 ZENIT</div>
+        <div class="derived-val" style="font-size:20px;"><input type="number" id="zenit" value="0" style="width:90%;background:transparent;border:none;text-align:center;color:var(--gold-bright);font-family:'Cinzel Decorative';font-weight:700;font-size:22px;padding:0;"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════ FABULA POINTS & IP ═══════ -->
+  <section class="panel">
+    <div class="panel-label"><span class="ico">⭐</span> 파뷸라 포인트 &amp; 인벤토리</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;" class="fp-ip-grid">
+      <div>
+        <div class="field-name">파뷸라 포인트</div>
+        <div class="fp-track" id="fpTrack"></div>
+      </div>
+      <div>
+        <div class="field-name">인벤토리 포인트 (IP)</div>
+        <div class="ip-track" id="ipTrack"></div>
+      </div>
+    </div>
+    <p class="hint">파뷸라 포인트는 3개로 시작 · IP는 최대 6 (별/원을 눌러 채우고 비우세요)</p>
+  </section>
+
+  <!-- ═══════ EQUIPMENT ═══════ -->
+  <section class="panel">
+    <div class="panel-label"><span class="ico">⚔</span> 장착 장비</div>
+    <div class="equip-slots">
+      <div class="slot"><div class="slot-name">갑옷 Armor</div><input type="text" data-key="slot_armor" placeholder="착용 갑옷"></div>
+      <div class="slot"><div class="slot-name">악세서리 Accessory</div><input type="text" data-key="slot_acc" placeholder="장신구"></div>
+      <div class="slot"><div class="slot-name">주 손 Main Hand</div><input type="text" data-key="slot_main" placeholder="무기"></div>
+      <div class="slot"><div class="slot-name">부 손 Off Hand</div><input type="text" data-key="slot_off" placeholder="무기 또는 방패"></div>
+    </div>
+    <div class="field-name" style="margin-top:6px;">소지 장비 목록 (가방)</div>
+    <div class="rows" id="equipRows"></div>
+    <button class="add-btn" data-add="equip">+ 장비 추가</button>
+  </section>
+
+  <!-- ═══════ SKILLS ═══════ -->
+  <section class="panel">
+    <div class="panel-label"><span class="ico">✨</span> 기술 &amp; 주문</div>
+    <div class="rows" id="skillRows"></div>
+    <button class="add-btn" data-add="skill">+ 기술/주문 추가</button>
+  </section>
+
+  <!-- ═══════ ITEMS ═══════ -->
+  <section class="panel">
+    <div class="panel-label"><span class="ico">🎒</span> 아이템 &amp; 소모품</div>
+    <div class="rows" id="itemRows"></div>
+    <button class="add-btn" data-add="item">+ 아이템 추가</button>
+  </section>
+
+  <!-- ═══════ BONDS & NOTES ═══════ -->
+  <section class="panel">
+    <div class="panel-label"><span class="ico">🔗</span> 유대 &amp; 기록</div>
+    <label class="field" style="margin-bottom:12px;"><span class="field-name">유대 (사람·장소·이상과의 연결, 강도 1~3)</span><textarea data-key="bonds" placeholder="예: 동료 카밀라를 향한 신뢰 (2) — 존경·충성"></textarea></label>
+    <label class="field"><span class="field-name">메모</span><textarea data-key="notes" placeholder="자유 기록"></textarea></label>
+  </section>
+
+  <!-- ═══════ TOOLBAR ═══════ -->
+  <div class="toolbar">
+    <button class="tool-btn" id="saveBtn">💾 저장</button>
+    <button class="tool-btn" id="loadBtn">📂 불러오기</button>
+    <button class="tool-btn" id="printBtn">🖨 인쇄 / PDF</button>
+    <button class="tool-btn" id="restBtn">🏕 휴식 (완전 회복)</button>
+    <button class="tool-btn danger" id="resetBtn">🗑 초기화</button>
+  </div>
+
+  <div class="footer">
+    <div class="ornament">◆ ◆ ◆</div>
+    파뷸라 울티마 캐릭터 시트 · 능력치를 바꾸면 HP·MP·방어가 자동 계산됩니다
+  </div>
+
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+
+(function() {
+  const DIE = { d6: 6, d8: 8, d10: 10, d12: 12 };
+  const $ = id => document.getElementById(id);
+  const state = { hpCur: null, mpCur: null, fp: 3, ip: 0 };
+
+  /* ---------- DERIVED CALCULATIONS ---------- */
+  function calc() {
+    const level = parseInt($('level').value) || 5;
+    const dex = DIE[document.querySelector('[data-attr=dex]').value];
+    const ins = DIE[document.querySelector('[data-attr=ins]').value];
+    const mig = DIE[document.querySelector('[data-attr=mig]').value];
+    const wlp = DIE[document.querySelector('[data-attr=wlp]').value];
+
+    const hpMax = level + mig * 5;
+    const mpMax = level + wlp * 5;
+    const crisis = Math.floor(hpMax / 2);
+
+    $('hpMax').textContent = hpMax;
+    $('mpMax').textContent = mpMax;
+    $('crisisVal').textContent = crisis;
+
+    // clamp current values to new max
+    if (state.hpCur === null) state.hpCur = hpMax;
+    if (state.mpCur === null) state.mpCur = mpMax;
+    state.hpCur = Math.min(state.hpCur, hpMax);
+    state.mpCur = Math.min(state.mpCur, mpMax);
+
+    // defense = dex die, mdef = ins die
+    const defBonus = parseInt($('defBonus').value) || 0;
+    const mdefBonus = parseInt($('mdefBonus').value) || 0;
+    const initBonus = parseInt($('initBonus').value) || 0;
+
+    $('defBase').textContent = dex + defBonus;
+    $('mdefBase').textContent = ins + mdefBonus;
+    $('defAddTxt').textContent = '';
+    $('mdefAddTxt').textContent = '';
+    const initTotal = initBonus; // base init modifier = 0
+    $('initSign').textContent = initTotal >= 0 ? '+' : '−';
+    $('initVal').textContent = Math.abs(initTotal);
+
+    updateVital('hp', state.hpCur, hpMax, crisis);
+    updateVital('mp', state.mpCur, mpMax, null);
+  }
+
+  function updateVital(type, cur, max, crisis) {
+    cur = Math.max(0, Math.min(cur, max));
+    if (type === 'hp') state.hpCur = cur; else state.mpCur = cur;
+    const pct = max > 0 ? (cur / max * 100) : 0;
+    $(type + 'Fill').style.width = pct + '%';
+    $(type + 'Text').textContent = cur + ' / ' + max;
+    $(type + 'Cur').value = cur;
+    if (type === 'hp') {
+      const v = $('hpVital');
+      if (crisis !== null && cur <= crisis && cur > 0) v.classList.add('crisis');
+      else v.classList.remove('crisis');
+    }
+  }
+
+  /* ---------- VITAL CONTROLS ---------- */
+  document.querySelectorAll('.stepper').forEach(b => {
+    b.addEventListener('click', () => {
+      const t = b.dataset.vital, step = parseInt(b.dataset.step);
+      const max = parseInt($(t + 'Max').textContent);
+      const cur = (t === 'hp' ? state.hpCur : state.mpCur) + step;
+      const crisis = Math.floor(parseInt($('hpMax').textContent) / 2);
+      updateVital(t, cur, max, t === 'hp' ? crisis : null);
+    });
+  });
+  ['hp', 'mp'].forEach(t => {
+    $(t + 'Cur').addEventListener('input', () => {
+      const max = parseInt($(t + 'Max').textContent);
+      const crisis = Math.floor(parseInt($('hpMax').textContent) / 2);
+      updateVital(t, parseInt($(t + 'Cur').value) || 0, max, t === 'hp' ? crisis : null);
+    });
+  });
+
+  /* ---------- FABULA POINTS ---------- */
+  function renderFP() {
+    const track = $('fpTrack'); track.innerHTML = '';
+    const shown = Math.max(6, state.fp);
+    for (let i = 0; i < shown; i++) {
+      const s = document.createElement('span');
+      s.className = 'fp-star' + (i < state.fp ? ' lit' : '');
+      s.textContent = '★';
+      s.addEventListener('click', () => { state.fp = (i + 1 === state.fp) ? i : i + 1; renderFP(); });
+      track.appendChild(s);
+    }
+    const add = document.createElement('span');
+    add.className = 'fp-star'; add.textContent = '＋'; add.style.fontSize = '18px';
+    add.addEventListener('click', () => { state.fp++; renderFP(); });
+    track.appendChild(add);
+  }
+
+  /* ---------- INVENTORY POINTS ---------- */
+  function renderIP() {
+    const track = $('ipTrack'); track.innerHTML = '';
+    for (let i = 0; i < 6; i++) {
+      const p = document.createElement('div');
+      p.className = 'ip-pip' + (i < state.ip ? ' filled' : '');
+      p.addEventListener('click', () => { state.ip = (i + 1 === state.ip) ? i : i + 1; renderIP(); });
+      track.appendChild(p);
+    }
+    const c = document.createElement('span');
+    c.className = 'ip-count'; c.textContent = state.ip + ' / 6';
+    track.appendChild(c);
+  }
+
+  /* ---------- REPEATABLE ROWS ---------- */
+  const templates = {
+    class: () => `<div class="row" style="grid-template-columns:1fr 80px auto;"><input type="text" placeholder="직업명 (예: 가디언)" data-rk="name"><input type="number" placeholder="Lv" value="1" min="1" data-rk="lv"><button class="del-btn">✕</button></div>`,
+    equip: () => `<div class="row equip"><input type="text" placeholder="장비명" data-rk="name"><div style="display:flex;gap:8px;"><input type="text" placeholder="효과/비고" data-rk="note"><button class="del-btn">✕</button></div></div>`,
+    skill: () => `<div class="row" style="grid-template-columns:1fr auto;"><input type="text" placeholder="기술/주문 이름 — 효과, MP 비용 등" data-rk="text"><button class="del-btn">✕</button></div>`,
+    item: () => `<div class="row item"><input type="text" placeholder="아이템명 / 효과" data-rk="name"><div style="display:flex;gap:8px;"><input type="text" class="qty" placeholder="수량" data-rk="qty"><button class="del-btn">✕</button></div></div>`
+  };
+  function addRow(type, data) {
+    const container = $(type + 'Rows');
+    const wrap = document.createElement('div');
+    wrap.innerHTML = templates[type]();
+    const row = wrap.firstChild;
+    if (data) row.querySelectorAll('[data-rk]').forEach(inp => { if (data[inp.dataset.rk] !== undefined) inp.value = data[inp.dataset.rk]; });
+    row.querySelector('.del-btn').addEventListener('click', () => row.remove());
+    container.appendChild(row);
+    return row;
+  }
+  document.querySelectorAll('[data-add]').forEach(b => b.addEventListener('click', () => addRow(b.dataset.add)));
+
+  /* ---------- SAVE / LOAD (in-memory + file) ---------- */
+  function collect() {
+    const d = { fields: {}, attrs: {}, rows: { class: [], equip: [], skill: [], item: [] }, vital: {}, meta: {} };
+    document.querySelectorAll('[data-key]').forEach(el => d.fields[el.dataset.key] = el.value);
+    document.querySelectorAll('[data-attr]').forEach(el => d.attrs[el.dataset.attr] = el.value);
+    ['class','equip','skill','item'].forEach(t => {
+      $(t + 'Rows').querySelectorAll('.row').forEach(r => {
+        const o = {}; r.querySelectorAll('[data-rk]').forEach(i => o[i.dataset.rk] = i.value); d.rows[t].push(o);
+      });
+    });
+    d.vital = { hp: state.hpCur, mp: state.mpCur, fp: state.fp, ip: state.ip };
+    d.meta = { defBonus: $('defBonus').value, mdefBonus: $('mdefBonus').value, initBonus: $('initBonus').value, zenit: $('zenit').value };
+    return d;
+  }
+  function apply(d) {
+    if (d.fields) document.querySelectorAll('[data-key]').forEach(el => { if (d.fields[el.dataset.key] !== undefined) el.value = d.fields[el.dataset.key]; });
+    if (d.attrs) document.querySelectorAll('[data-attr]').forEach(el => { if (d.attrs[el.dataset.attr]) el.value = d.attrs[el.dataset.attr]; });
+    if (d.meta) { $('defBonus').value = d.meta.defBonus||0; $('mdefBonus').value = d.meta.mdefBonus||0; $('initBonus').value = d.meta.initBonus||0; $('zenit').value = d.meta.zenit||0; }
+    ['class','equip','skill','item'].forEach(t => { $(t + 'Rows').innerHTML = ''; (d.rows && d.rows[t] || []).forEach(o => addRow(t, o)); });
+    if (d.vital) { state.hpCur = d.vital.hp; state.mpCur = d.vital.mp; state.fp = d.vital.fp ?? 3; state.ip = d.vital.ip ?? 0; }
+    calc(); renderFP(); renderIP();
+  }
+
+  function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 1800); }
+
+  // in-memory store for this session
+  let memSave = null;
+  $('saveBtn').addEventListener('click', () => {
+    memSave = JSON.stringify(collect());
+    // also offer file download
+    const blob = new Blob([memSave], { type: 'application/json' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    const nm = (document.querySelector('[data-key=name]').value || 'character').replace(/\s+/g,'_');
+    a.download = nm + '_sheet.json'; a.click(); URL.revokeObjectURL(a.href);
+    toast('저장 완료 — 파일로 내려받았습니다');
+  });
+  $('loadBtn').addEventListener('click', () => {
+    const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.json,application/json';
+    inp.addEventListener('change', e => {
+      const f = e.target.files[0]; if (!f) return;
+      const r = new FileReader();
+      r.onload = () => { try { apply(JSON.parse(r.result)); toast('불러오기 완료'); } catch(err) { toast('파일을 읽을 수 없습니다'); } };
+      r.readAsText(f);
+    });
+    inp.click();
+  });
+  $('printBtn').addEventListener('click', () => window.print());
+  $('restBtn').addEventListener('click', () => {
+    state.hpCur = parseInt($('hpMax').textContent);
+    state.mpCur = parseInt($('mpMax').textContent);
+    calc(); toast('🏕 휴식 — HP·MP 완전 회복 & 상태이상 해제');
+  });
+  $('resetBtn').addEventListener('click', () => {
+    if (!confirm('모든 내용을 초기화할까요?')) return;
+    document.querySelectorAll('[data-key]').forEach(el => el.value = '');
+    document.querySelectorAll('[data-attr]').forEach(el => el.value = 'd8');
+    $('level').value = 5; $('defBonus').value = 0; $('mdefBonus').value = 0; $('initBonus').value = 0; $('zenit').value = 0;
+    ['class','equip','skill','item'].forEach(t => $(t + 'Rows').innerHTML = '');
+    state.hpCur = null; state.mpCur = null; state.fp = 3; state.ip = 0;
+    seedRows(); calc(); renderFP(); renderIP(); toast('초기화 완료');
+  });
+
+  /* ---------- RECALC TRIGGERS ---------- */
+  $('level').addEventListener('input', calc);
+  document.querySelectorAll('[data-attr]').forEach(s => s.addEventListener('change', calc));
+  ['defBonus','mdefBonus','initBonus'].forEach(id => $(id).addEventListener('input', calc));
+
+  /* ---------- INIT ---------- */
+  function seedRows() {
+    addRow('class'); addRow('class');
+    for (let i=0;i<2;i++) addRow('equip');
+    for (let i=0;i<3;i++) addRow('skill');
+    for (let i=0;i<2;i++) addRow('item');
+  }
+  seedRows();
+  calc();
+  renderFP();
+  renderIP();
+
+  /* expose API for multiplayer layer */
+  function blankData() {
+    return { fields:{}, attrs:{dex:'d8',ins:'d8',mig:'d8',wlp:'d8'}, rows:{class:[],equip:[],skill:[],item:[]}, vital:{hp:45,mp:45,fp:3,ip:0}, meta:{defBonus:0,mdefBonus:0,initBonus:0,zenit:0} };
+  }
+  function setReadonly(ro) {
+    document.querySelectorAll('.sheet input, .sheet select, .sheet textarea, .sheet .stepper, .sheet .add-btn, .sheet .del-btn, .fp-star, .ip-pip').forEach(el => {
+      if (ro) { el.setAttribute('disabled','disabled'); el.style.opacity='0.7'; el.style.pointerEvents='none'; }
+      else { el.removeAttribute('disabled'); el.style.opacity=''; el.style.pointerEvents=''; }
+    });
+  }
+  window.SHEET = { collect, apply, blank: blankData, setReadonly, toast };
+
+  /* notify multiplayer layer on ANY change */
+  function notify() { if (window.SHEET_ONCHANGE) window.SHEET_ONCHANGE(); }
+  document.addEventListener('input', e => { if (e.target.closest('.sheet')) notify(); });
+  document.addEventListener('change', e => { if (e.target.closest('.sheet')) notify(); });
+  // hook programmatic updates (vital steppers, fp, ip) — patch state mutators
+  const _calc = calc;
+  // wrap renderFP/renderIP/updateVital already call via clicks handled by input/change? they don't fire input.
+
+
+  document.addEventListener('click', e => {
+    if (e.target.closest('.sheet') && (e.target.classList.contains('stepper') || e.target.classList.contains('fp-star') || e.target.classList.contains('ip-pip'))) {
+      setTimeout(() => { if (window.SHEET_ONCHANGE) window.SHEET_ONCHANGE(); }, 30);
+    }
+  });
+
+})();
+
+</script>
+<script>
+
+/* ════════════════════════════════════════════════════════════ */
+/* ✦ FIREBASE MULTIPLAYER SYNC                                    */
+/* ════════════════════════════════════════════════════════════ */
+(function() {
+  // ===== 1) FIREBASE 설정 — 아래 6줄을 본인 프로젝트 값으로 교체하세요 =====
+  const firebaseConfig = {
+    apiKey: "AIzaSyAFmmDJjDV7qVvwMYm_kZVadrVDCuTi53A",
+    authDomain: "fabula-ultima-5fde1.firebaseapp.com",
+    databaseURL: "https://fabula-ultima-5fde1-default-rtdb.firebaseio.com",
+    projectId: "fabula-ultima-5fde1",
+    storageBucket: "fabula-ultima-5fde1.firebasestorage.app",
+    messagingSenderId: "840099087278",
+    appId: "1:840099087278:web:c4c10d6b380d3b8a207e3f"
+  };
+  // ====================================================================
+
+  const $ = id => document.getElementById(id);
+  let db = null, configured = false;
+  let roomCode = null, userName = null, myCharId = null;
+  let chars = {};       // { charId: {owner, data, updated} }
+  let activeId = null;  // currently viewed tab
+  let applying = false; // guard to avoid echo writes
+  let writeTimer = null;
+
+  // check if config was filled in
+  configured = firebaseConfig.apiKey !== "YOUR_API_KEY";
+
+  function setStatus(ok, msg) {
+    const dot = $('setupDot'), st = $('setupStatus');
+    if (!dot) return;
+    dot.className = 'status-dot ' + (ok ? 'on' : 'off');
+    st.innerHTML = '<span class="status-dot ' + (ok ? 'on' : 'off') + '" id="setupDot"></span> ' + msg;
+  }
+
+  // ---- init firebase ----
+  function initFirebase() {
+    if (!configured) {
+      setStatus(false, 'Firebase 설정이 필요합니다 — 파일 상단의 firebaseConfig를 채우세요. (지금은 오프라인 단일 시트로 작동)');
+      return false;
+    }
+    try {
+      firebase.initializeApp(firebaseConfig);
+      db = firebase.database();
+      setStatus(true, '연결 준비 완료 — 방 코드를 입력하고 입장하세요');
+      return true;
+    } catch (e) {
+      setStatus(false, 'Firebase 초기화 실패: ' + e.message);
+      return false;
+    }
+  }
+
+  // ---- enter room ----
+  function enterRoom() {
+    roomCode = ($('roomInput').value || '').trim().toLowerCase().replace(/[^a-z0-9가-힣\-_]/g, '');
+    userName = ($('userInput').value || '').trim() || '익명';
+    if (!roomCode) { alert('방 코드를 입력하세요.'); return; }
+
+    if (!configured) {
+      // offline fallback: single local character
+      $('setupScreen').style.display = 'none';
+      $('playerBar').style.display = 'flex';
+      $('roomLabel').textContent = '(오프라인)';
+      myCharId = 'local';
+      chars[myCharId] = { owner: userName, data: window.SHEET.collect() };
+      activeId = myCharId;
+      renderTabs();
+      return;
+    }
+
+    $('setupScreen').style.display = 'none';
+    $('playerBar').style.display = 'flex';
+    $('roomLabel').textContent = roomCode;
+
+    // my character id (stable per name within room)
+    myCharId = 'c_' + userName.replace(/[^a-zA-Z0-9가-힣]/g, '') + '_' + Math.random().toString(36).slice(2, 6);
+
+    const roomRef = db.ref('rooms/' + roomCode + '/chars');
+
+    // create my character node with current sheet
+    const myRef = roomRef.child(myCharId);
+    myRef.set({ owner: userName, data: window.SHEET.collect(), updated: Date.now() });
+    myRef.onDisconnect(); // keep data after disconnect (don't remove)
+
+    // listen to all characters in room
+    roomRef.on('value', snap => {
+      chars = snap.val() || {};
+      if (!activeId || !chars[activeId]) activeId = myCharId;
+      renderTabs();
+      // if viewing someone else's (or my) sheet, refresh display
+      applyToSheet(activeId);
+    });
+  }
+
+  // ---- render player tabs ----
+  function renderTabs() {
+    const bar = $('playerBar');
+    // remove old tabs (keep room badge)
+    bar.querySelectorAll('.ptab, .ptab-add').forEach(e => e.remove());
+    const badge = $('roomBadge');
+
+    Object.keys(chars).forEach(id => {
+      const ch = chars[id];
+      const name = (ch.data && ch.data.fields && ch.data.fields.name) || ch.owner || '이름없음';
+      const tab = document.createElement('div');
+      tab.className = 'ptab' + (id === activeId ? ' active' : '');
+      tab.innerHTML = '<span class="dot"></span>' + escapeHtml(name) +
+        (id === myCharId ? '<span class="close" title="내 캐릭터">★</span>' : '');
+      tab.addEventListener('click', () => { activeId = id; renderTabs(); applyToSheet(id); });
+      bar.insertBefore(tab, badge);
+    });
+
+    // add-tab button (creates an additional character you own)
+    if (configured) {
+      const add = document.createElement('div');
+      add.className = 'ptab-add';
+      add.textContent = '+ 캐릭터';
+      add.addEventListener('click', addCharacter);
+      bar.insertBefore(add, badge);
+    }
+    updateReadonly();
+  }
+
+  function addCharacter() {
+    const nm = prompt('새 캐릭터의 플레이어/이름:', userName);
+    if (nm === null) return;
+    const id = 'c_' + nm.replace(/[^a-zA-Z0-9가-힣]/g, '') + '_' + Math.random().toString(36).slice(2, 6);
+    const blank = window.SHEET.blank();
+    blank.fields.name = nm;
+    db.ref('rooms/' + roomCode + '/chars/' + id).set({ owner: userName, data: blank, updated: Date.now() });
+    // mark ownership locally too (so I can edit it)
+    myOwned.add(id);
+    activeId = id;
+  }
+
+  const myOwned = new Set();
+  function canEdit(id) {
+    if (!configured) return true;
+    if (id === myCharId) return true;
+    if (myOwned.has(id)) return true;
+    // can edit characters whose owner == my name
+    return chars[id] && chars[id].owner === userName;
+  }
+
+  function updateReadonly() {
+    const ro = !canEdit(activeId);
+    $('readonlyBanner').style.display = ro ? 'block' : 'none';
+    window.SHEET.setReadonly(ro);
+  }
+
+  // ---- apply a character's data into the visible sheet ----
+  function applyToSheet(id) {
+    if (!chars[id]) return;
+    applying = true;
+    window.SHEET.apply(chars[id].data || window.SHEET.blank());
+    applying = false;
+    updateReadonly();
+  }
+
+  // ---- when the sheet changes locally, push to firebase ----
+  function onSheetChange() {
+    if (applying) return;
+    if (!configured) { if (chars[activeId]) chars[activeId].data = window.SHEET.collect(); return; }
+    if (!canEdit(activeId)) return;
+    clearTimeout(writeTimer);
+    writeTimer = setTimeout(() => {
+      db.ref('rooms/' + roomCode + '/chars/' + activeId).update({
+        data: window.SHEET.collect(), owner: chars[activeId] ? chars[activeId].owner : userName, updated: Date.now()
+      });
+    }, 400); // debounce
+  }
+  window.SHEET_ONCHANGE = onSheetChange;
+
+  function escapeHtml(s) { return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+  // ---- room badge: copy code ----
+  $('roomBadge').addEventListener('click', () => {
+    if (!roomCode) return;
+    const url = location.origin + location.pathname + '#' + roomCode;
+    navigator.clipboard && navigator.clipboard.writeText(url);
+    window.SHEET.toast('방 링크 복사됨 — 파티원에게 보내세요');
+  });
+
+  // ---- wire setup screen ----
+  $('enterBtn').addEventListener('click', enterRoom);
+  $('roomInput').addEventListener('keydown', e => { if (e.key === 'Enter') $('userInput').focus(); });
+  $('userInput').addEventListener('keydown', e => { if (e.key === 'Enter') enterRoom(); });
+
+  // prefill room from URL hash
+  if (location.hash.length > 1) $('roomInput').value = decodeURIComponent(location.hash.slice(1));
+
+  // boot
+  if (configured) initFirebase();
+  else setStatus(false, 'Firebase 미설정 — 오프라인 단일 시트로 사용 가능 (공유하려면 상단 설정 입력)');
+})();
+
+</script>
+</body>
+</html>
