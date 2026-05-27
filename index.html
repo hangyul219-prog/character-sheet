@@ -628,9 +628,20 @@
     return d;
   }
   function apply(d) {
-    if (d.fields) document.querySelectorAll('[data-key]').forEach(el => { if (d.fields[el.dataset.key] !== undefined) el.value = d.fields[el.dataset.key]; });
-    if (d.attrs) document.querySelectorAll('[data-attr]').forEach(el => { if (d.attrs[el.dataset.attr]) el.value = d.attrs[el.dataset.attr]; });
-    if (d.meta) { $('defBonus').value = d.meta.defBonus||0; $('mdefBonus').value = d.meta.mdefBonus||0; $('initBonus').value = d.meta.initBonus||0; $('zenit').value = d.meta.zenit||0; }
+    /* ★ 포커스된 입력창은 덮어쓰지 않음 — 타이핑 중 포커스 유지 */
+    const focused = document.activeElement;
+    if (d.fields) document.querySelectorAll('[data-key]').forEach(el => {
+      if (d.fields[el.dataset.key] !== undefined && el !== focused) el.value = d.fields[el.dataset.key];
+    });
+    if (d.attrs) document.querySelectorAll('[data-attr]').forEach(el => {
+      if (d.attrs[el.dataset.attr] && el !== focused) el.value = d.attrs[el.dataset.attr];
+    });
+    if (d.meta) {
+      if ($('defBonus')  !== focused) $('defBonus').value  = d.meta.defBonus||0;
+      if ($('mdefBonus') !== focused) $('mdefBonus').value = d.meta.mdefBonus||0;
+      if ($('initBonus') !== focused) $('initBonus').value = d.meta.initBonus||0;
+      if ($('zenit')     !== focused) $('zenit').value     = d.meta.zenit||0;
+    }
     ['class','equip','skill','item'].forEach(t => { $(t + 'Rows').innerHTML = ''; (d.rows && d.rows[t] || []).forEach(o => addRow(t, o)); });
     if (d.vital) { state.hpCur = d.vital.hp; state.mpCur = d.vital.mp; state.fp = d.vital.fp ?? 3; state.ip = d.vital.ip ?? 0; }
     calc(); renderFP(); renderIP();
@@ -725,10 +736,9 @@
 <script>
 
 /* ════════════════════════════════════════════════════════════ */
-/* ✦ FIREBASE MULTIPLAYER SYNC                                    */
+/* ✦ FIREBASE MULTIPLAYER SYNC  (v2 — 안정적 ID + 삭제 기능)    */
 /* ════════════════════════════════════════════════════════════ */
 (function() {
-  // ===== 1) FIREBASE 설정 — 아래 6줄을 본인 프로젝트 값으로 교체하세요 =====
   const firebaseConfig = {
     apiKey: "AIzaSyAFmmDJjDV7qVvwMYm_kZVadrVDCuTi53A",
     authDomain: "fabula-ultima-5fde1.firebaseapp.com",
@@ -738,55 +748,59 @@
     messagingSenderId: "840099087278",
     appId: "1:840099087278:web:c4c10d6b380d3b8a207e3f"
   };
-  // ====================================================================
 
   const $ = id => document.getElementById(id);
-  let db = null, configured = false;
-  let roomCode = null, userName = null, myCharId = null;
-  let chars = {};       // { charId: {owner, data, updated} }
-  let activeId = null;  // currently viewed tab
-  let applying = false; // guard to avoid echo writes
-  let writeTimer = null;
+  let db = null;
+  const configured = firebaseConfig.apiKey !== "YOUR_API_KEY";
 
-  // check if config was filled in
-  configured = firebaseConfig.apiKey !== "YOUR_API_KEY";
+  let roomCode = null, userName = null, myCharId = null;
+  let chars = {};
+  let activeId = null;
+  let applying = false;
+  let writeTimer = null;
+  const myOwned = new Set();
+
+  /* ──────────────────────────────────────────────
+     결정론적 ID: 방코드 + 이름으로 해시 생성
+     → 같은 방에 같은 이름으로 재입장하면 항상 같은 시트
+  ────────────────────────────────────────────── */
+  function makeStableId(room, name) {
+    let h = 0;
+    const s = room + '\x00' + name;
+    for (let i = 0; i < s.length; i++) h = Math.imul(31, h) + s.charCodeAt(i) | 0;
+    return 'c_' + Math.abs(h).toString(36);
+  }
 
   function setStatus(ok, msg) {
-    const dot = $('setupDot'), st = $('setupStatus');
-    if (!dot) return;
-    dot.className = 'status-dot ' + (ok ? 'on' : 'off');
+    const st = $('setupStatus');
+    if (!st) return;
     st.innerHTML = '<span class="status-dot ' + (ok ? 'on' : 'off') + '" id="setupDot"></span> ' + msg;
   }
 
-  // ---- init firebase ----
   function initFirebase() {
-    if (!configured) {
-      setStatus(false, 'Firebase 설정이 필요합니다 — 파일 상단의 firebaseConfig를 채우세요. (지금은 오프라인 단일 시트로 작동)');
-      return false;
-    }
+    if (!configured) { setStatus(false, 'Firebase 미설정 — 오프라인 단일 시트로 사용 가능'); return false; }
     try {
-      firebase.initializeApp(firebaseConfig);
+      if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
       db = firebase.database();
       setStatus(true, '연결 준비 완료 — 방 코드를 입력하고 입장하세요');
       return true;
-    } catch (e) {
-      setStatus(false, 'Firebase 초기화 실패: ' + e.message);
-      return false;
-    }
+    } catch (e) { setStatus(false, 'Firebase 초기화 실패: ' + e.message); return false; }
   }
 
-  // ---- enter room ----
+  /* ── 입장 ── */
   function enterRoom() {
     roomCode = ($('roomInput').value || '').trim().toLowerCase().replace(/[^a-z0-9가-힣\-_]/g, '');
     userName = ($('userInput').value || '').trim() || '익명';
     if (!roomCode) { alert('방 코드를 입력하세요.'); return; }
 
+    /* 결정론적 ID — 재입장해도 항상 같은 캐릭터 */
+    myCharId = makeStableId(roomCode, userName);
+    myOwned.add(myCharId);
+
     if (!configured) {
-      // offline fallback: single local character
       $('setupScreen').style.display = 'none';
       $('playerBar').style.display = 'flex';
       $('roomLabel').textContent = '(오프라인)';
-      myCharId = 'local';
       chars[myCharId] = { owner: userName, data: window.SHEET.collect() };
       activeId = myCharId;
       renderTabs();
@@ -797,74 +811,120 @@
     $('playerBar').style.display = 'flex';
     $('roomLabel').textContent = roomCode;
 
-    // my character id (stable per name within room)
-    myCharId = 'c_' + userName.replace(/[^a-zA-Z0-9가-힣]/g, '') + '_' + Math.random().toString(36).slice(2, 6);
-
     const roomRef = db.ref('rooms/' + roomCode + '/chars');
+    const myRef  = roomRef.child(myCharId);
 
-    // create my character node with current sheet
-    const myRef = roomRef.child(myCharId);
-    myRef.set({ owner: userName, data: window.SHEET.collect(), updated: Date.now() });
-    myRef.onDisconnect(); // keep data after disconnect (don't remove)
+    /* 이미 저장된 내 시트가 있으면 복원, 없으면 현재 시트로 신규 생성 */
+    myRef.once('value').then(snap => {
+      if (snap.exists()) {
+        applying = true;
+        window.SHEET.apply(snap.val().data || window.SHEET.blank());
+        applying = false;
+      } else {
+        myRef.set({ owner: userName, data: window.SHEET.collect(), updated: Date.now() });
+      }
+    });
 
-    // listen to all characters in room
+    /* 방 전체 실시간 구독 */
     roomRef.on('value', snap => {
       chars = snap.val() || {};
       if (!activeId || !chars[activeId]) activeId = myCharId;
       renderTabs();
-      // if viewing someone else's (or my) sheet, refresh display
-      applyToSheet(activeId);
+      /* ★ 내 탭이 활성 상태면 절대 덮어쓰지 않음 — 포커스 보존 */
+      if (activeId !== myCharId) applyToSheet(activeId);
     });
   }
 
-  // ---- render player tabs ----
+  /* ── 탭 렌더링 ── */
   function renderTabs() {
     const bar = $('playerBar');
-    // remove old tabs (keep room badge)
     bar.querySelectorAll('.ptab, .ptab-add').forEach(e => e.remove());
     const badge = $('roomBadge');
 
     Object.keys(chars).forEach(id => {
       const ch = chars[id];
-      const name = (ch.data && ch.data.fields && ch.data.fields.name) || ch.owner || '이름없음';
+      const displayName = (ch.data && ch.data.fields && ch.data.fields.name) || ch.owner || '이름없음';
+      const editable = canEdit(id);
+
       const tab = document.createElement('div');
       tab.className = 'ptab' + (id === activeId ? ' active' : '');
-      tab.innerHTML = '<span class="dot"></span>' + escapeHtml(name) +
-        (id === myCharId ? '<span class="close" title="내 캐릭터">★</span>' : '');
+
+      /* 탭 내용: 도트 + 이름 */
+      const dot = document.createElement('span'); dot.className = 'dot';
+      const lbl = document.createElement('span'); lbl.textContent = displayName;
+      tab.appendChild(dot);
+      tab.appendChild(lbl);
+
+      /* 삭제 버튼 — 내가 편집 가능한 캐릭터에만 표시 */
+      if (editable) {
+        const del = document.createElement('span');
+        del.className = 'close';
+        del.title = '캐릭터 삭제';
+        del.textContent = '✕';
+        del.addEventListener('click', e => {
+          e.stopPropagation();
+          if (!confirm('"' + displayName + '" 캐릭터를 삭제할까요?\n이 작업은 되돌릴 수 없습니다.')) return;
+          deleteChar(id);
+        });
+        tab.appendChild(del);
+      }
+
       tab.addEventListener('click', () => { activeId = id; renderTabs(); applyToSheet(id); });
       bar.insertBefore(tab, badge);
     });
 
-    // add-tab button (creates an additional character you own)
-    if (configured) {
-      const add = document.createElement('div');
-      add.className = 'ptab-add';
-      add.textContent = '+ 캐릭터';
-      add.addEventListener('click', addCharacter);
-      bar.insertBefore(add, badge);
-    }
+    /* + 캐릭터 추가 버튼 */
+    const add = document.createElement('div');
+    add.className = 'ptab-add';
+    add.textContent = '+ 캐릭터';
+    add.addEventListener('click', addCharacter);
+    bar.insertBefore(add, badge);
+
     updateReadonly();
   }
 
-  function addCharacter() {
-    const nm = prompt('새 캐릭터의 플레이어/이름:', userName);
-    if (nm === null) return;
-    const id = 'c_' + nm.replace(/[^a-zA-Z0-9가-힣]/g, '') + '_' + Math.random().toString(36).slice(2, 6);
-    const blank = window.SHEET.blank();
-    blank.fields.name = nm;
-    db.ref('rooms/' + roomCode + '/chars/' + id).set({ owner: userName, data: blank, updated: Date.now() });
-    // mark ownership locally too (so I can edit it)
-    myOwned.add(id);
-    activeId = id;
+  /* ── 캐릭터 삭제 ── */
+  function deleteChar(id) {
+    if (!canEdit(id)) return;
+    myOwned.delete(id);
+    if (configured && db) {
+      db.ref('rooms/' + roomCode + '/chars/' + id).remove();
+    } else {
+      delete chars[id];
+      /* 삭제 후 남은 탭으로 이동 */
+      const remaining = Object.keys(chars);
+      activeId = remaining[0] || null;
+      renderTabs();
+      if (activeId) applyToSheet(activeId);
+    }
+    /* Firebase 구독 콜백이 activeId를 갱신하므로 온라인일 땐 자동 처리 */
+    if (configured && activeId === id) activeId = null;
   }
 
-  const myOwned = new Set();
+  /* ── 캐릭터 추가 ── */
+  function addCharacter() {
+    const nm = prompt('새 캐릭터 이름:', '새 캐릭터');
+    if (!nm) return;
+    /* 추가 캐릭터는 랜덤 suffix로 고유성 보장 */
+    const id = makeStableId(roomCode, nm) + '_' + Math.random().toString(36).slice(2, 5);
+    const blank = window.SHEET.blank();
+    blank.fields.name = nm;
+    myOwned.add(id);
+    activeId = id;
+    if (configured && db) {
+      db.ref('rooms/' + roomCode + '/chars/' + id).set({ owner: userName, data: blank, updated: Date.now() });
+    } else {
+      chars[id] = { owner: userName, data: blank };
+      renderTabs();
+      applyToSheet(id);
+    }
+  }
+
   function canEdit(id) {
     if (!configured) return true;
     if (id === myCharId) return true;
     if (myOwned.has(id)) return true;
-    // can edit characters whose owner == my name
-    return chars[id] && chars[id].owner === userName;
+    return !!(chars[id] && chars[id].owner === userName);
   }
 
   function updateReadonly() {
@@ -873,16 +933,14 @@
     window.SHEET.setReadonly(ro);
   }
 
-  // ---- apply a character's data into the visible sheet ----
   function applyToSheet(id) {
-    if (!chars[id]) return;
+    if (!id || !chars[id]) return;
     applying = true;
     window.SHEET.apply(chars[id].data || window.SHEET.blank());
     applying = false;
     updateReadonly();
   }
 
-  // ---- when the sheet changes locally, push to firebase ----
   function onSheetChange() {
     if (applying) return;
     if (!configured) { if (chars[activeId]) chars[activeId].data = window.SHEET.collect(); return; }
@@ -890,15 +948,16 @@
     clearTimeout(writeTimer);
     writeTimer = setTimeout(() => {
       db.ref('rooms/' + roomCode + '/chars/' + activeId).update({
-        data: window.SHEET.collect(), owner: chars[activeId] ? chars[activeId].owner : userName, updated: Date.now()
+        data: window.SHEET.collect(),
+        owner: (chars[activeId] ? chars[activeId].owner : userName),
+        updated: Date.now()
       });
-    }, 400); // debounce
+    }, 400);
   }
   window.SHEET_ONCHANGE = onSheetChange;
 
   function escapeHtml(s) { return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
-  // ---- room badge: copy code ----
   $('roomBadge').addEventListener('click', () => {
     if (!roomCode) return;
     const url = location.origin + location.pathname + '#' + roomCode;
@@ -906,17 +965,14 @@
     window.SHEET.toast('방 링크 복사됨 — 파티원에게 보내세요');
   });
 
-  // ---- wire setup screen ----
   $('enterBtn').addEventListener('click', enterRoom);
   $('roomInput').addEventListener('keydown', e => { if (e.key === 'Enter') $('userInput').focus(); });
   $('userInput').addEventListener('keydown', e => { if (e.key === 'Enter') enterRoom(); });
 
-  // prefill room from URL hash
   if (location.hash.length > 1) $('roomInput').value = decodeURIComponent(location.hash.slice(1));
 
-  // boot
   if (configured) initFirebase();
-  else setStatus(false, 'Firebase 미설정 — 오프라인 단일 시트로 사용 가능 (공유하려면 상단 설정 입력)');
+  else setStatus(false, 'Firebase 미설정 — 오프라인 단일 시트로 사용 가능');
 })();
 
 </script>
