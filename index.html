@@ -303,6 +303,31 @@
   .footer { text-align: center; color: var(--text-muted); font-size: 12px; margin-top: 28px; }
   .footer .ornament { color: var(--gold); letter-spacing: 8px; opacity: 0.5; margin-bottom: 8px; }
 
+  /* ── 판정 FAB ── */
+  .dice-fab {
+    position: fixed; bottom: 28px; right: 24px; z-index: 400;
+    width: 58px; height: 58px; border-radius: 50%;
+    background: linear-gradient(145deg, rgba(212,175,82,0.35), rgba(212,175,82,0.15));
+    border: 1.5px solid var(--gold);
+    color: var(--gold-bright); font-size: 26px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5), 0 0 24px rgba(212,175,82,0.3);
+    transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+    -webkit-tap-highlight-color: transparent;
+    animation: fabFloat 3s ease-in-out infinite;
+  }
+  .dice-fab:hover {
+    transform: scale(1.12) translateY(-3px);
+    background: linear-gradient(145deg, rgba(212,175,82,0.55), rgba(212,175,82,0.3));
+    box-shadow: 0 8px 28px rgba(0,0,0,0.5), 0 0 36px rgba(212,175,82,0.5);
+  }
+  .dice-fab:active { transform: scale(0.93); animation: none; }
+  @keyframes fabFloat {
+    0%, 100% { transform: translateY(0); }
+    50%       { transform: translateY(-5px); }
+  }
+  @media (prefers-reduced-motion: reduce) { .dice-fab { animation: none; } }
+
   .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); background: linear-gradient(160deg, #1a2236, #0e1322); border: 1px solid var(--border-strong); border-radius: 10px; padding: 12px 22px; color: var(--gold-light); font-family: 'Cinzel', serif; font-size: 13px; box-shadow: 0 8px 30px rgba(0,0,0,0.6), 0 0 20px rgba(212,175,82,0.2); opacity: 0; visibility: hidden; transition: all 0.3s; z-index: 300; }
   .toast.show { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0); }
 
@@ -628,7 +653,6 @@
 
   <!-- ═══════ TOOLBAR ═══════ -->
   <div class="toolbar">
-    <button class="tool-btn" id="rollShortcutBtn">⚄ 판정 굴림</button>
     <button class="tool-btn" id="saveBtn">💾 저장</button>
     <button class="tool-btn" id="loadBtn">📂 불러오기</button>
     <button class="tool-btn" id="printBtn">🖨 인쇄 / PDF</button>
@@ -643,6 +667,8 @@
 
 
 </div>
+
+<button class="dice-fab" id="rollShortcutBtn" title="판정 굴림">⚄</button>
 
 <div class="toast" id="toast"></div>
 
