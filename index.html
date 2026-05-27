@@ -5,12 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#080B14">
 <meta name="color-scheme" content="dark">
-<title>파뷸라 울티마 — 파티 캐릭터 시트</title>
+<title>파뷸라 울티마의 세계로 접속하기</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
 <!-- Firebase (compat SDK) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
+<script src="https://www.youtube.com/iframe_api"></script>
 <style>
 
   :root {
@@ -316,70 +317,7 @@
   .footer { text-align: center; color: var(--text-muted); font-size: 12px; margin-top: 28px; }
   .footer .ornament { color: var(--gold); letter-spacing: 8px; opacity: 0.5; margin-bottom: 8px; }
 
-  /* ── 주사위 기록 사이드바 ── */
-  .dice-log-sidebar {
-    position: fixed; top: 0; right: 0; height: 100vh; z-index: 300;
-    pointer-events: none;
-  }
-  .dice-log-tab {
-    position: absolute; right: 0; top: 50%; transform: translateY(-50%);
-    width: 28px; display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 5px; padding: 16px 0; border-radius: 10px 0 0 10px;
-    background: linear-gradient(180deg, #1c2540, #141b30);
-    border: 1px solid var(--border-strong); border-right: none;
-    cursor: pointer; pointer-events: all;
-    box-shadow: -4px 0 18px rgba(0,0,0,0.5);
-    transition: right 0.32s cubic-bezier(0.16,1,0.3,1), background 0.2s, border-color 0.2s;
-  }
-  .dice-log-sidebar:hover .dice-log-tab { right: 320px; }
-  .dice-log-sidebar.pinned .dice-log-tab { right: 320px; }
-  .dice-log-tab:hover { background: linear-gradient(180deg, #232d50, #1a2240); border-color: var(--gold); }
-  .dice-log-tab .tab-icon { font-size: 15px; line-height: 1; }
-  .dice-log-tab .tab-label {
-    writing-mode: vertical-rl; text-orientation: mixed; transform: rotate(180deg);
-    font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 1.5px;
-    color: var(--gold-light); white-space: nowrap;
-  }
-  .dice-log-tab .tab-count {
-    width: 18px; height: 18px; border-radius: 50%;
-    background: var(--arcane); color: #fff; font-size: 10px; font-family: 'Cinzel', serif;
-    display: flex; align-items: center; justify-content: center;
-    opacity: 0; transform: scale(0); transition: all 0.2s;
-  }
-  .dice-log-tab .tab-count.has-items { opacity: 1; transform: scale(1); }
-
-  .dice-log-panel {
-    position: absolute; right: 0; top: 0; height: 100%;
-    width: 320px;
-    background: linear-gradient(160deg, #0f1626, #0c1220);
-    border-left: 1px solid var(--border-strong);
-    box-shadow: -8px 0 40px rgba(0,0,0,0.6);
-    display: flex; flex-direction: column;
-    pointer-events: all;
-    transform: translateX(100%);
-    transition: transform 0.32s cubic-bezier(0.16,1,0.3,1);
-  }
-  .dice-log-sidebar:hover .dice-log-panel { transform: translateX(0); }
-  .dice-log-sidebar.pinned .dice-log-panel { transform: translateX(0); }
-
-  .dlp-header {
-    padding: 16px 16px 12px;
-    border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
-    background: linear-gradient(160deg, rgba(123,92,196,0.12), rgba(212,175,82,0.06));
-  }
-  .dlp-title {
-    font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 1.5px;
-    color: var(--gold-light); display: flex; align-items: center; gap: 8px;
-  }
-  .dlp-actions { display: flex; gap: 6px; }
-  .dlp-btn {
-    background: none; border: 1px solid var(--border); border-radius: 6px;
-    color: var(--text-muted); font-size: 10px; font-family: 'Cinzel', serif;
-    padding: 4px 8px; cursor: pointer; transition: all 0.15s; letter-spacing: 0.5px;
-  }
-  .dlp-btn:hover { border-color: var(--gold); color: var(--gold-light); }
-
+  /* ── 굴림 기록 (통합 패널 내부) ── */
   .dlp-list {
     flex: 1; overflow-y: auto; padding: 10px 10px;
     display: flex; flex-direction: column; gap: 8px;
@@ -555,17 +493,273 @@
 
 
   /* ════════ MULTIPLAYER LAYER ════════ */
+  /* ════════════════════════════════════════════════
+     ✦ 마법서 로그인 화면 ✦
+  ════════════════════════════════════════════════ */
   .setup-screen {
-    max-width: 560px; margin: 60px auto; padding: 0 20px; position: relative; z-index: 2;
+    max-width: 600px; margin: 0 auto; padding: 36px 20px 60px;
+    min-height: 100vh; position: relative; z-index: 2;
+    display: flex; flex-direction: column; justify-content: center;
   }
+
+  /* 배경 — 떠다니는 룬과 빛가루 */
+  .grimoire-bg {
+    position: fixed; inset: 0; z-index: 1; pointer-events: none; overflow: hidden;
+    background:
+      radial-gradient(ellipse at 20% 30%, rgba(212,175,82,0.08), transparent 50%),
+      radial-gradient(ellipse at 80% 70%, rgba(123,92,196,0.07), transparent 50%),
+      radial-gradient(ellipse at 50% 100%, rgba(63,166,124,0.05), transparent 60%);
+  }
+  .grimoire-bg::before {
+    content: ''; position: absolute; inset: 0;
+    background-image:
+      radial-gradient(2px 2px at 12% 23%, rgba(212,175,82,0.6), transparent),
+      radial-gradient(1.5px 1.5px at 28% 67%, rgba(123,92,196,0.55), transparent),
+      radial-gradient(1.5px 1.5px at 54% 18%, rgba(212,175,82,0.5), transparent),
+      radial-gradient(2px 2px at 73% 52%, rgba(63,166,124,0.45), transparent),
+      radial-gradient(1px 1px at 88% 88%, rgba(212,175,82,0.65), transparent),
+      radial-gradient(1.5px 1.5px at 41% 91%, rgba(168,40,40,0.4), transparent),
+      radial-gradient(1px 1px at 65% 32%, rgba(212,175,82,0.5), transparent),
+      radial-gradient(2px 2px at 92% 14%, rgba(123,92,196,0.5), transparent);
+    background-size: 100% 100%;
+    animation: motesFloat 24s linear infinite;
+  }
+  @keyframes motesFloat {
+    0%   { transform: translate3d(0,0,0); opacity: 0.7; }
+    50%  { transform: translate3d(20px,-30px,0); opacity: 1; }
+    100% { transform: translate3d(0,0,0); opacity: 0.7; }
+  }
+
+  /* 떠다니는 룬 글리프 */
+  .rune {
+    position: absolute; font-family: 'Cinzel', serif; color: rgba(212,175,82,0.18);
+    font-size: 60px; user-select: none; animation: runeDrift 18s ease-in-out infinite;
+    text-shadow: 0 0 20px rgba(212,175,82,0.3);
+  }
+  .rune.r1 { top: 8%;  left: 8%;  font-size: 64px; animation-delay: 0s; }
+  .rune.r2 { top: 18%; right: 10%; font-size: 52px; animation-delay: -4s; color: rgba(123,92,196,0.18); }
+  .rune.r3 { bottom: 16%; left: 12%; font-size: 72px; animation-delay: -9s; color: rgba(63,166,124,0.16); }
+  .rune.r4 { bottom: 10%; right: 14%; font-size: 56px; animation-delay: -14s; }
+  .rune.r5 { top: 48%; left: 4%; font-size: 44px; animation-delay: -6s; color: rgba(168,40,40,0.15); }
+  .rune.r6 { top: 42%; right: 6%; font-size: 48px; animation-delay: -11s; color: rgba(212,175,82,0.15); }
+  @keyframes runeDrift {
+    0%, 100% { transform: translate(0,0) rotate(0deg); opacity: 0.6; }
+    25%      { transform: translate(15px,-12px) rotate(8deg); opacity: 0.9; }
+    50%      { transform: translate(-10px,-20px) rotate(-5deg); opacity: 0.7; }
+    75%      { transform: translate(8px,10px) rotate(4deg); opacity: 0.85; }
+  }
+
+  /* 마법서(카드) */
   .setup-card {
-    background: linear-gradient(160deg, var(--ink-panel), var(--ink-panel-2));
-    border: 1px solid var(--border-strong); border-radius: 14px; padding: 32px 28px;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 12px 40px rgba(0,0,0,0.5), 0 0 30px rgba(212,175,82,0.12);
+    position: relative;
+    background:
+      radial-gradient(ellipse at top, rgba(212,175,82,0.06), transparent 60%),
+      linear-gradient(160deg, #1a1409, #110b04 60%, #0c0703);
+    border: 1px solid rgba(212,175,82,0.35);
+    border-radius: 6px;
+    padding: 44px 38px 36px;
+    box-shadow:
+      inset 0 0 0 1px rgba(212,175,82,0.1),
+      inset 0 1px 0 rgba(255,255,255,0.04),
+      inset 0 -60px 90px rgba(0,0,0,0.5),
+      0 30px 80px rgba(0,0,0,0.7),
+      0 0 60px rgba(212,175,82,0.18),
+      0 0 120px rgba(123,92,196,0.08);
+    animation: grimoireIn 1.2s cubic-bezier(0.16,1,0.3,1) both;
   }
-  .setup-card h2 { font-family:'Cinzel',serif; color: var(--gold-light); font-size: 18px; letter-spacing:1px; margin-bottom: 6px; text-align:center; }
-  .setup-card .sub { text-align:center; color: var(--text-muted); font-size: 13px; margin-bottom: 22px; }
-  .setup-card .field-name { margin-top: 14px; }
+  @keyframes grimoireIn {
+    from { opacity: 0; transform: translateY(20px) scale(0.96); filter: blur(8px); }
+    to   { opacity: 1; transform: translateY(0)    scale(1);   filter: blur(0); }
+  }
+  /* 가장자리 황금 장식 */
+  .setup-card::before, .setup-card::after {
+    content: ''; position: absolute; pointer-events: none;
+    background-image:
+      linear-gradient(135deg, transparent 0, transparent 8px, rgba(212,175,82,0.5) 8px, rgba(212,175,82,0.5) 9px, transparent 9px);
+  }
+  .setup-card::before { inset: 8px 8px auto auto; width: 38px; height: 38px;
+    border-top: 1px solid rgba(212,175,82,0.5); border-right: 1px solid rgba(212,175,82,0.5);
+    border-top-right-radius: 4px; background: none;
+  }
+  .setup-card::after  { inset: auto auto 8px 8px; width: 38px; height: 38px;
+    border-bottom: 1px solid rgba(212,175,82,0.5); border-left: 1px solid rgba(212,175,82,0.5);
+    border-bottom-left-radius: 4px; background: none;
+  }
+
+  /* 펄럭이는 양쪽 페이지 가장자리 (책처럼 보이게) */
+  .setup-card-edge {
+    position: absolute; top: 0; bottom: 0; width: 6px;
+    background: linear-gradient(90deg, rgba(0,0,0,0.6), transparent);
+    pointer-events: none;
+  }
+  .setup-card-edge.left  { left: 0; }
+  .setup-card-edge.right { right: 0; background: linear-gradient(270deg, rgba(0,0,0,0.6), transparent); }
+
+  /* 제목 */
+  .grimoire-title {
+    text-align: center; margin-bottom: 8px;
+    font-family: 'Cinzel', serif; font-weight: 700;
+    font-size: 22px; letter-spacing: 4px; color: var(--gold-bright);
+    text-shadow: 0 0 18px rgba(212,175,82,0.6), 0 2px 8px rgba(0,0,0,0.8);
+    position: relative;
+  }
+  .grimoire-title .crest { display: block; font-size: 28px; margin-bottom: 8px; opacity: 0.85; }
+  .grimoire-title small {
+    display: block; font-size: 10px; letter-spacing: 6px; color: rgba(212,175,82,0.55);
+    margin-top: 6px; font-weight: 400;
+  }
+  /* 제목 아래 장식선 */
+  .title-flourish {
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+    margin: 14px 0 26px; color: rgba(212,175,82,0.6);
+  }
+  .title-flourish::before, .title-flourish::after {
+    content: ''; flex: 1; max-width: 90px; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(212,175,82,0.5), transparent);
+  }
+  .title-flourish .gem { font-size: 14px; text-shadow: 0 0 10px rgba(212,175,82,0.7); }
+
+  .setup-card h2 { display: none; } /* 옛 헤더 숨김 (호환) */
+  .setup-card .sub {
+    text-align: center; color: var(--text-secondary); font-size: 13px;
+    margin: 0 0 28px; font-style: italic; letter-spacing: 0.5px;
+    font-family: 'Crimson Pro', serif;
+  }
+  .setup-card .field-name {
+    margin-top: 18px; color: rgba(212,175,82,0.75); letter-spacing: 2px;
+  }
+  .setup-card .field input {
+    background: rgba(0,0,0,0.4); border: 1px solid rgba(212,175,82,0.25);
+    color: var(--gold-light); font-family: 'Crimson Pro', serif;
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+  .setup-card .field input:focus {
+    border-color: var(--gold); box-shadow: 0 0 14px rgba(212,175,82,0.35);
+    outline: none;
+  }
+
+  /* GM 체크박스 — 인장 느낌으로 */
+  .gm-check {
+    display: flex; align-items: center; gap: 11px; margin-top: 22px; padding: 13px 15px;
+    border: 1px solid rgba(168,40,40,0.3); border-radius: 6px; cursor: pointer;
+    background: linear-gradient(160deg, rgba(168,40,40,0.1), rgba(212,175,82,0.04));
+    font-size: 13px; color: var(--text-secondary);
+    font-family: 'Crimson Pro', serif;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .gm-check:hover { border-color: var(--crimson-light); background: linear-gradient(160deg, rgba(168,40,40,0.16), rgba(212,175,82,0.06)); }
+  .gm-check input { width: 18px; height: 18px; accent-color: var(--crimson); flex-shrink: 0; cursor: pointer; }
+  .gm-check b { color: var(--crimson-light); letter-spacing: 1px; font-family: 'Cinzel', serif; font-size: 12px; }
+
+  /* 입장 버튼 — 인장 발동 느낌 */
+  .grimoire-enter {
+    width: 100%; margin-top: 24px; padding: 14px 20px;
+    font-family: 'Cinzel', serif; font-size: 14px; letter-spacing: 4px; font-weight: 700;
+    color: var(--gold-bright);
+    background: linear-gradient(160deg, rgba(212,175,82,0.18), rgba(168,40,40,0.1));
+    border: 1px solid rgba(212,175,82,0.5); border-radius: 6px;
+    cursor: pointer; position: relative; overflow: hidden;
+    text-shadow: 0 0 10px rgba(212,175,82,0.5);
+    box-shadow: inset 0 0 20px rgba(212,175,82,0.1), 0 0 24px rgba(212,175,82,0.15);
+    transition: all 0.3s;
+  }
+  .grimoire-enter:hover {
+    background: linear-gradient(160deg, rgba(212,175,82,0.28), rgba(168,40,40,0.18));
+    box-shadow: inset 0 0 30px rgba(212,175,82,0.2), 0 0 36px rgba(212,175,82,0.35);
+    border-color: var(--gold);
+    transform: translateY(-1px);
+  }
+  /* 버튼 위를 가로지르는 빛줄기 */
+  .grimoire-enter::before {
+    content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(212,175,82,0.4), transparent);
+    animation: enterShine 3.5s ease-in-out infinite;
+  }
+  @keyframes enterShine {
+    0%, 100% { left: -100%; }
+    50%      { left: 100%; }
+  }
+
+  .sync-note {
+    color: rgba(212,175,82,0.5); text-align: center; font-size: 11px;
+    font-style: italic; font-family: 'Crimson Pro', serif;
+    margin-top: 16px; letter-spacing: 0.5px;
+  }
+
+  /* ════════ 입장 시 마법진 효과 ════════ */
+  .magic-veil {
+    position: fixed; inset: 0; z-index: 9999;
+    background: radial-gradient(circle, rgba(8,12,24,0.0) 0%, rgba(8,12,24,0.0) 30%, rgba(8,12,24,1) 100%);
+    display: none; pointer-events: all;
+    align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+  .magic-veil.active { display: flex; animation: veilIn 1.6s ease-out forwards; }
+  @keyframes veilIn {
+    0%   { background: radial-gradient(circle, rgba(8,12,24,0.0) 0%, rgba(8,12,24,0.0) 30%, rgba(8,12,24,0) 100%); }
+    50%  { background: radial-gradient(circle, rgba(8,12,24,0.4) 0%, rgba(8,12,24,0.7) 50%, rgba(8,12,24,0.9) 100%); }
+    100% { background: radial-gradient(circle, rgba(8,12,24,1) 0%,   rgba(8,12,24,1) 60%,   rgba(8,12,24,1) 100%); }
+  }
+  /* 마법진 */
+  .magic-circle {
+    position: absolute; width: 520px; height: 520px;
+    max-width: 90vw; max-height: 90vw;
+    opacity: 0; transform: scale(0.4) rotate(0deg);
+  }
+  .magic-veil.active .magic-circle {
+    animation: circleIn 2.4s cubic-bezier(0.16,1,0.3,1) forwards;
+  }
+  @keyframes circleIn {
+    0%   { opacity: 0; transform: scale(0.4) rotate(0deg); }
+    30%  { opacity: 1; transform: scale(1)   rotate(180deg); filter: drop-shadow(0 0 30px var(--gold)); }
+    70%  { opacity: 1; transform: scale(1.08) rotate(340deg); filter: drop-shadow(0 0 60px var(--gold)) drop-shadow(0 0 100px rgba(212,175,82,0.5)); }
+    100% { opacity: 0; transform: scale(1.6) rotate(380deg); filter: drop-shadow(0 0 0 transparent); }
+  }
+  .magic-circle svg { width: 100%; height: 100%; display: block; }
+  .magic-circle .ring-outer { animation: spinCW 8s linear infinite; transform-origin: center; }
+  .magic-circle .ring-mid   { animation: spinCCW 6s linear infinite; transform-origin: center; }
+  .magic-circle .ring-inner { animation: spinCW 4s linear infinite; transform-origin: center; }
+  @keyframes spinCW  { to { transform: rotate(360deg); } }
+  @keyframes spinCCW { to { transform: rotate(-360deg); } }
+
+  /* 입장 텍스트 */
+  .magic-text {
+    position: absolute; bottom: 18%; text-align: center;
+    font-family: 'Cinzel', serif; font-size: 14px; letter-spacing: 8px;
+    color: var(--gold-bright); text-shadow: 0 0 20px var(--gold);
+    opacity: 0;
+  }
+  .magic-veil.active .magic-text { animation: textPulse 2.4s ease-out 0.3s forwards; }
+  @keyframes textPulse {
+    0%   { opacity: 0; transform: translateY(10px); }
+    40%  { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(-10px); }
+  }
+
+  /* 로그인 카드가 사라지는 애니메이션 */
+  .setup-screen.dissolving {
+    animation: pageDissolve 1.0s ease-in forwards;
+  }
+  @keyframes pageDissolve {
+    0%   { opacity: 1; transform: scale(1) rotateX(0deg); filter: blur(0); }
+    100% { opacity: 0; transform: scale(0.9) rotateX(15deg); filter: blur(6px); }
+  }
+
+  /* 시트가 나타나는 애니메이션 */
+  .sheet.materializing {
+    animation: sheetMaterialize 1.0s cubic-bezier(0.16,1,0.3,1) both;
+  }
+  @keyframes sheetMaterialize {
+    0%   { opacity: 0; transform: scale(0.98) translateY(8px); filter: blur(10px); }
+    100% { opacity: 1; transform: scale(1)    translateY(0);   filter: blur(0); }
+  }
+  .player-bar.materializing {
+    animation: barMaterialize 0.6s ease-out 0.3s both;
+  }
+  @keyframes barMaterialize {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
   .setup-row { display:flex; gap:10px; }
   .setup-row .tool-btn { flex:1; }
   .status-dot { display:inline-block; width:8px; height:8px; border-radius:50%; background:#666; margin-right:6px; vertical-align:middle; transition: background 0.3s, box-shadow 0.3s; }
@@ -608,37 +802,72 @@
   .readonly-banner { background: rgba(168,40,40,0.15); border:1px solid rgba(168,40,40,0.4); border-radius:8px; padding:8px 14px; margin: 0 16px 12px; text-align:center; color: var(--crimson-light); font-size:13px; max-width:920px; margin-left:auto; margin-right:auto; }
 
   /* ════════════════════════════════
-     채팅 패널
+     통합 패널 (채팅 + 굴림) — 우측 사이드바
   ════════════════════════════════ */
   .chat-panel {
-    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
-    width: min(720px, 98vw); z-index: 350;
-    display: flex; flex-direction: column;
-    filter: drop-shadow(0 -4px 24px rgba(0,0,0,0.5));
+    position: fixed; top: 0; right: 0; height: 100vh; z-index: 320;
+    pointer-events: none;
   }
+  /* 우측 탭 (펼치기 트리거) */
+  .chat-side-tab {
+    position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+    width: 30px; padding: 16px 0; border-radius: 10px 0 0 10px;
+    background: linear-gradient(180deg, #1c2540, #141b30);
+    border: 1px solid var(--border-strong); border-right: none;
+    cursor: pointer; pointer-events: all;
+    box-shadow: -4px 0 18px rgba(0,0,0,0.5);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+    transition: right 0.32s cubic-bezier(0.16,1,0.3,1), background 0.2s, border-color 0.2s;
+  }
+  .chat-panel.open .chat-side-tab { right: 360px; }
+  .chat-side-tab:hover { background: linear-gradient(180deg, #232d50, #1a2240); border-color: var(--gold); }
+  .chat-side-tab .tab-icon { font-size: 15px; line-height: 1; }
+  .chat-side-tab .tab-label {
+    writing-mode: vertical-rl; text-orientation: mixed;
+    font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 1.5px;
+    color: var(--gold-light); white-space: nowrap;
+  }
+  .chat-side-tab .tab-count {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--arcane); color: #fff; font-size: 10px; font-family: 'Cinzel', serif;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; transform: scale(0); transition: all 0.2s;
+  }
+  .chat-side-tab .tab-count.show { opacity: 1; transform: scale(1); }
 
-  /* 탭 헤더 */
+  /* 본체 패널 (오른쪽에서 슬라이드 인) */
   .chat-tab-bar {
     display: flex; align-items: center; gap: 0;
     background: linear-gradient(90deg, #10192e, #0d1425);
-    border: 1px solid var(--border-strong); border-bottom: none;
-    border-radius: 12px 12px 0 0; padding: 0 12px;
-    cursor: pointer; user-select: none;
+    border-bottom: 1px solid var(--border);
+    padding: 0 12px; user-select: none; flex-shrink: 0;
   }
   .chat-tab-title {
     font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 1.5px;
     color: var(--gold-light); padding: 9px 0; display: flex; align-items: center; gap: 7px; flex: 1;
   }
-  .chat-tab-title .chat-unread {
+  .chat-unread {
     background: var(--arcane); color: #fff; border-radius: 10px;
-    padding: 1px 6px; font-size: 10px; display: none;
+    padding: 1px 6px; font-size: 10px; display: none; line-height: 1.4;
   }
-  .chat-tab-title .chat-unread.show { display: inline; }
-  .chat-chevron {
-    font-size: 11px; color: var(--text-muted); transition: transform 0.25s; margin-left: 4px;
+  .chat-unread.show { display: inline; }
+  .chat-unread.dice-count { background: var(--gold); color: #1a1206; }
+  .chat-chevron { display: none; } /* 사이드바 모드에선 셰브론 불필요 */
+  .chat-tab-actions { display: flex; gap: 6px; padding: 8px 0; }
+
+  /* 통합 패널 내부 탭 (채팅 / 굴림) */
+  .cpanel-tabs { display: flex; gap: 4px; flex: 1; }
+  .cpanel-tab {
+    background: none; border: none; cursor: pointer;
+    font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 1px;
+    color: var(--text-muted); padding: 10px 12px 8px; position: relative;
+    display: flex; align-items: center; gap: 6px;
+    border-bottom: 2px solid transparent; transition: color 0.15s, border-color 0.15s;
+    -webkit-tap-highlight-color: transparent;
   }
-  .chat-panel.open .chat-chevron { transform: rotate(180deg); }
-  .chat-tab-actions { display: flex; gap: 6px; }
+  .cpanel-tab:hover { color: var(--gold-light); }
+  .cpanel-tab.active { color: var(--gold-bright); border-bottom-color: var(--gold); }
+  .cpanel-view { flex: 1; display: flex; flex-direction: column; min-height: 0; }
   .chat-tab-btn {
     background: none; border: 1px solid var(--border); border-radius: 6px;
     color: var(--text-muted); font-size: 10px; font-family: 'Cinzel', serif;
@@ -648,16 +877,23 @@
   .chat-tab-btn:hover { border-color: var(--gold); color: var(--gold-light); }
   .chat-tab-btn.danger:hover { border-color: var(--crimson-light); color: var(--crimson-light); }
 
-  /* 채팅 바디 */
+  /* 채팅 바디 — 우측 사이드바 슬라이드 */
   .chat-body {
-    background: linear-gradient(180deg, #0c1220, #080e1a);
-    border: 1px solid var(--border-strong); border-top: none;
-    border-radius: 0 0 0 0;
-    height: 0; overflow: hidden;
-    transition: height 0.3s cubic-bezier(0.16,1,0.3,1);
+    position: absolute; right: 0; top: 0; height: 100%;
+    width: 360px;
+    background: linear-gradient(160deg, #0f1626, #0c1220);
+    border-left: 1px solid var(--border-strong);
+    box-shadow: -8px 0 40px rgba(0,0,0,0.6);
+    pointer-events: all;
+    transform: translateX(100%);
+    transition: transform 0.32s cubic-bezier(0.16,1,0.3,1);
     display: flex; flex-direction: column;
   }
-  .chat-panel.open .chat-body { height: min(560px, 68vh); }
+  .chat-panel.open .chat-body { transform: translateX(0); }
+  @media (max-width: 520px) {
+    .chat-body { width: 92vw; }
+    .chat-panel.open .chat-side-tab { right: 92vw; }
+  }
 
   /* 메시지 목록 */
   .chat-messages {
@@ -853,23 +1089,426 @@
   .ccm-confirm { background: rgba(168,40,40,0.2); border: 1px solid rgba(168,40,40,0.5); color: var(--crimson-light); }
   .ccm-confirm:hover { background: rgba(168,40,40,0.35); }
 
+  /* ════════════════════════════════
+     좌측 GM 사이드바 (전투맵 + BGM)
+  ════════════════════════════════ */
+  .gm-sidebar { position: fixed; top: 0; left: 0; height: 100vh; z-index: 310; pointer-events: none; }
+  .gm-tab {
+    position: absolute; left: 0; top: 38%; transform: translateY(-50%);
+    width: 30px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 6px; padding: 18px 0; border-radius: 0 10px 10px 0;
+    background: linear-gradient(180deg, #1c2540, #141b30);
+    border: 1px solid var(--border-strong); border-left: none;
+    cursor: pointer; pointer-events: all;
+    box-shadow: 4px 0 18px rgba(0,0,0,0.5);
+    transition: left 0.34s cubic-bezier(0.16,1,0.3,1), background 0.2s, border-color 0.2s;
+  }
+  .gm-sidebar.open .gm-tab { left: min(460px, 92vw); }
+  .gm-tab:hover { background: linear-gradient(180deg, #232d50, #1a2240); border-color: var(--gold); }
+  .gm-tab .tab-icon { font-size: 16px; line-height: 1; }
+  .gm-tab .tab-label {
+    writing-mode: vertical-rl; text-orientation: mixed;
+    font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 1.5px;
+    color: var(--gold-light); white-space: nowrap;
+  }
+  .gm-panel {
+    position: absolute; left: 0; top: 0; height: 100%;
+    width: min(460px, 92vw);
+    background: linear-gradient(200deg, #0f1626, #0c1220);
+    border-right: 1px solid var(--border-strong);
+    box-shadow: 8px 0 40px rgba(0,0,0,0.6);
+    display: flex; flex-direction: column; pointer-events: all;
+    transform: translateX(-100%);
+    transition: transform 0.34s cubic-bezier(0.16,1,0.3,1);
+  }
+  .gm-sidebar.open .gm-panel { transform: translateX(0); }
+
+  .gm-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 14px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+    background: linear-gradient(160deg, rgba(123,92,196,0.12), rgba(212,175,82,0.06));
+  }
+  .gm-subtab {
+    background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text-muted); font-family: 'Cinzel', serif; font-size: 12px;
+    padding: 7px 13px; cursor: pointer; transition: all 0.15s; -webkit-tap-highlight-color: transparent;
+  }
+  .gm-subtab:hover { border-color: var(--gold); color: var(--gold-light); }
+  .gm-subtab.active { border-color: var(--gold); background: rgba(212,175,82,0.18); color: var(--gold-bright); }
+  .gm-close { background: none; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer; line-height: 1; }
+  .gm-close:hover { color: var(--gold-light); }
+
+  .gm-pane { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 12px;
+    scrollbar-width: thin; scrollbar-color: rgba(212,175,82,0.2) transparent; }
+  .gm-pane::-webkit-scrollbar { width: 5px; }
+  .gm-pane::-webkit-scrollbar-thumb { background: rgba(212,175,82,0.2); border-radius: 4px; }
+
+  .gm-toolbar { display: flex; gap: 8px; flex-wrap: wrap; }
+  .gm-btn {
+    flex: 1; min-width: 92px; padding: 9px 10px; border-radius: 8px;
+    border: 1px solid var(--border-strong); background: linear-gradient(160deg, var(--ink-panel), var(--ink-panel-2));
+    color: var(--gold-light); font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 0.5px;
+    cursor: pointer; transition: all 0.18s; -webkit-tap-highlight-color: transparent;
+  }
+  .gm-btn:hover { border-color: var(--gold); box-shadow: 0 0 14px rgba(212,175,82,0.2); }
+  .gm-btn.danger { color: var(--crimson-light); border-color: rgba(168,40,40,0.4); }
+  .gm-btn.danger:hover { box-shadow: 0 0 14px rgba(168,40,40,0.3); }
+  .gm-hint { font-size: 11px; color: var(--text-muted); font-style: italic; text-align: center; }
+
+  /* GM 공통 입력 */
+  .gm-input {
+    background: rgba(0,0,0,0.3); border: 1px solid var(--border-strong); border-radius: 8px;
+    color: var(--text-primary); font-family: 'Crimson Pro', serif; font-size: 13px;
+    padding: 8px 10px; flex: 1; min-width: 0;
+  }
+  .gm-input:focus { border-color: var(--gold); outline: none; }
+  select.gm-input { font-family: 'Cinzel', serif; font-size: 12px; cursor: pointer; }
+  .gm-empty-note { color: var(--text-muted); font-size: 12px; font-style: italic; text-align: center; padding: 18px 10px; border: 1px dashed var(--border); border-radius: 8px; }
+
+  /* 울티마 포인트 */
+  .up-display {
+    display: flex; align-items: center; justify-content: center; gap: 18px;
+    padding: 22px; border: 1px solid var(--border-strong); border-radius: 12px;
+    background: linear-gradient(160deg, rgba(168,40,40,0.16), rgba(123,92,196,0.1));
+  }
+  .up-count { font-family: 'Cinzel', serif; font-size: 52px; font-weight: 700; color: var(--crimson-light); line-height: 1; min-width: 64px; text-align: center; text-shadow: 0 0 18px rgba(168,40,40,0.5); }
+  .up-label { font-family: 'Cinzel', serif; font-size: 14px; letter-spacing: 1px; color: var(--gold-light); }
+  .up-label span { font-size: 10px; color: var(--text-muted); }
+  .up-controls { display: flex; gap: 8px; }
+
+  /* 시계 */
+  .clock-list { display: flex; flex-direction: column; gap: 10px; }
+  .clock-card {
+    border: 1px solid var(--border-strong); border-radius: 10px; padding: 12px;
+    background: rgba(0,0,0,0.25); display: flex; flex-direction: column; gap: 9px;
+  }
+  .clock-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .clock-title { font-family: 'Cinzel', serif; font-size: 13px; color: var(--gold-light); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .clock-frac { font-family: 'Cinzel', serif; font-size: 11px; color: var(--text-muted); flex-shrink: 0; }
+  .clock-del { flex-shrink: 0; width: 22px; height: 22px; border-radius: 5px; border: 1px solid rgba(168,40,40,0.3); background: rgba(168,40,40,0.12); color: var(--crimson-light); font-size: 12px; cursor: pointer; line-height: 1; }
+  .clock-del:hover { background: rgba(168,40,40,0.3); }
+  .clock-segs { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; }
+  .clock-seg {
+    width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--border-strong);
+    background: rgba(0,0,0,0.4); cursor: pointer; transition: all 0.15s; -webkit-tap-highlight-color: transparent;
+  }
+  .clock-seg:hover { border-color: var(--gold); }
+  .clock-seg.filled { background: radial-gradient(circle, var(--gold-bright), var(--gold)); border-color: var(--gold-bright); box-shadow: 0 0 8px rgba(212,175,82,0.5); }
+  .clock-seg-label { font-family: 'Cinzel', serif; font-size: 11px; color: var(--text-muted); align-self: center; }
+
+  /* 악당 / NPC */
+  .villain-list { display: flex; flex-direction: column; gap: 8px; }
+  .villain-card {
+    border: 1px solid var(--border-strong); border-radius: 10px; padding: 11px 12px;
+    background: rgba(0,0,0,0.25); display: flex; flex-direction: column; gap: 8px;
+  }
+  .villain-card.rank-엘리트 { border-left: 3px solid var(--arcane-light); }
+  .villain-card.rank-챔피언 { border-left: 3px solid var(--gold); }
+  .villain-card.rank-솔로 { border-left: 3px solid var(--crimson-light); }
+  .vil-head { display: flex; align-items: center; gap: 8px; }
+  .vil-name { font-family: 'Crimson Pro', serif; font-size: 15px; color: var(--text-primary); font-weight: 600; flex: 1; }
+  .vil-rank-badge { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 0.5px; padding: 2px 7px; border-radius: 10px; background: rgba(255,255,255,0.08); color: var(--text-secondary); flex-shrink: 0; }
+  .vil-del { flex-shrink: 0; width: 22px; height: 22px; border-radius: 5px; border: 1px solid rgba(168,40,40,0.3); background: rgba(168,40,40,0.12); color: var(--crimson-light); font-size: 12px; cursor: pointer; line-height: 1; }
+  .vil-del:hover { background: rgba(168,40,40,0.3); }
+  .vil-stats { display: flex; gap: 10px; }
+  .vil-stat { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+  .vil-stat-label { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 1px; color: var(--text-muted); }
+  .vil-stat-row { display: flex; align-items: center; gap: 4px; }
+  .vil-stat-row button { width: 24px; height: 26px; border-radius: 5px; border: 1px solid var(--border); background: rgba(0,0,0,0.3); color: var(--text-secondary); cursor: pointer; font-size: 14px; line-height: 1; }
+  .vil-stat-row button:hover { border-color: var(--gold); color: var(--gold-light); }
+  .vil-stat-row input { width: 100%; text-align: center; background: rgba(0,0,0,0.35); border: 1px solid var(--border); border-radius: 5px; color: var(--text-primary); font-family: 'Cinzel', serif; font-size: 13px; padding: 4px 2px; }
+  .vil-hp input:focus { border-color: var(--crimson); outline: none; }
+  .vil-mp input:focus { border-color: var(--arcane-light); outline: none; }
+  .gm-subtabs { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+  .gm-subtabs::-webkit-scrollbar { display: none; }
+
+  /* 전투 보드 */
+  .battle-board {
+    position: relative; width: 100%; border: 1px solid var(--border-strong); border-radius: 10px;
+    background: repeating-linear-gradient(45deg, rgba(255,255,255,0.015) 0 12px, transparent 12px 24px), rgba(0,0,0,0.45);
+    min-height: 240px; overflow: hidden; touch-action: none;
+  }
+  .battle-map-img { display: block; width: 100%; height: auto; user-select: none; -webkit-user-drag: none; }
+  .battle-empty {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    color: var(--text-muted); font-size: 13px; font-style: italic; text-align: center; padding: 20px;
+  }
+  .battle-token {
+    position: absolute; transform: translate(-50%, -50%);
+    border-radius: 50%; overflow: hidden; cursor: grab;
+    border: 2px solid var(--gold); background: rgba(0,0,0,0.5);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.6), 0 0 10px rgba(212,175,82,0.3);
+    touch-action: none; transition: box-shadow 0.15s;
+  }
+  .battle-token.remote-move { transition: left 0.18s linear, top 0.18s linear; }
+  .battle-token img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; -webkit-user-drag: none; }
+  .battle-token.selected { border-color: var(--gold-bright); box-shadow: 0 0 0 2px var(--gold-bright), 0 0 16px rgba(212,175,82,0.6); z-index: 5; }
+  .battle-token.dragging { cursor: grabbing; z-index: 6; box-shadow: 0 6px 18px rgba(0,0,0,0.7), 0 0 18px rgba(212,175,82,0.6); }
+  .token-tools {
+    position: absolute; top: -34px; left: 50%; transform: translateX(-50%);
+    display: none; gap: 4px; background: rgba(10,14,26,0.95); border: 1px solid var(--border-strong);
+    border-radius: 7px; padding: 3px 5px; white-space: nowrap; z-index: 7;
+  }
+  .battle-token.selected .token-tools { display: flex; }
+  .token-tools button {
+    background: rgba(0,0,0,0.4); border: 1px solid var(--border); border-radius: 5px;
+    color: var(--text-secondary); font-size: 13px; width: 24px; height: 24px; cursor: pointer; line-height: 1;
+  }
+  .token-tools button:hover { border-color: var(--gold); color: var(--gold-light); }
+  .token-tools button.del:hover { border-color: var(--crimson-light); color: var(--crimson-light); }
+
+  /* ── BGM 플레이어 ── */
+  .bgm-now {
+    text-align: center; font-family: 'Cinzel', serif; font-size: 13px; color: var(--gold-light);
+    padding: 10px; border: 1px solid var(--border); border-radius: 9px;
+    background: linear-gradient(160deg, rgba(123,92,196,0.12), rgba(0,0,0,0.25));
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .bgm-now .bgm-now-state { font-size: 11px; color: var(--text-muted); display: block; margin-top: 2px; }
+  .bgm-controls { display: flex; gap: 8px; justify-content: center; align-items: center; }
+  .bgm-controls button {
+    background: rgba(0,0,0,0.35); border: 1px solid var(--border); border-radius: 10px;
+    color: var(--gold-light); font-size: 17px; width: 44px; height: 40px; cursor: pointer; transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent;
+  }
+  .bgm-controls button:hover { border-color: var(--gold); box-shadow: 0 0 12px rgba(212,175,82,0.25); }
+  .bgm-controls button.main { width: 56px; background: linear-gradient(160deg, rgba(212,175,82,0.28), rgba(212,175,82,0.12)); color: var(--gold-bright); }
+  .bgm-controls button.active { border-color: var(--gold); background: rgba(212,175,82,0.2); color: var(--gold-bright); }
+  .bgm-seek { display: flex; flex-direction: column; gap: 4px; }
+  .bgm-seek input[type=range], .bgm-volume input[type=range] {
+    -webkit-appearance: none; appearance: none; width: 100%; height: 5px; border-radius: 3px;
+    background: rgba(255,255,255,0.12); cursor: pointer;
+  }
+  .bgm-seek input[type=range]::-webkit-slider-thumb, .bgm-volume input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--gold); border: none;
+    box-shadow: 0 0 6px rgba(212,175,82,0.5);
+  }
+  .bgm-seek input[type=range]::-moz-range-thumb, .bgm-volume input[type=range]::-moz-range-thumb {
+    width: 14px; height: 14px; border-radius: 50%; background: var(--gold); border: none;
+  }
+  .bgm-time { display: flex; justify-content: space-between; font-family: 'Cinzel', serif; font-size: 10px; color: var(--text-muted); }
+  .bgm-section { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .bgm-section button {
+    background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 7px;
+    color: var(--text-secondary); font-family: 'Cinzel', serif; font-size: 11px; padding: 5px 9px; cursor: pointer;
+  }
+  .bgm-section button:hover { border-color: var(--gold); color: var(--gold-light); }
+  .bgm-section button.set { border-color: var(--emerald); color: var(--emerald-light); }
+  .bgm-ab-label { font-size: 10px; color: var(--arcane-light); font-family: 'Cinzel', serif; }
+  .bgm-volume { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); }
+  .bgm-playlist { display: flex; flex-direction: column; gap: 5px; }
+  .bgm-track {
+    display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px;
+    border: 1px solid var(--border); background: rgba(0,0,0,0.2); cursor: pointer; transition: all 0.15s;
+  }
+  .bgm-track:hover { border-color: var(--gold); background: rgba(212,175,82,0.06); }
+  .bgm-track.current { border-color: var(--gold); background: rgba(212,175,82,0.14); }
+  .bgm-track .bt-icon { font-size: 14px; flex-shrink: 0; color: var(--gold-light); }
+  .bgm-track .bt-name { flex: 1; font-size: 13px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bgm-track .bt-by { font-size: 10px; color: var(--text-muted); font-family: 'Cinzel', serif; flex-shrink: 0; }
+  .bgm-track .bt-del {
+    flex-shrink: 0; width: 22px; height: 22px; border-radius: 5px; border: 1px solid rgba(168,40,40,0.3);
+    background: rgba(168,40,40,0.12); color: var(--crimson-light); font-size: 12px; cursor: pointer; line-height: 1;
+  }
+  .bgm-track .bt-del:hover { background: rgba(168,40,40,0.3); }
+  .bgm-empty { text-align: center; color: var(--text-muted); font-size: 12px; font-style: italic; padding: 14px; }
+  .bgm-upload-progress { font-size: 11px; color: var(--arcane-light); font-family: 'Cinzel', serif; text-align: center; display: none; }
+  .bgm-upload-progress.show { display: block; }
+
+  /* BGM 자동재생 잠금 해제 안내 */
+  /* ── BGM 트랙 (유튜브 동시 재생) ── */
+  .bgm-tracklist { display: flex; flex-direction: column; gap: 8px; }
+  .bgm-track-card {
+    border: 1px solid var(--border-strong); border-radius: 10px; padding: 10px 11px;
+    background: rgba(0,0,0,0.25); display: flex; flex-direction: column; gap: 8px;
+  }
+  .bgm-track-card.playing { border-color: var(--gold); background: rgba(212,175,82,0.08); box-shadow: 0 0 12px rgba(212,175,82,0.15); }
+  .btc-head { display: flex; align-items: center; gap: 8px; }
+  .btc-title { flex: 1; font-family: 'Crimson Pro', serif; font-size: 14px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .btc-title .btc-eq { color: var(--gold-light); margin-right: 5px; }
+  .btc-del { flex-shrink: 0; width: 22px; height: 22px; border-radius: 5px; border: 1px solid rgba(168,40,40,0.3); background: rgba(168,40,40,0.12); color: var(--crimson-light); font-size: 12px; cursor: pointer; line-height: 1; }
+  .btc-del:hover { background: rgba(168,40,40,0.3); }
+  .btc-controls { display: flex; align-items: center; gap: 7px; }
+  .btc-controls button {
+    background: rgba(0,0,0,0.35); border: 1px solid var(--border); border-radius: 8px;
+    color: var(--gold-light); font-size: 14px; width: 38px; height: 34px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; transition: all 0.15s; -webkit-tap-highlight-color: transparent;
+  }
+  .btc-controls button:hover { border-color: var(--gold); }
+  .btc-controls button.active { border-color: var(--gold); background: rgba(212,175,82,0.2); color: var(--gold-bright); }
+  .btc-vol { flex: 1; display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); }
+  .btc-vol input[type=range] {
+    -webkit-appearance: none; appearance: none; flex: 1; height: 5px; border-radius: 3px;
+    background: rgba(255,255,255,0.12); cursor: pointer;
+  }
+  .btc-vol input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 13px; height: 13px; border-radius: 50%; background: var(--gold); border: none; box-shadow: 0 0 5px rgba(212,175,82,0.5); }
+  .btc-vol input[type=range]::-moz-range-thumb { width: 13px; height: 13px; border-radius: 50%; background: var(--gold); border: none; }
+
+  /* 플레이어용 BGM 상태 칩 (비-GM 포함 모두 표시) */
+  .bgm-chip {
+    position: fixed; left: 14px; bottom: 14px; z-index: 290;
+    display: none; align-items: center; gap: 8px; max-width: 240px;
+    padding: 8px 13px; border-radius: 22px; cursor: pointer;
+    background: linear-gradient(160deg, rgba(16,25,46,0.96), rgba(13,20,37,0.96));
+    border: 1px solid var(--border-strong); box-shadow: 0 4px 18px rgba(0,0,0,0.5);
+    font-family: 'Cinzel', serif; font-size: 11px; color: var(--gold-light);
+  }
+  .bgm-chip.show { display: flex; }
+  .bgm-chip .chip-eq { font-size: 13px; }
+  .bgm-chip .chip-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bgm-chip .chip-mute { margin-left: auto; opacity: 0.7; }
+
+  .bgm-unlock {
+    position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%);
+    z-index: 360; display: none; align-items: center; gap: 8px;
+    padding: 10px 18px; border-radius: 30px; cursor: pointer;
+    background: linear-gradient(160deg, rgba(212,175,82,0.9), rgba(154,116,32,0.9));
+    color: #1a1206; font-family: 'Cinzel', serif; font-size: 13px; font-weight: 700;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.5);
+  }
+  .bgm-unlock.show { display: flex; animation: chatMsgIn 0.3s ease; }
+
+  /* ── 플레이어용 맵 뷰어 (모달) ── */
+  .map-viewer-bg {
+    position: fixed; inset: 0; background: rgba(5,8,16,0.85); backdrop-filter: blur(4px);
+    z-index: 360; display: flex; align-items: center; justify-content: center; padding: 16px;
+  }
+  .map-viewer {
+    width: min(900px, 100%); max-height: 92vh; display: flex; flex-direction: column; gap: 10px;
+    background: linear-gradient(160deg, #16203a, #0e1628); border: 1px solid var(--border-strong);
+    border-radius: 14px; padding: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+  }
+  .mv-head { display: flex; align-items: center; justify-content: space-between; }
+  .mv-title { font-family: 'Cinzel', serif; font-size: 14px; letter-spacing: 1.5px; color: var(--gold-light); }
+  .mv-close { background: none; border: 1px solid var(--border); border-radius: 50%; width: 30px; height: 30px; color: var(--text-secondary); font-size: 14px; cursor: pointer; }
+  .mv-close:hover { border-color: var(--gold); color: var(--gold-light); }
+  .mv-board {
+    position: relative; flex: 1; min-height: 240px; background: rgba(0,0,0,0.4); border-radius: 10px;
+    overflow: hidden; border: 1px dashed var(--border); display: flex; align-items: center; justify-content: center;
+  }
+  .mv-map { max-width: 100%; max-height: 70vh; display: none; }
+  .mv-empty { color: var(--text-muted); font-size: 13px; font-style: italic; padding: 30px; text-align: center; }
+  .mv-hint { font-size: 11px; color: var(--text-muted); font-style: italic; text-align: center; margin: 0; }
+  /* 토큰을 뷰어 보드에도 표시 (재사용을 위해 동일 클래스 적용 시 미니 토큰화) */
+  .mv-board .battle-token { position: absolute; }
+
+  /* 맵 뷰어 FAB (비-GM용) */
+  .map-fab {
+    position: fixed; bottom: 100px; left: 20px; z-index: 280;
+    width: 50px; height: 50px; border-radius: 50%;
+    background: linear-gradient(160deg, #1c2540, #141b30);
+    border: 1px solid var(--border-strong); color: var(--gold-light);
+    font-size: 22px; cursor: pointer; box-shadow: 0 6px 18px rgba(0,0,0,0.55);
+    transition: transform 0.15s, border-color 0.15s;
+  }
+  .map-fab:hover { border-color: var(--gold); transform: translateY(-2px); }
+
+  /* ── 채팅 "입력 중..." 표시 (입력칸 바로 위 떠 있는 버블) ── */
+  .chat-typing {
+    padding: 6px 14px; margin: 0 10px 4px;
+    font-size: 11px; color: var(--gold-light); font-style: italic;
+    background: linear-gradient(160deg, rgba(212,175,82,0.1), rgba(123,92,196,0.06));
+    border: 1px solid rgba(212,175,82,0.2); border-radius: 12px;
+    display: flex; align-items: center; gap: 8px;
+    animation: typingIn 0.25s ease-out;
+  }
+  .chat-typing.empty { display: none; }
+  @keyframes typingIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .chat-typing .tdots { display: inline-flex; gap: 3px; }
+  .chat-typing .tdots span {
+    width: 5px; height: 5px; border-radius: 50%; background: var(--gold);
+    animation: tdot 1.2s infinite ease-in-out;
+    box-shadow: 0 0 6px rgba(212,175,82,0.5);
+  }
+  .chat-typing .tdots span:nth-child(2) { animation-delay: 0.2s; }
+  .chat-typing .tdots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes tdot { 0%,80%,100% { opacity: 0.25; transform: scale(0.7); } 40% { opacity: 1; transform: scale(1.1); } }
+
 </style>
 <body>
 
 
 <!-- ═══════ SETUP / CONNECT SCREEN ═══════ -->
+<!-- 마법서 배경 (떠다니는 룬·빛가루) -->
+<div class="grimoire-bg" id="grimoireBg">
+  <span class="rune r1">✦</span>
+  <span class="rune r2">⟁</span>
+  <span class="rune r3">✧</span>
+  <span class="rune r4">⚔</span>
+  <span class="rune r5">❖</span>
+  <span class="rune r6">⚜</span>
+</div>
+
 <div class="setup-screen" id="setupScreen">
   <div class="setup-card">
-    <h2>⚜ 파뷸라 울티마의 이야기 속으로</h2>
+    <span class="setup-card-edge left"></span>
+    <span class="setup-card-edge right"></span>
+    <div class="grimoire-title">
+      <span class="crest">⚜</span>
+      파뷸라 울티마의 세계로
+      <small>F A B U L A &nbsp; U L T I M A</small>
+    </div>
+    <div class="title-flourish">
+      <span class="gem">✦</span>
+      <span class="gem" style="color: var(--crimson-light); opacity: 0.7;">❖</span>
+      <span class="gem">✦</span>
+    </div>
     <p class="sub">같은 <b>방 코드</b>를 입력하면 파티원들과 실시간으로 시트를 공유합니다</p>
     <label class="field"><span class="field-name">방 코드 (파티 이름 등 자유롭게)</span><input type="text" id="roomInput" placeholder="예: dragons-of-relde" autocomplete="off"></label>
-    <label class="field"><span class="field-name">내 이름 (GM 또는 플레이어)</span><input type="text" id="userInput" placeholder="예: 리즈 (GM)" autocomplete="off"></label>
-    <div class="setup-row" style="margin-top:20px;">
-      <button class="tool-btn" id="enterBtn" style="flex:2;">🚪 입장 / 방 만들기</button>
-    </div>
-    <p class="sync-note" id="setupStatus"><span class="status-dot" id="setupDot"></span> Firebase 설정을 기다리는 중...</p>
+    <label class="field"><span class="field-name">내 이름 (GM 또는 플레이어)</span><input type="text" id="userInput" placeholder="예: 리즈" autocomplete="off"></label>
+    <label class="gm-check"><input type="checkbox" id="gmCheck"> <span>나는 <b>게임 마스터(GM)</b>입니다 — GM 전용 도구를 사용합니다</span></label>
+    <button class="grimoire-enter" id="enterBtn">✦  접속하기  ✦</button>
+    <p class="sync-note" id="setupStatus"><span class="status-dot"></span> Firebase 설정을 기다리는 중...</p>
     <p class="sync-note">방 코드를 파티원에게 알려주면 같은 방으로 모입니다.</p>
   </div>
+</div>
+
+<!-- 입장 시 마법진 트랜지션 오버레이 -->
+<div class="magic-veil" id="magicVeil">
+  <div class="magic-circle">
+    <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="circleGlow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%"  stop-color="#F5D77A" stop-opacity="0.8"/>
+          <stop offset="60%" stop-color="#D4AF52" stop-opacity="0.4"/>
+          <stop offset="100%" stop-color="#9A7420" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <!-- 중심 글로우 -->
+      <circle cx="200" cy="200" r="180" fill="url(#circleGlow)"/>
+      <!-- 바깥 링 (시계방향 회전) -->
+      <g class="ring-outer" stroke="#D4AF52" stroke-width="1.2" fill="none" opacity="0.9">
+        <circle cx="200" cy="200" r="190"/>
+        <circle cx="200" cy="200" r="176" stroke-dasharray="3 6"/>
+        <!-- 8방위 룬 -->
+        <text x="200" y="22" text-anchor="middle" fill="#F5D77A" font-family="Cinzel" font-size="22">✦</text>
+        <text x="378" y="206" text-anchor="middle" fill="#F5D77A" font-family="Cinzel" font-size="22">⟁</text>
+        <text x="200" y="390" text-anchor="middle" fill="#F5D77A" font-family="Cinzel" font-size="22">✧</text>
+        <text x="22"  y="206" text-anchor="middle" fill="#F5D77A" font-family="Cinzel" font-size="22">❖</text>
+        <text x="324" y="80"  text-anchor="middle" fill="#D4AF52" font-family="Cinzel" font-size="18">⚜</text>
+        <text x="324" y="332" text-anchor="middle" fill="#D4AF52" font-family="Cinzel" font-size="18">⚔</text>
+        <text x="76"  y="332" text-anchor="middle" fill="#D4AF52" font-family="Cinzel" font-size="18">⚜</text>
+        <text x="76"  y="80"  text-anchor="middle" fill="#D4AF52" font-family="Cinzel" font-size="18">⚔</text>
+      </g>
+      <!-- 중간 링 (반시계 회전) — 펜타그램 -->
+      <g class="ring-mid" stroke="#D4AF52" stroke-width="1.5" fill="none" opacity="0.85">
+        <circle cx="200" cy="200" r="140"/>
+        <polygon points="200,80 277,278 113,154 287,154 123,278" stroke-linejoin="round"/>
+      </g>
+      <!-- 안쪽 링 (시계방향) -->
+      <g class="ring-inner" stroke="#F5D77A" stroke-width="1.2" fill="none" opacity="0.95">
+        <circle cx="200" cy="200" r="80"/>
+        <circle cx="200" cy="200" r="60" stroke-dasharray="2 4"/>
+        <polygon points="200,140 252,200 200,260 148,200"/>
+      </g>
+      <!-- 중심 ⚜ -->
+      <text x="200" y="216" text-anchor="middle" fill="#F5D77A" font-family="Cinzel" font-size="44" style="filter: drop-shadow(0 0 8px #D4AF52);">⚜</text>
+    </svg>
+  </div>
+  <div class="magic-text">✦  S U M M O N I N G  ✦</div>
 </div>
 
 <!-- ═══════ PLAYER TAB BAR ═══════ -->
@@ -1159,53 +1798,187 @@
 
 </div>
 
-<button class="dice-fab" id="rollShortcutBtn" title="판정 굴림">⚄</button>
-
-<!-- ═══════ DICE LOG SIDEBAR ═══════ -->
-<div class="dice-log-sidebar" id="diceLogSidebar">
-  <div class="dice-log-tab" id="diceLogTab">
-    <span class="tab-icon">⚄</span>
-    <span class="tab-label">굴림 기록</span>
-    <span class="tab-count" id="diceLogCount">0</span>
+<!-- ═══════ 좌측 GM 사이드바 (전투맵 + BGM) ═══════ -->
+<div class="gm-sidebar" id="gmSidebar" style="display:none;">
+  <div class="gm-tab" id="gmTab">
+    <span class="tab-icon">🗺</span>
+    <span class="tab-label">GM 도구</span>
   </div>
-  <div class="dice-log-panel">
-    <div class="dlp-header">
-      <div class="dlp-title">⚄ 굴림 기록</div>
-      <div class="dlp-actions">
-        <button class="dlp-btn" id="diceLogClear">초기화</button>
+  <div class="gm-panel">
+    <div class="gm-header">
+      <div class="gm-subtabs">
+        <button class="gm-subtab active" data-pane="ultima">⬢ 울티마</button>
+        <button class="gm-subtab" data-pane="clock">◴ 시계</button>
+        <button class="gm-subtab" data-pane="villain">☠ 악당</button>
+        <button class="gm-subtab" data-pane="map">🗺 전투맵</button>
+        <button class="gm-subtab" data-pane="bgm">🎵 BGM</button>
       </div>
+      <button class="gm-close" id="gmClose" title="닫기">✕</button>
     </div>
-    <div class="dlp-list" id="diceLogList">
-      <div class="dlp-empty" id="diceLogEmpty">
-        <div class="dlp-empty-icon">🎲</div>
-        <div>아직 굴림이 없습니다<br>주사위를 굴려보세요!</div>
+
+    <!-- 울티마 포인트 -->
+    <div class="gm-pane" id="gmPaneUltima">
+      <div class="up-display">
+        <div class="up-count" id="upCount">0</div>
+        <div class="up-label">울티마 포인트<br><span>Ultima Points</span></div>
       </div>
+      <div class="up-controls">
+        <button class="gm-btn" id="upMinus">− 1</button>
+        <button class="gm-btn" id="upPlus">+ 1</button>
+      </div>
+      <button class="gm-btn" id="upReset">파티 인원수로 초기화</button>
+      <p class="gm-hint">악당은 파티원 수만큼 울티마 포인트로 시작합니다. HP가 0이 되면 1점을 소비해 씬에서 탈출할 수 있습니다. 같은 방의 모두에게 공유됩니다.</p>
+    </div>
+
+    <!-- 시계 (Clock) -->
+    <div class="gm-pane" id="gmPaneClock" style="display:none;">
+      <div class="gm-toolbar">
+        <input type="text" id="clockName" class="gm-input" placeholder="시계 이름 (예: 경계 발령!)">
+      </div>
+      <div class="gm-toolbar">
+        <span class="clock-seg-label">칸 수</span>
+        <select id="clockSize" class="gm-input" style="flex:1;">
+          <option value="4">4칸</option>
+          <option value="6" selected>6칸</option>
+          <option value="8">8칸</option>
+          <option value="10">10칸</option>
+          <option value="12">12칸</option>
+        </select>
+        <button class="gm-btn" id="clockAdd" style="flex:1;">＋ 시계 추가</button>
+      </div>
+      <div class="clock-list" id="clockList">
+        <div class="gm-empty-note" id="clockEmpty">아직 시계가 없습니다. 복잡한 상황·위험·목표의 진행을 추적해 보세요.</div>
+      </div>
+      <p class="gm-hint">시계는 단일 판정으로 끝나지 않는 복잡한 상황을 추적합니다. 칸을 눌러 채우고 비울 수 있으며, 모두에게 공개됩니다.</p>
+    </div>
+
+    <!-- 악당 / NPC -->
+    <div class="gm-pane" id="gmPaneVillain" style="display:none;">
+      <div class="gm-toolbar">
+        <input type="text" id="vilName" class="gm-input" placeholder="이름 (예: 사령관 두나)">
+      </div>
+      <div class="gm-toolbar">
+        <select id="vilRank" class="gm-input" style="flex:1;">
+          <option value="일반">일반 (Soldier)</option>
+          <option value="엘리트">엘리트 (Elite)</option>
+          <option value="챔피언">챔피언 (Champion)</option>
+          <option value="솔로">솔로 (Solo)</option>
+        </select>
+        <button class="gm-btn" id="vilAdd" style="flex:1;">＋ 추가</button>
+      </div>
+      <div class="villain-list" id="villainList">
+        <div class="gm-empty-note" id="villainEmpty">아직 등록된 적이 없습니다.</div>
+      </div>
+      <p class="gm-hint">전투 중인 적·NPC의 HP/MP를 추적합니다. 챔피언은 등급 수만큼, 솔로는 여러 턴을 가집니다. 같은 방의 모두에게 공유됩니다.</p>
+    </div>
+
+    <!-- 전투맵 -->
+    <div class="gm-pane" id="gmPaneMap" style="display:none;">
+      <div class="gm-toolbar">
+        <button class="gm-btn" id="mapUploadBtn">🖼 맵 URL 추가</button>
+        <button class="gm-btn" id="tokenUploadBtn">⊕ 토큰 URL 추가</button>
+        <button class="gm-btn danger" id="mapClearBtn">맵 제거</button>
+      </div>
+      <div class="battle-board" id="battleBoard">
+        <img class="battle-map-img" id="battleMapImg" alt="전투맵" style="display:none;">
+        <div class="battle-empty" id="battleEmpty">🗺<br>맵 URL을 추가하면<br>파티원 모두에게 공유됩니다<br><span style="font-size:11px;opacity:0.7;">이미지 · GIF URL 지원</span></div>
+      </div>
+      <p class="gm-hint">토큰을 드래그해 이동 · 토큰을 탭하면 크기·삭제 메뉴 · GIF URL 사용 가능</p>
+    </div>
+
+    <!-- BGM -->
+    <div class="gm-pane" id="gmPaneBgm" style="display:none;">
+      <div class="gm-toolbar">
+        <input type="text" id="bgmUrlInput" class="gm-input" placeholder="유튜브 URL 붙여넣기">
+      </div>
+      <div class="gm-toolbar">
+        <input type="text" id="bgmTitleInput" class="gm-input" placeholder="이름 (선택, 예: 전투 BGM)" style="flex:2;">
+        <button class="gm-btn" id="bgmAddBtn" style="flex:1;">＋ 추가</button>
+      </div>
+      <div class="bgm-tracklist" id="bgmTracklist">
+        <div class="gm-empty-note" id="bgmEmpty">재생목록이 비어 있습니다. 유튜브 URL을 추가해 보세요. 여러 곡을 동시에 재생할 수 있습니다.</div>
+      </div>
+      <p class="gm-hint">여러 곡을 동시에 틀 수 있습니다 (전투 음악 + 앰비언트 등). 재생 상태는 같은 방의 모두에게 공유됩니다. 모바일은 동시 재생이 제한될 수 있어요.</p>
+      <!-- 유튜브 플레이어가 생성되는 숨겨진 영역 -->
+      <div id="bgmPlayers" style="position:absolute;width:0;height:0;overflow:hidden;left:-9999px;"></div>
     </div>
   </div>
 </div>
+<div class="bgm-unlock" id="bgmUnlock">🔊 BGM이 재생 중입니다 — 탭하여 듣기</div>
 
-<!-- ═══════ CHAT PANEL ═══════ -->
-<div class="chat-panel" id="chatPanel">
-  <div class="chat-tab-bar" id="chatTabBar">
-    <div class="chat-tab-title">
-      💬 파티 채팅
-      <span class="chat-unread" id="chatUnread">0</span>
+<!-- 플레이어용 BGM 상태 칩 (방의 모두에게 표시) -->
+<div class="bgm-chip" id="bgmChip" title="음소거 / 해제">
+  <span class="chip-eq">🎵</span>
+  <span class="chip-text" id="bgmChipText">재생 중</span>
+  <span class="chip-mute" id="bgmChipMute">🔊</span>
+</div>
+
+<!-- 플레이어용 맵 뷰어 (비-GM도 전투맵을 볼 수 있게) -->
+<div class="map-viewer-bg" id="mapViewerBg" style="display:none;">
+  <div class="map-viewer">
+    <div class="mv-head">
+      <span class="mv-title">🗺 전투맵</span>
+      <button class="mv-close" id="mapViewerClose">✕</button>
     </div>
-    <div class="chat-tab-actions" id="chatTabActions" style="display:none;">
-      <button class="chat-tab-btn danger" id="chatCleanBtn" title="오래된 메시지 정리">🧹 청소</button>
+    <div class="mv-board" id="mvBoard">
+      <img class="mv-map" id="mvMapImg" alt="map">
+      <div class="mv-empty" id="mvEmpty">맵이 아직 설정되지 않았습니다</div>
     </div>
-    <span class="chat-chevron" id="chatChevron">▲</span>
+    <p class="mv-hint">GM이 맵을 설정하면 자동으로 동기화됩니다. 토큰의 움직임도 실시간 표시됩니다.</p>
   </div>
+</div>
+
+<!-- 플레이어 화면에서 맵 뷰어 열기 FAB -->
+<button class="map-fab" id="mapFab" title="전투맵 보기" style="display:none;">🗺</button>
+
+<button class="dice-fab" id="rollShortcutBtn" title="판정 굴림" style="display:none;">⚄</button>
+
+<!-- ═══════ DICE LOG SIDEBAR ═══════ -->
+<!-- ═══════ 통합 패널: 채팅 + 굴림 기록 ═══════ -->
+<div class="chat-panel" id="chatPanel" style="display:none;">
+  <!-- 우측 엣지 탭 (펼치기) -->
+  <div class="chat-side-tab" id="chatSideTab">
+    <span class="tab-icon">💬</span>
+    <span class="tab-label">채팅 · 굴림</span>
+    <span class="tab-count" id="chatSideTabCount">0</span>
+  </div>
+  <!-- 본체 (사이드바 슬라이드) -->
   <div class="chat-body" id="chatBody">
-    <div class="chat-messages" id="chatMessages">
-      <div class="chat-msg system">
-        <div class="chat-bubble">방에 입장하면 파티원과 채팅할 수 있습니다</div>
+    <div class="chat-tab-bar" id="chatTabBar">
+      <div class="cpanel-tabs">
+        <button class="cpanel-tab active" id="cpTabChat" data-view="chat">
+          💬 채팅 <span class="chat-unread" id="chatUnread">0</span>
+        </button>
+        <button class="cpanel-tab" id="cpTabDice" data-view="dice">
+          ⚄ 굴림 <span class="chat-unread dice-count" id="diceLogCount">0</span>
+        </button>
+      </div>
+      <div class="chat-tab-actions" id="chatTabActions">
+        <button class="chat-tab-btn danger" id="diceLogClear" title="굴림 기록 초기화" style="display:none;">🧹 기록</button>
+        <button class="chat-tab-btn danger" id="chatCleanBtn" title="오래된 메시지 정리">🧹 청소</button>
       </div>
     </div>
-    <!-- 입력 (미디어 업로드 비활성화 — 텍스트 전용) -->
-    <div class="chat-input-row">
-      <textarea class="chat-text-input" id="chatTextInput" placeholder="메시지 입력... (Enter 전송, Shift+Enter 줄바꿈)" rows="1"></textarea>
-      <button class="chat-send-btn" id="chatSendBtn">➤</button>
+    <!-- 채팅 뷰 -->
+    <div class="cpanel-view" id="cpViewChat">
+      <div class="chat-messages" id="chatMessages">
+        <div class="chat-msg system">
+          <div class="chat-bubble">방에 입장하면 파티원과 채팅할 수 있습니다</div>
+        </div>
+      </div>
+      <div class="chat-typing empty" id="chatTyping"></div>
+      <div class="chat-input-row">
+        <textarea class="chat-text-input" id="chatTextInput" placeholder="메시지 입력... (Enter 전송, Shift+Enter 줄바꿈)" rows="1"></textarea>
+        <button class="chat-send-btn" id="chatSendBtn">➤</button>
+      </div>
+    </div>
+    <!-- 굴림 기록 뷰 -->
+    <div class="cpanel-view" id="cpViewDice" style="display:none;">
+      <div class="dlp-list" id="diceLogList">
+        <div class="dlp-empty" id="diceLogEmpty">
+          <div class="dlp-empty-icon">🎲</div>
+          <div>아직 굴림이 없습니다<br>주사위를 굴려보세요!</div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -1728,6 +2501,9 @@
     renderDiceLogEntry(entry, true);
     updateDiceLogCount();
 
+    /* 내가 굴리면 굴림 탭을 띄워 결과를 바로 보여줌 */
+    if (window.PANEL_VIEW) window.PANEL_VIEW('dice');
+
     /* Firebase 공유 */
     if (window.DICE_PUSH) window.DICE_PUSH(entry);
   }
@@ -1821,10 +2597,16 @@
     const countEl = $('diceLogCount');
     const n = diceLogEntries.length;
     countEl.textContent = n > 99 ? '99+' : n;
-    countEl.classList.toggle('has-items', n > 0);
+    /* 굴림 탭을 보고 있지 않을 때만 배지 표시 */
+    const showBadge = n > 0 && currentPanelView !== 'dice';
+    countEl.classList.toggle('show', showBadge);
+    /* 우측 사이드 탭 배지도 갱신 (블록 2에 정의됨) */
+    if (typeof updateSideTabBadge === 'function') updateSideTabBadge();
+    else if (window.UPDATE_SIDE_BADGE) window.UPDATE_SIDE_BADGE();
   }
 
-  $('diceLogClear').addEventListener('click', () => {
+  $('diceLogClear').addEventListener('click', (e) => {
+    e.stopPropagation();
     if (diceLogEntries.length === 0) return;
     if (!confirm('굴림 기록을 모두 지울까요?')) return;
     diceLogEntries = [];
@@ -1834,16 +2616,33 @@
     updateDiceLogCount();
   });
 
-  /* ── 굴림 기록 패널: 탭을 눌러 열고 닫기 (터치 기기 지원) ── */
-  const diceLogSidebar = $('diceLogSidebar');
-  $('diceLogTab').addEventListener('click', () => {
-    diceLogSidebar.classList.toggle('pinned');
-  });
-  /* 패널 바깥을 누르면 닫힘 */
-  document.addEventListener('click', e => {
-    if (!diceLogSidebar.classList.contains('pinned')) return;
-    if (!diceLogSidebar.contains(e.target)) diceLogSidebar.classList.remove('pinned');
-  });
+  /* ── 통합 패널 내부 탭 전환 (채팅 / 굴림) ── */
+  let currentPanelView = 'chat';
+  window.PANEL_CURRENT = () => currentPanelView;
+  function switchPanelView(view) {
+    currentPanelView = view;
+    const isChat = view === 'chat';
+    $('cpTabChat').classList.toggle('active', isChat);
+    $('cpTabDice').classList.toggle('active', !isChat);
+    $('cpViewChat').style.display = isChat ? 'flex' : 'none';
+    $('cpViewDice').style.display = isChat ? 'none' : 'flex';
+    /* 액션 버튼: 채팅=청소, 굴림=기록 초기화 */
+    $('chatCleanBtn').style.display = isChat ? '' : 'none';
+    $('diceLogClear').style.display = isChat ? 'none' : '';
+    /* 패널이 닫혀 있으면 열기 */
+    if (window.CHAT_PANEL && !window.CHAT_PANEL.isOpen()) {
+      window.CHAT_PANEL.setOpen(true);
+    }
+    if (isChat) {
+      if (window.CHAT_PANEL) window.CHAT_PANEL.markRead();
+    } else {
+      updateDiceLogCount();
+    }
+  }
+  $('cpTabChat').addEventListener('click', e => { e.stopPropagation(); switchPanelView('chat'); });
+  $('cpTabDice').addEventListener('click', e => { e.stopPropagation(); switchPanelView('dice'); });
+  /* 다른 모듈(주사위 굴림)에서 굴림 탭으로 보낼 수 있게 노출 */
+  window.PANEL_VIEW = switchPanelView;
 
   /* 원격(다른 플레이어)에서 받은 굴림 기록 렌더 */
   function receiveRemote(raw) {
@@ -1866,7 +2665,7 @@
     updateDiceLogCount();
   }
 
-  window.DICE_LOG = { receiveRemote };
+  window.DICE_LOG = { receiveRemote, count: () => diceLogEntries.length };
 
   /* ── INIT ── */
   function seedRows() {
@@ -2001,6 +2800,7 @@
   const configured = firebaseConfig.apiKey !== "YOUR_API_KEY";
 
   let roomCode = null, userName = null, myCharId = null;
+  let isGameMaster = false;
   let chars = {};
   let activeId = null;
   let applying = false;
@@ -2021,39 +2821,75 @@
   function setStatus(ok, msg) {
     const st = $('setupStatus');
     if (!st) return;
-    st.innerHTML = '<span class="status-dot ' + (ok ? 'on' : 'off') + '" id="setupDot"></span> ' + msg;
+    st.innerHTML = '<span class="status-dot ' + (ok ? 'on' : 'off') + '"></span> ' + msg;
   }
 
   function initFirebase() {
     if (!configured) { setStatus(false, 'Firebase 미설정 — 오프라인 단일 시트로 사용 가능'); return false; }
+    /* ── 진단 ── */
+    if (typeof firebase === 'undefined') {
+      setStatus(false, 'Firebase SDK 로드 실패 — 인터넷 연결 확인 또는 브라우저 광고차단기 해제 필요');
+      console.error('[Firebase] window.firebase is undefined. CDN script may have been blocked.');
+      return false;
+    }
+    if (!firebase.database) {
+      setStatus(false, 'Firebase Realtime DB 모듈 로드 실패 — 페이지 새로고침 시도');
+      console.error('[Firebase] firebase.database is missing. database-compat script failed to load.');
+      return false;
+    }
     try {
-      if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+      if (!firebase.apps || !firebase.apps.length) firebase.initializeApp(firebaseConfig);
       db = firebase.database();
+      /* 연결 상태 능동 확인 */
+      db.ref('.info/connected').on('value', s => {
+        const connected = !!s.val();
+        if (connected) setStatus(true, '연결됨 — 방 코드를 입력하고 입장하세요');
+        else setStatus(false, '연결 끊김 (재연결 시도 중...)');
+      });
       setStatus(true, '연결 준비 완료 — 방 코드를 입력하고 입장하세요');
       return true;
-    } catch (e) { setStatus(false, 'Firebase 초기화 실패: ' + e.message); return false; }
+    } catch (e) {
+      console.error('[Firebase] init error:', e);
+      let hint = '';
+      if (/already exists/i.test(e.message)) hint = ' (페이지를 두 번 로드한 것 같습니다. 새로고침해 보세요)';
+      else if (/invalid.*api.*key/i.test(e.message)) hint = ' (API 키가 잘못되었거나 만료됨)';
+      else if (/database/i.test(e.message)) hint = ' (Realtime Database가 콘솔에서 생성되지 않았을 수 있음)';
+      setStatus(false, 'Firebase 초기화 실패: ' + e.message + hint);
+      return false;
+    }
   }
 
   /* ── 입장 ── */
+  /* 방 입장 시에만 떠야 하는 플로팅 UI (로그인 화면에서는 숨김) */
+  function revealRoomUI() {
+    $('rollShortcutBtn').style.display = '';
+    $('chatPanel').style.display = '';
+    if (isGameMaster) {
+      /* GM은 GM 사이드바를 본다 — 그 안에 전투맵 편집·BGM 컨트롤이 있음 */
+      $('gmSidebar').style.display = '';
+    } else {
+      /* 플레이어는 좌측에 맵 보기 FAB만 — 전투맵을 읽기 전용으로 열어볼 수 있음 */
+      $('mapFab').style.display = '';
+    }
+    /* BGM 칩은 처음엔 숨김; 재생 시작되면 모든 클라이언트에서 나타남 */
+  }
+
   function enterRoom() {
     roomCode = ($('roomInput').value || '').trim().toLowerCase().replace(/[^a-z0-9가-힣\-_]/g, '');
     userName = ($('userInput').value || '').trim() || '익명';
+    isGameMaster = $('gmCheck').checked;
+    window.IS_GM = isGameMaster;
     if (!roomCode) { alert('방 코드를 입력하세요.'); return; }
 
     /* 결정론적 ID — 재입장해도 항상 같은 캐릭터 */
     myCharId = makeStableId(roomCode, userName);
     myOwned.add(myCharId);
 
-    /* Firebase SDK 미로드 시 자동 오프라인 전환 */
-    if (configured && typeof firebase === 'undefined') {
-      alert('Firebase SDK가 아직 로드되지 않았습니다. 잠시 후 다시 시도하거나, 네트워크 연결을 확인하세요.');
-      return;
-    }
-
     if (!configured) {
       $('setupScreen').style.display = 'none';
       $('playerBar').style.display = 'flex';
       $('sheetRoot').style.display = '';
+      revealRoomUI();
       $('roomLabel').textContent = '(오프라인)';
       chars[myCharId] = { owner: userName, data: window.SHEET.collect() };
       activeId = myCharId;
@@ -2064,7 +2900,17 @@
     $('setupScreen').style.display = 'none';
     $('playerBar').style.display = 'flex';
     $('sheetRoot').style.display = '';
+    revealRoomUI();
     $('roomLabel').textContent = roomCode;
+
+    if (!db) {
+      /* configured였는데 db가 비어 있다면 진입 자체는 했으니 오프라인으로 안전 진입 */
+      window.SHEET && window.SHEET.toast('데이터베이스 연결 실패 — 오프라인 모드로 진입합니다');
+      chars[myCharId] = { owner: userName, data: window.SHEET.collect() };
+      activeId = myCharId;
+      renderTabs();
+      return;
+    }
 
     const roomRef = db.ref('rooms/' + roomCode + '/chars');
     const myRef  = roomRef.child(myCharId);
@@ -2093,6 +2939,12 @@
     subscribeDiceLog(roomCode);
     /* ── 채팅 초기화 ── */
     if (window.CHAT_INIT) window.CHAT_INIT(roomCode);
+    /* ── 좌측 GM 사이드바(전투맵) 초기화 ── */
+    initBattlemap(roomCode);
+    /* ── GM 도구(울티마·시계·악당) 초기화 ── */
+    initGmTools(roomCode);
+    /* ── BGM (다음 단계에서 구현 예정) ── */
+    initBgm(roomCode);
 
     /* 입장 알림 */
     setTimeout(() => {
@@ -2101,6 +2953,544 @@
       }
     }, 1200);
   }
+
+  /* ════════════════════════════════════════════════
+     좌측 GM 사이드바 — 전투맵 (맵 + 드래그 토큰, 방 단위 실시간 공유)
+     데이터: rooms/<room>/battlemap = { map:{url,name}, tokens:{<id>:{url,name,x,y,size,by}} }
+     ════════════════════════════════════════════════ */
+  let bmRef = null;
+  let bmState = { map: null, tokens: {} };
+  let bmSelected = null;
+
+  function initBattlemap(room) {
+    if (!db) return;
+    bmRef = db.ref('rooms/' + room + '/battlemap');
+
+    bmRef.child('map').on('value', snap => {
+      bmState.map = snap.val();
+      renderBattleMap();
+    });
+    bmRef.child('tokens').on('value', snap => {
+      bmState.tokens = snap.val() || {};
+      renderTokens();
+    });
+  }
+
+  function renderBattleMap() {
+    const img = $('battleMapImg');
+    const empty = $('battleEmpty');
+    const mvImg = $('mvMapImg');
+    const mvEmpty = $('mvEmpty');
+    if (bmState.map && bmState.map.url) {
+      img.src = bmState.map.url;
+      img.style.display = 'block';
+      empty.style.display = 'none';
+      mvImg.src = bmState.map.url;
+      mvImg.style.display = 'block';
+      mvEmpty.style.display = 'none';
+    } else {
+      img.style.display = 'none';
+      img.removeAttribute('src');
+      empty.style.display = 'flex';
+      mvImg.style.display = 'none';
+      mvImg.removeAttribute('src');
+      mvEmpty.style.display = 'flex';
+    }
+  }
+
+  function renderTokens() {
+    /* GM 보드 (드래그·도구 가능) */
+    renderTokensInto($('battleBoard'), true);
+    /* 플레이어 뷰어 보드 (읽기 전용) */
+    renderTokensInto($('mvBoard'), false);
+  }
+
+  function renderTokensInto(board, interactive) {
+    board.querySelectorAll('.battle-token').forEach(t => t.remove());
+    Object.keys(bmState.tokens).forEach(id => {
+      const t = bmState.tokens[id];
+      const el = document.createElement('div');
+      el.className = 'battle-token' + (interactive && id === bmSelected ? ' selected' : '');
+      el.dataset.id = id;
+      const size = t.size || 48;
+      el.style.width = size + 'px';
+      el.style.height = size + 'px';
+      el.style.left = (t.x != null ? t.x : 50) + '%';
+      el.style.top  = (t.y != null ? t.y : 50) + '%';
+
+      const im = document.createElement('img');
+      im.src = t.url; im.alt = t.name || ''; im.loading = 'lazy';
+      el.appendChild(im);
+
+      if (interactive && isGameMaster) {
+        const tools = document.createElement('div');
+        tools.className = 'token-tools';
+        const minus = document.createElement('button'); minus.textContent = '−'; minus.title = '작게';
+        const plus  = document.createElement('button'); plus.textContent = '＋'; plus.title = '크게';
+        const del   = document.createElement('button'); del.className = 'del'; del.textContent = '🗑'; del.title = '삭제';
+        minus.addEventListener('click', e => { e.stopPropagation(); resizeToken(id, -8); });
+        plus.addEventListener('click',  e => { e.stopPropagation(); resizeToken(id, +8); });
+        del.addEventListener('click',   e => { e.stopPropagation(); deleteToken(id); });
+        tools.appendChild(minus); tools.appendChild(plus); tools.appendChild(del);
+        el.appendChild(tools);
+        attachTokenDrag(el, id);
+      } else {
+        /* 비-GM 또는 뷰어 보드: 포인터 이벤트 차단 */
+        el.style.pointerEvents = 'none';
+      }
+      board.appendChild(el);
+    });
+  }
+
+  function resizeToken(id, delta) {
+    const t = bmState.tokens[id]; if (!t || !bmRef) return;
+    const size = Math.max(24, Math.min(160, (t.size || 48) + delta));
+    bmRef.child('tokens').child(id).update({ size });
+  }
+
+  function deleteToken(id) {
+    if (!bmRef) return;
+    if (bmSelected === id) bmSelected = null;
+    bmRef.child('tokens').child(id).remove();
+  }
+
+  /* 드래그: 퍼센트 좌표로 저장 → 보드 크기와 무관하게 모두에게 동일 위치 */
+  function attachTokenDrag(el, id) {
+    let dragging = false, raf = null, pending = null;
+
+    function pointerDown(e) {
+      e.preventDefault();
+      bmSelected = id;
+      renderTokens();
+      dragging = true;
+      el.classList.add('dragging');
+      document.addEventListener('pointermove', pointerMove);
+      document.addEventListener('pointerup', pointerUp);
+    }
+    function pointerMove(e) {
+      if (!dragging) return;
+      const board = $('battleBoard');
+      const rect = board.getBoundingClientRect();
+      let x = ((e.clientX - rect.left) / rect.width) * 100;
+      let y = ((e.clientY - rect.top) / rect.height) * 100;
+      x = Math.max(0, Math.min(100, x));
+      y = Math.max(0, Math.min(100, y));
+      el.style.left = x + '%';
+      el.style.top  = y + '%';
+      pending = { x, y };
+      if (!raf) raf = requestAnimationFrame(flush);
+    }
+    function flush() {
+      raf = null;
+      if (pending && bmRef) bmRef.child('tokens').child(id).update(pending);
+      pending = null;
+    }
+    function pointerUp() {
+      dragging = false;
+      el.classList.remove('dragging');
+      if (pending && bmRef) bmRef.child('tokens').child(id).update(pending);
+      document.removeEventListener('pointermove', pointerMove);
+      document.removeEventListener('pointerup', pointerUp);
+    }
+    el.addEventListener('pointerdown', pointerDown);
+  }
+
+  function addBattleByUrl(kind) {
+    if (!bmRef) { window.SHEET.toast('전투맵은 방 입장 후 사용 가능합니다'); return; }
+    const label = kind === 'map' ? '맵' : '토큰';
+    const url = prompt(label + ' 이미지 URL을 붙여넣으세요 (GIF 가능):');
+    if (!url) return;
+    const trimmed = url.trim();
+    if (!/^https?:\/\//i.test(trimmed)) { window.SHEET.toast('http(s):// 로 시작하는 URL이어야 합니다'); return; }
+    const name = (prompt('이름 (선택):') || '').trim();
+    if (kind === 'map') {
+      bmRef.child('map').set({ url: trimmed, name, by: userName || '익명' });
+    } else {
+      bmRef.child('tokens').push({ url: trimmed, name, x: 50, y: 50, size: 48, by: userName || '익명' });
+    }
+  }
+
+  function clearBattleMap() {
+    if (!bmRef) return;
+    if (!confirm('맵을 제거할까요? (토큰은 그대로 유지됩니다)')) return;
+    bmRef.child('map').remove();
+  }
+
+  /* GM 사이드바 바인딩 */
+  (function bindGmSidebar() {
+    const sidebar = $('gmSidebar');
+    $('gmTab').addEventListener('click', () => sidebar.classList.toggle('open'));
+    $('gmClose').addEventListener('click', () => sidebar.classList.remove('open'));
+
+    /* 서브탭 전환 (울티마 / 시계 / 악당 / 전투맵 / BGM) */
+    const paneMap = { ultima:'gmPaneUltima', clock:'gmPaneClock', villain:'gmPaneVillain', map:'gmPaneMap', bgm:'gmPaneBgm' };
+    document.querySelectorAll('.gm-subtab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.gm-subtab').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const pane = btn.dataset.pane;
+        Object.keys(paneMap).forEach(k => {
+          $(paneMap[k]).style.display = (k === pane) ? '' : 'none';
+        });
+      });
+    });
+
+    /* 맵 / 토큰 추가 (외부 URL) */
+    $('mapUploadBtn').addEventListener('click', () => addBattleByUrl('map'));
+    $('tokenUploadBtn').addEventListener('click', () => addBattleByUrl('token'));
+    $('mapClearBtn').addEventListener('click', clearBattleMap);
+
+    /* 빈 곳 클릭 시 토큰 선택 해제 */
+    $('battleBoard').addEventListener('pointerdown', e => {
+      if (e.target.id === 'battleBoard' || e.target.id === 'battleMapImg' || e.target.id === 'battleEmpty') {
+        if (bmSelected) { bmSelected = null; renderTokens(); }
+      }
+    });
+
+    /* 맵 뷰어 (비-GM 플레이어가 전투맵을 읽기 전용으로 보는 모달) */
+    $('mapFab').addEventListener('click', () => $('mapViewerBg').style.display = 'flex');
+    $('mapViewerClose').addEventListener('click', () => $('mapViewerBg').style.display = 'none');
+    $('mapViewerBg').addEventListener('click', e => {
+      if (e.target.id === 'mapViewerBg') $('mapViewerBg').style.display = 'none';
+    });
+
+    /* 울티마 포인트 */
+    $('upPlus').addEventListener('click', () => setUltima(gmState.ultima + 1));
+    $('upMinus').addEventListener('click', () => setUltima(Math.max(0, gmState.ultima - 1)));
+    $('upReset').addEventListener('click', () => {
+      const n = Object.keys(chars).length || 1;
+      setUltima(n);
+      window.SHEET.toast('파티 인원수(' + n + ')로 초기화했습니다');
+    });
+
+    /* 시계 */
+    $('clockAdd').addEventListener('click', () => {
+      const name = ($('clockName').value || '').trim() || '이름 없는 시계';
+      const size = parseInt($('clockSize').value) || 6;
+      if (!gmRef) { window.SHEET.toast('방 입장 후 사용 가능합니다'); return; }
+      gmRef.child('clocks').push({ name, size, filled: 0, ts: Date.now() });
+      $('clockName').value = '';
+    });
+
+    /* BGM 추가 (유튜브 URL) */
+    $('bgmAddBtn').addEventListener('click', bgmAdd);
+    $('bgmUrlInput').addEventListener('keydown', e => { if (e.key === 'Enter') bgmAdd(); });
+
+    /* 악당 / NPC */
+    $('vilAdd').addEventListener('click', () => {
+      const name = ($('vilName').value || '').trim();
+      if (!name) { window.SHEET.toast('적의 이름을 입력하세요'); return; }
+      if (!gmRef) { window.SHEET.toast('방 입장 후 사용 가능합니다'); return; }
+      const rank = $('vilRank').value;
+      gmRef.child('villains').push({ name, rank, hp: 50, hpMax: 50, mp: 30, mpMax: 30, ts: Date.now() });
+      $('vilName').value = '';
+    });
+  })();
+
+  /* ════════════════════════════════════════════════
+     GM 도구 — 울티마 포인트 · 시계 · 악당 (방 단위 공유)
+     데이터: rooms/<room>/gm/{ultima, clocks, villains}
+     ════════════════════════════════════════════════ */
+  let gmRef = null;
+  let gmState = { ultima: 0, clocks: {}, villains: {} };
+
+  function initGmTools(room) {
+    if (!db) return;
+    gmRef = db.ref('rooms/' + room + '/gm');
+    gmRef.child('ultima').on('value', s => { gmState.ultima = s.val() || 0; renderUltima(); });
+    gmRef.child('clocks').on('value', s => { gmState.clocks = s.val() || {}; renderClocks(); });
+    gmRef.child('villains').on('value', s => { gmState.villains = s.val() || {}; renderVillains(); });
+  }
+
+  function setUltima(v) {
+    if (!gmRef) { gmState.ultima = v; renderUltima(); return; }
+    gmRef.child('ultima').set(v);
+  }
+  function renderUltima() { $('upCount').textContent = gmState.ultima; }
+
+  function renderClocks() {
+    const list = $('clockList');
+    list.querySelectorAll('.clock-card').forEach(c => c.remove());
+    const ids = Object.keys(gmState.clocks).sort((a,b) => (gmState.clocks[a].ts||0) - (gmState.clocks[b].ts||0));
+    $('clockEmpty').style.display = ids.length ? 'none' : '';
+
+    ids.forEach(id => {
+      const c = gmState.clocks[id];
+      const card = document.createElement('div'); card.className = 'clock-card';
+      const head = document.createElement('div'); head.className = 'clock-card-head';
+      const title = document.createElement('span'); title.className = 'clock-title'; title.textContent = c.name;
+      const frac = document.createElement('span'); frac.className = 'clock-frac'; frac.textContent = (c.filled||0) + ' / ' + c.size;
+      const del = document.createElement('button'); del.className = 'clock-del'; del.textContent = '✕'; del.title = '삭제';
+      del.addEventListener('click', () => { if (gmRef) gmRef.child('clocks').child(id).remove(); });
+      head.appendChild(title); head.appendChild(frac); head.appendChild(del);
+
+      const segs = document.createElement('div'); segs.className = 'clock-segs';
+      for (let i = 0; i < c.size; i++) {
+        const seg = document.createElement('div');
+        seg.className = 'clock-seg' + (i < (c.filled||0) ? ' filled' : '');
+        seg.addEventListener('click', () => {
+          /* 클릭한 칸까지 채움 / 이미 그 지점이면 한 칸 비움 */
+          const newFilled = (i + 1 === (c.filled||0)) ? i : i + 1;
+          if (gmRef) gmRef.child('clocks').child(id).update({ filled: newFilled });
+        });
+        segs.appendChild(seg);
+      }
+      card.appendChild(head); card.appendChild(segs);
+      list.appendChild(card);
+    });
+  }
+
+  function renderVillains() {
+    const list = $('villainList');
+    list.querySelectorAll('.villain-card').forEach(c => c.remove());
+    const ids = Object.keys(gmState.villains).sort((a,b) => (gmState.villains[a].ts||0) - (gmState.villains[b].ts||0));
+    $('villainEmpty').style.display = ids.length ? 'none' : '';
+
+    ids.forEach(id => {
+      const v = gmState.villains[id];
+      const card = document.createElement('div'); card.className = 'villain-card rank-' + (v.rank||'일반');
+
+      const head = document.createElement('div'); head.className = 'vil-head';
+      const nm = document.createElement('span'); nm.className = 'vil-name'; nm.textContent = v.name;
+      const badge = document.createElement('span'); badge.className = 'vil-rank-badge'; badge.textContent = v.rank || '일반';
+      const del = document.createElement('button'); del.className = 'vil-del'; del.textContent = '✕'; del.title = '삭제';
+      del.addEventListener('click', () => { if (gmRef) gmRef.child('villains').child(id).remove(); });
+      head.appendChild(nm); head.appendChild(badge); head.appendChild(del);
+
+      const stats = document.createElement('div'); stats.className = 'vil-stats';
+      stats.appendChild(makeVilStat(id, 'hp', 'HP', v.hp, v.hpMax));
+      stats.appendChild(makeVilStat(id, 'mp', 'MP', v.mp, v.mpMax));
+
+      card.appendChild(head); card.appendChild(stats);
+      list.appendChild(card);
+    });
+  }
+
+  function makeVilStat(id, key, label, cur, max) {
+    const wrap = document.createElement('div'); wrap.className = 'vil-stat vil-' + key;
+    const lab = document.createElement('div'); lab.className = 'vil-stat-label'; lab.textContent = label + ' / ' + (max != null ? max : '?');
+    const row = document.createElement('div'); row.className = 'vil-stat-row';
+    const minus = document.createElement('button'); minus.textContent = '−';
+    const inp = document.createElement('input'); inp.type = 'number'; inp.value = (cur != null ? cur : 0);
+    const plus = document.createElement('button'); plus.textContent = '＋';
+    const commit = val => { if (gmRef) gmRef.child('villains').child(id).update({ [key]: val }); };
+    minus.addEventListener('click', () => commit(Math.max(0, (parseInt(inp.value)||0) - 5)));
+    plus.addEventListener('click',  () => commit((parseInt(inp.value)||0) + 5));
+    inp.addEventListener('change', () => commit(parseInt(inp.value)||0));
+    row.appendChild(minus); row.appendChild(inp); row.appendChild(plus);
+    wrap.appendChild(lab); wrap.appendChild(row);
+    return wrap;
+  }
+
+  /* BGM — 다음 단계에서 구현 (지금은 안전한 빈 함수) */
+  /* ════════════════════════════════════════════════
+     BGM — 유튜브 동시 재생 (방 단위 실시간 동기화)
+     데이터: rooms/<room>/bgm/tracks/{id} = { videoId, title, playing, volume, loop }
+     GM이 컨트롤 → Firebase로 전파 → 모든 클라이언트가 자기 브라우저에서 YT.Player로 재생
+     ════════════════════════════════════════════════ */
+  let bgmRef = null;
+  let bgmTracks = {};        // Firebase에서 받아온 트랙 상태
+  let ytPlayers = {};        // id -> YT.Player 인스턴스
+  let ytApiReady = false;
+  let bgmAudioUnlocked = false;
+
+  /* YouTube IFrame API 로드 완료 콜백 (전역) */
+  window.onYouTubeIframeAPIReady = function() {
+    ytApiReady = true;
+    /* 이미 트랙이 들어와 있다면 플레이어 생성 시도 */
+    syncAllPlayers();
+  };
+
+  function parseYouTubeId(url) {
+    if (!url) return null;
+    /* youtu.be/<id> | youtube.com/watch?v=<id> | youtube.com/embed/<id> | shorts/<id> */
+    const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([A-Za-z0-9_-]{11})/);
+    if (m) return m[1];
+    /* 그냥 ID만 넣은 경우 */
+    if (/^[A-Za-z0-9_-]{11}$/.test(url.trim())) return url.trim();
+    return null;
+  }
+
+  function initBgm(room) {
+    if (!db) return;
+    bgmRef = db.ref('rooms/' + room + '/bgm/tracks');
+    bgmRef.on('value', s => {
+      bgmTracks = s.val() || {};
+      renderBgmTracks();
+      syncAllPlayers();
+      updateBgmChip();
+    });
+  }
+
+  function renderBgmTracks() {
+    const list = $('bgmTracklist');
+    list.querySelectorAll('.bgm-track-card').forEach(c => c.remove());
+    const ids = Object.keys(bgmTracks);
+    $('bgmEmpty').style.display = ids.length ? 'none' : '';
+
+    ids.forEach(id => {
+      const t = bgmTracks[id];
+      const card = document.createElement('div');
+      card.className = 'bgm-track-card' + (t.playing ? ' playing' : '');
+
+      const head = document.createElement('div'); head.className = 'btc-head';
+      const title = document.createElement('div'); title.className = 'btc-title';
+      title.innerHTML = (t.playing ? '<span class="btc-eq">🎵</span>' : '') + (t.title || ('유튜브 — ' + t.videoId));
+      const del = document.createElement('button'); del.className = 'btc-del'; del.textContent = '✕'; del.title = '삭제';
+      del.addEventListener('click', () => { if (bgmRef) bgmRef.child(id).remove(); });
+      head.appendChild(title); head.appendChild(del);
+
+      const ctrls = document.createElement('div'); ctrls.className = 'btc-controls';
+      const play = document.createElement('button');
+      play.textContent = t.playing ? '⏸' : '▶';
+      play.title = t.playing ? '정지' : '재생';
+      if (t.playing) play.classList.add('active');
+      play.addEventListener('click', () => {
+        if (!bgmRef) return;
+        bgmRef.child(id).update({ playing: !t.playing });
+      });
+      const loop = document.createElement('button');
+      loop.textContent = '🔁'; loop.title = '반복';
+      if (t.loop) loop.classList.add('active');
+      loop.addEventListener('click', () => {
+        if (!bgmRef) return;
+        bgmRef.child(id).update({ loop: !t.loop });
+      });
+
+      const volWrap = document.createElement('div'); volWrap.className = 'btc-vol';
+      const volLabel = document.createElement('span'); volLabel.textContent = '🔊';
+      const vol = document.createElement('input'); vol.type = 'range'; vol.min = 0; vol.max = 100;
+      vol.value = (t.volume != null ? t.volume : 60);
+      const volNum = document.createElement('span'); volNum.style.cssText = 'font-size:11px;width:26px;text-align:right;'; volNum.textContent = vol.value;
+      vol.addEventListener('input', () => {
+        volNum.textContent = vol.value;
+        /* 즉시 로컬 적용 (반응성) */
+        if (ytPlayers[id] && ytPlayers[id].setVolume) {
+          try { ytPlayers[id].setVolume(parseInt(vol.value)); } catch(_) {}
+        }
+      });
+      vol.addEventListener('change', () => {
+        if (bgmRef) bgmRef.child(id).update({ volume: parseInt(vol.value) });
+      });
+      volWrap.appendChild(volLabel); volWrap.appendChild(vol); volWrap.appendChild(volNum);
+
+      ctrls.appendChild(play); ctrls.appendChild(loop); ctrls.appendChild(volWrap);
+      card.appendChild(head); card.appendChild(ctrls);
+      list.appendChild(card);
+    });
+  }
+
+  /* Firebase 상태 → 실제 YT 플레이어 동기화 (모든 클라이언트에서 실행) */
+  function syncAllPlayers() {
+    if (!ytApiReady || !window.YT || !window.YT.Player) return;
+    const ids = Object.keys(bgmTracks);
+
+    /* 새로운 트랙 → 플레이어 생성 */
+    ids.forEach(id => {
+      const t = bgmTracks[id];
+      if (!t.videoId) return;
+      if (!ytPlayers[id]) {
+        const div = document.createElement('div');
+        div.id = 'ytp_' + id;
+        $('bgmPlayers').appendChild(div);
+        ytPlayers[id] = new YT.Player(div.id, {
+          height: '0', width: '0', videoId: t.videoId,
+          playerVars: { autoplay: 0, controls: 0, disablekb: 1, playsinline: 1 },
+          events: {
+            onReady: (e) => {
+              try { e.target.setVolume(t.volume != null ? t.volume : 60); } catch(_) {}
+              applyTrackState(id);
+            },
+            onStateChange: (e) => {
+              /* 종료 시 반복 처리 */
+              if (e.data === YT.PlayerState.ENDED) {
+                const tr = bgmTracks[id];
+                if (tr && tr.loop && ytPlayers[id] && ytPlayers[id].playVideo) {
+                  try { ytPlayers[id].seekTo(0); ytPlayers[id].playVideo(); } catch(_) {}
+                }
+              }
+            }
+          }
+        });
+      } else {
+        applyTrackState(id);
+      }
+    });
+
+    /* 사라진 트랙 → 플레이어 제거 */
+    Object.keys(ytPlayers).forEach(id => {
+      if (!bgmTracks[id]) {
+        try { ytPlayers[id].destroy && ytPlayers[id].destroy(); } catch(_) {}
+        const el = document.getElementById('ytp_' + id);
+        if (el && el.parentNode) el.parentNode.removeChild(el);
+        delete ytPlayers[id];
+      }
+    });
+  }
+
+  function applyTrackState(id) {
+    const p = ytPlayers[id]; const t = bgmTracks[id];
+    if (!p || !t || !p.getPlayerState) return;
+    try {
+      if (t.volume != null && p.setVolume) p.setVolume(t.volume);
+      const state = p.getPlayerState();
+      const PLAYING = (window.YT && YT.PlayerState && YT.PlayerState.PLAYING) || 1;
+      if (t.playing && state !== PLAYING) {
+        p.playVideo();
+      } else if (!t.playing && state === PLAYING) {
+        p.pauseVideo();
+      }
+    } catch(_) {}
+  }
+
+  function updateBgmChip() {
+    const playingIds = Object.keys(bgmTracks).filter(id => bgmTracks[id].playing);
+    const chip = $('bgmChip');
+    const text = $('bgmChipText');
+    if (playingIds.length === 0) {
+      chip.classList.remove('show');
+      return;
+    }
+    chip.classList.add('show');
+    if (playingIds.length === 1) {
+      const t = bgmTracks[playingIds[0]];
+      text.textContent = t.title || ('유튜브 — ' + t.videoId);
+    } else {
+      text.textContent = playingIds.length + '곡 재생 중';
+    }
+  }
+
+  /* GM의 '＋ 추가' 버튼 */
+  function bgmAdd() {
+    if (!bgmRef) { window.SHEET.toast('방 입장 후 사용 가능합니다'); return; }
+    const url = ($('bgmUrlInput').value || '').trim();
+    const title = ($('bgmTitleInput').value || '').trim();
+    const id = parseYouTubeId(url);
+    if (!id) { window.SHEET.toast('유효한 유튜브 URL이 아닙니다'); return; }
+    bgmRef.push({
+      videoId: id,
+      title: title || ('유튜브 — ' + id),
+      playing: false,
+      volume: 60,
+      loop: false,
+      ts: Date.now()
+    });
+    $('bgmUrlInput').value = ''; $('bgmTitleInput').value = '';
+  }
+
+  /* BGM 칩 — 자기 브라우저만 음소거 (모든 트랙에 적용) */
+  let chipMuted = false;
+  function bindBgmChip() {
+    $('bgmChip').addEventListener('click', () => {
+      chipMuted = !chipMuted;
+      $('bgmChipMute').textContent = chipMuted ? '🔇' : '🔊';
+      Object.keys(ytPlayers).forEach(id => {
+        const p = ytPlayers[id];
+        try { if (chipMuted) p.mute && p.mute(); else p.unMute && p.unMute(); } catch(_) {}
+      });
+    });
+  }
+  bindBgmChip();
 
   /* ── 탭 렌더링 ── */
   function renderTabs() {
@@ -2275,23 +3665,42 @@
     window.SHEET.toast('방 링크 복사됨 — 파티원에게 보내세요');
   });
 
-  $('enterBtn').addEventListener('click', enterRoom);
+  /* 입장 시 마법진 트랜지션 후 실제 입장 */
+  function enterWithMagic() {
+    const room = ($('roomInput').value || '').trim();
+    if (!room) { enterRoom(); return; }  /* 유효성 alert는 enterRoom이 처리 */
+
+    /* 카드 흩어지기 + 마법진 발동 */
+    $('setupScreen').classList.add('dissolving');
+    $('magicVeil').classList.add('active');
+
+    /* 1.0초 즈음에 실제 입장 수행 (시트 DOM 준비) */
+    setTimeout(() => {
+      enterRoom();
+      $('sheetRoot').classList.add('materializing');
+      $('playerBar').classList.add('materializing');
+      /* 마법서 배경(룬)은 입장 후엔 숨김 */
+      const bg = $('grimoireBg'); if (bg) bg.style.display = 'none';
+    }, 1000);
+
+    /* 1.8초 즈음 베일 페이드 아웃, 정리 */
+    setTimeout(() => {
+      $('magicVeil').classList.remove('active');
+      setTimeout(() => {
+        $('sheetRoot').classList.remove('materializing');
+        $('playerBar').classList.remove('materializing');
+      }, 1100);
+    }, 1800);
+  }
+
+  $('enterBtn').addEventListener('click', enterWithMagic);
   $('roomInput').addEventListener('keydown', e => { if (e.key === 'Enter') $('userInput').focus(); });
-  $('userInput').addEventListener('keydown', e => { if (e.key === 'Enter') enterRoom(); });
+  $('userInput').addEventListener('keydown', e => { if (e.key === 'Enter') enterWithMagic(); });
 
   if (location.hash.length > 1) $('roomInput').value = decodeURIComponent(location.hash.slice(1));
 
-  function tryInitFirebase(attempt) {
-    if (!configured) { setStatus(false, 'Firebase 미설정 — 오프라인 단일 시트로 사용 가능'); return; }
-    if (typeof firebase !== 'undefined') {
-      initFirebase();
-    } else if (attempt < 30) {
-      setTimeout(function() { tryInitFirebase(attempt + 1); }, 200);
-    } else {
-      setStatus(false, 'Firebase SDK 로드 실패 — 네트워크를 확인하세요');
-    }
-  }
-  tryInitFirebase(0);
+  if (configured) initFirebase();
+  else setStatus(false, 'Firebase 미설정 — 오프라인 단일 시트로 사용 가능');
 
   /* ════════════════════════════════════════════════════════
      💬 채팅 시스템
@@ -2308,35 +3717,141 @@
     if (!configured || !db) return;
     try { storage = firebase.storage(); } catch(e) { storage = null; }
     chatRef = db.ref('rooms/' + room + '/chat');
+    typingRef = db.ref('rooms/' + room + '/typing');
 
-    /* 최근 100개 로드 후 실시간 스트리밍 */
+    /* 최근 100개 로드 후 실시간 스트리밍.
+       Firebase는 첫 구독 시 기존 메시지들에 대해서도 child_added를 발화하므로,
+       그 '백필 단계'에서는 안읽음 카운트를 올리지 않는다 (재입장 시 모두 안읽음이 되는 버그 방지). */
+    let chatBackfillDone = false;
+    chatRef.limitToLast(100).once('value').then(() => { chatBackfillDone = true; });
     chatRef.limitToLast(100).on('child_added', snap => {
       const msg = snap.val();
       if (!msg) return;
       appendChatMsg(msg, snap.key);
-      if (!chatOpen) {
+      /* 새로 도착한 메시지(백필 끝난 뒤)만 안읽음으로 집계, 그리고 내가 보낸 건 제외 */
+      if (chatBackfillDone && msg.sender !== userName && (!chatOpen || !currentPanelViewIsChat())) {
         unreadCount++;
-        const el = $('chatUnread');
-        el.textContent = unreadCount > 99 ? '99+' : unreadCount;
-        el.classList.add('show');
+        updateChatUnread();
       }
     });
+
+    /* ── 타이핑 상태 구독 ── */
+    typingRef.on('value', s => {
+      typingState = s.val() || {};
+      renderTypingIndicator();
+      /* stale 항목(8초 이상 갱신 안 됨)은 Firebase에서도 정리 */
+      const now = Date.now();
+      Object.keys(typingState).forEach(k => {
+        const t = typingState[k];
+        if (t && t.ts && (now - t.ts > 10000)) {
+          typingRef.child(k).remove();
+        }
+      });
+    });
+
+    /* 내가 나갈 때 자동 정리 */
+    if (userName && typingRef) {
+      typingRef.child(safeUserKey(userName)).onDisconnect().remove();
+      /* 페이지 전환·새로고침 시 즉시 정리 (onDisconnect는 보장이 안 됨) */
+      window.addEventListener('beforeunload', () => {
+        try { typingRef.child(safeUserKey(userName)).remove(); } catch(_) {}
+      });
+    }
 
     /* 탭 액션 버튼 표시 */
     $('chatTabActions').style.display = 'flex';
   }
   window.CHAT_INIT = initChat;
 
-  /* ── 패널 토글 ── */
-  $('chatTabBar').addEventListener('click', () => {
+  /* ── "입력 중..." 상태 ── */
+  let typingRef = null;
+  let typingState = {};
+  let typingPubTimer = null;
+  let typingStopTimer = null;
+
+  function safeUserKey(name) {
+    return (name || '익명').replace(/[.#$\/\[\]]/g, '_');
+  }
+
+  function publishTyping(active) {
+    if (!typingRef || !userName) return;
+    const key = safeUserKey(userName);
+    if (active) {
+      typingRef.child(key).set({
+        name: userName,
+        charId: (typeof activeId !== 'undefined' ? activeId : null),
+        ts: Date.now()
+      });
+    } else {
+      typingRef.child(key).remove();
+    }
+  }
+
+  function renderTypingIndicator() {
+    const el = $('chatTyping'); if (!el) return;
+    const me = safeUserKey(userName || '');
+    const now = Date.now();
+    /* 8초 이내 ts만 유효한 것으로 간주 (stale 방지) */
+    const others = Object.keys(typingState).filter(k => k !== me && typingState[k] && (now - (typingState[k].ts||0) < 8000));
+    if (others.length === 0) {
+      el.classList.add('empty');
+      el.innerHTML = '';
+      return;
+    }
+    el.classList.remove('empty');
+    /* 이름 결정: charId가 있고 시트에 캐릭터 이름이 있으면 그걸로 */
+    const names = others.map(k => {
+      const t = typingState[k];
+      const cid = t.charId;
+      if (cid && chars[cid] && chars[cid].data && chars[cid].data.fields && chars[cid].data.fields.name) {
+        return chars[cid].data.fields.name;
+      }
+      return t.name || '누군가';
+    });
+    let label;
+    if (names.length === 1) label = names[0] + '님이 입력 중';
+    else if (names.length === 2) label = names[0] + ', ' + names[1] + '님이 입력 중';
+    else label = names.length + '명이 입력 중';
+    el.innerHTML = '<span>' + label.replace(/</g,'&lt;') + '</span><span class="tdots"><span></span><span></span><span></span></span>';
+  }
+
+  function updateChatUnread() {
+    const el = $('chatUnread');
+    el.textContent = unreadCount > 99 ? '99+' : unreadCount;
+    el.classList.toggle('show', unreadCount > 0 && !(chatOpen && currentPanelViewIsChat()));
+    updateSideTabBadge();
+  }
+  function updateSideTabBadge() {
+    /* 닫혀 있을 때만: 채팅 미확인 + 굴림 보유 여부 */
+    const el = $('chatSideTabCount'); if (!el) return;
+    if (chatOpen) { el.classList.remove('show'); return; }
+    const diceN = (window.DICE_LOG && window.DICE_LOG.count) ? window.DICE_LOG.count() : 0;
+    const total = unreadCount + (diceN > 0 ? 1 : 0);
+    el.textContent = unreadCount > 99 ? '99+' : (unreadCount > 0 ? String(unreadCount) : (diceN > 0 ? '⚄' : '0'));
+    el.classList.toggle('show', total > 0);
+  }
+  window.UPDATE_SIDE_BADGE = updateSideTabBadge;
+  function currentPanelViewIsChat() {
+    return !window.PANEL_CURRENT || window.PANEL_CURRENT() === 'chat';
+  }
+  /* 통합 패널 로직에서 사용 */
+  window.CHAT_PANEL = {
+    isOpen: () => chatOpen,
+    setOpen: (v) => { chatOpen = v; $('chatPanel').classList.toggle('open', chatOpen); updateSideTabBadge(); },
+    markRead: () => { unreadCount = 0; updateChatUnread(); setTimeout(() => scrollChatBottom(), 320); },
+    scrollBottom: () => scrollChatBottom()
+  };
+
+  /* ── 패널 열고 닫기 (우측 사이드 탭 클릭) ── */
+  $('chatSideTab').addEventListener('click', () => {
     chatOpen = !chatOpen;
     $('chatPanel').classList.toggle('open', chatOpen);
     if (chatOpen) {
       unreadCount = 0;
-      const el = $('chatUnread');
-      el.textContent = '0'; el.classList.remove('show');
+      updateChatUnread();
       setTimeout(() => scrollChatBottom(), 320);
     }
+    updateSideTabBadge();
   });
 
   function scrollChatBottom() {
@@ -2455,7 +3970,7 @@
   /* ── 라이트박스 ── */
   function openLightbox(url, type) {
     const lb = $('chatLightbox');
-    lb.innerHTML = '<button class="chat-lightbox-close" id="chatLightboxClose">✕</button>';
+    lb.innerHTML = '<button class="chat-lightbox-close">✕</button>';
     if (type === 'video') {
       const vid = document.createElement('video');
       vid.src = url; vid.controls = true; vid.autoplay = true;
@@ -2492,6 +4007,11 @@
     };
     chatRef.push(payload);
     $('chatSendBtn').disabled = false;
+
+    /* 타이핑 상태 해제 */
+    publishTyping(false);
+    if (typingPubTimer) { clearInterval(typingPubTimer); typingPubTimer = null; }
+    clearTimeout(typingStopTimer);
   }
 
   $('chatSendBtn').addEventListener('click', sendChatMsg);
@@ -2504,10 +4024,33 @@
     ta.style.height = 'auto';
     ta.style.height = Math.min(ta.scrollHeight, 90) + 'px';
   }
-  $('chatTextInput').addEventListener('input', autoResizeTextarea);
+  $('chatTextInput').addEventListener('input', () => {
+    autoResizeTextarea();
+    /* 타이핑 상태 발행 (한 번만, 5초마다 갱신) */
+    if (!typingRef) return;
+    const hasText = ($('chatTextInput').value || '').trim().length > 0;
+    if (hasText) {
+      if (!typingPubTimer) {
+        publishTyping(true);
+        typingPubTimer = setInterval(() => publishTyping(true), 5000);
+      }
+      /* 4초 동안 입력이 없으면 자동 해제 */
+      clearTimeout(typingStopTimer);
+      typingStopTimer = setTimeout(() => {
+        publishTyping(false);
+        if (typingPubTimer) { clearInterval(typingPubTimer); typingPubTimer = null; }
+      }, 4000);
+    } else {
+      /* 빈 입력 → 즉시 해제 */
+      publishTyping(false);
+      if (typingPubTimer) { clearInterval(typingPubTimer); typingPubTimer = null; }
+      clearTimeout(typingStopTimer);
+    }
+  });
 
   /* ── 🧹 청소 (한 달 이상 된 메시지+Storage) ── */
-  $('chatCleanBtn').addEventListener('click', () => {
+  $('chatCleanBtn').addEventListener('click', (e) => {
+    e.stopPropagation();
     const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
     const cutDate = new Date(cutoff);
     const label = cutDate.getFullYear() + '년 ' + (cutDate.getMonth()+1) + '월 ' + cutDate.getDate() + '일';
