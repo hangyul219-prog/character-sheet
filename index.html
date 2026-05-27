@@ -170,11 +170,113 @@
 
   /* repeatable rows (skills, equipment, items) */
   .rows { display: flex; flex-direction: column; gap: 8px; }
-  .row { display: grid; gap: 8px; align-items: start; }
+  .row { display: grid; gap: 6px; align-items: start; }
   .row.skill { grid-template-columns: 1fr; }
-  .row.equip { grid-template-columns: 1.4fr 1fr; }
+  .row.equip { grid-template-columns: 1fr; }
   .row.item { grid-template-columns: 1fr auto; }
   .row .qty { width: 64px; }
+  /* skill/equip 서브행 */
+  .row-main { display: flex; gap: 6px; align-items: center; }
+  .row-main input.name-inp { flex: 1 1 0; min-width: 0; }
+  .row-main input.mod-inp  { width: 62px; flex-shrink: 0; text-align: center; font-family:'Cinzel',serif; font-weight:700; color: var(--gold-bright); }
+  .row-sub  { display: flex; gap: 6px; align-items: center; }
+  .row-sub input.fx-inp   { flex: 1 1 0; min-width: 0; font-size:13px; color: var(--text-secondary); font-style: italic; }
+  .roll-btn {
+    flex-shrink: 0; width: 30px; height: 30px; border-radius: 7px;
+    border: 1px solid var(--border-strong); background: rgba(212,175,82,0.1);
+    color: var(--gold-light); font-size: 16px; cursor: pointer; transition: all 0.18s;
+    display: flex; align-items: center; justify-content: center; padding: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .roll-btn:hover { background: rgba(212,175,82,0.25); border-color: var(--gold); transform: scale(1.1); }
+  .roll-btn:active { transform: scale(0.93); }
+
+  /* ── 주사위 모달 ── */
+  .dice-modal-bg {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.72); z-index: 500;
+    display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+    opacity: 0; visibility: hidden; transition: opacity 0.22s, visibility 0.22s;
+  }
+  .dice-modal-bg.open { opacity: 1; visibility: visible; }
+  .dice-modal {
+    background: linear-gradient(160deg, #16203a, #0e1628);
+    border: 1px solid var(--border-strong); border-radius: 14px;
+    padding: 24px 22px; width: min(480px, 95vw);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.7), 0 0 40px rgba(212,175,82,0.12);
+    transform: translateY(12px); transition: transform 0.22s;
+  }
+  .dice-modal-bg.open .dice-modal { transform: translateY(0); }
+  .dm-title { font-family:'Cinzel',serif; color: var(--gold-light); font-size:16px; letter-spacing:1px; margin-bottom:16px; text-align:center; }
+  .dm-section { margin-bottom:14px; }
+  .dm-label { font-family:'Cinzel',serif; font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color: var(--text-muted); margin-bottom:6px; }
+  /* 능력치 선택 버튼 */
+  .attr-btns { display:flex; gap:6px; flex-wrap:wrap; }
+  .attr-btn {
+    padding: 7px 14px; border-radius:8px; border:1px solid var(--border);
+    background: rgba(0,0,0,0.3); color: var(--text-secondary);
+    font-family:'Cinzel',serif; font-size:12px; cursor:pointer; transition:all 0.15s;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .attr-btn:hover { border-color:var(--gold); color:var(--gold-light); }
+  .attr-btn.sel { border-color:var(--gold); background:rgba(212,175,82,0.2); color:var(--gold-bright); box-shadow:0 0 10px rgba(212,175,82,0.25); }
+  /* 장비/기술 체크리스트 */
+  .dm-checklist { display:flex; flex-direction:column; gap:5px; max-height:160px; overflow-y:auto; }
+  .dm-check-item {
+    display:flex; align-items:center; gap:8px; padding:6px 10px; border-radius:7px;
+    border:1px solid var(--border); background:rgba(0,0,0,0.2); cursor:pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .dm-check-item:hover { border-color: var(--gold); background:rgba(212,175,82,0.07); }
+  .dm-check-item.checked { border-color:var(--gold); background:rgba(212,175,82,0.13); }
+  .dm-check-item input[type=checkbox] { accent-color:var(--gold); width:14px; height:14px; flex-shrink:0; cursor:pointer; }
+  .dm-check-name { font-family:'Crimson Pro',serif; font-size:14px; color:var(--text-primary); flex:1; }
+  .dm-check-mod  { font-family:'Cinzel',serif; font-size:12px; color:var(--gold-bright); flex-shrink:0; }
+  .dm-check-fx   { font-size:12px; color:var(--text-muted); font-style:italic; flex:1.2; text-align:right; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  /* 수정자 합계 & 굴림 버튼 */
+  .dm-mod-row { display:flex; align-items:center; gap:10px; }
+  .dm-mod-row .dm-label { margin:0; white-space:nowrap; }
+  .dm-total-mod { font-family:'Cinzel',serif; font-weight:700; font-size:18px; color:var(--gold-bright); min-width:40px; }
+  .dm-extra-mod { width:64px; text-align:center; font-family:'Cinzel',serif; font-size:14px; }
+  .dm-roll-btn {
+    margin-top:16px; width:100%; padding:12px; border-radius:10px;
+    border:1px solid var(--gold); background:linear-gradient(160deg,rgba(212,175,82,0.25),rgba(212,175,82,0.1));
+    color:var(--gold-bright); font-family:'Cinzel',serif; font-size:15px; letter-spacing:1.5px;
+    cursor:pointer; transition:all 0.2s;
+  }
+  .dm-roll-btn:hover { background:linear-gradient(160deg,rgba(212,175,82,0.4),rgba(212,175,82,0.2)); box-shadow:0 0 20px rgba(212,175,82,0.3); }
+  .dm-close { position:absolute; top:14px; right:16px; background:none; border:none; color:var(--text-muted); font-size:20px; cursor:pointer; line-height:1; }
+
+  /* ── 굴림 결과창 ── */
+  .roll-result {
+    margin-top:16px; padding:16px; border-radius:10px;
+    border:1px solid var(--border); background:rgba(0,0,0,0.3);
+    display:none;
+  }
+  .roll-result.show { display:block; animation: resultPop 0.3s cubic-bezier(0.16,1,0.3,1); }
+  @keyframes resultPop { from { opacity:0; transform:scale(0.93) translateY(6px); } to { opacity:1; transform:scale(1); } }
+  .rr-dice { display:flex; gap:10px; justify-content:center; margin-bottom:10px; flex-wrap:wrap; }
+  .rr-die {
+    width:52px; height:52px; border-radius:10px; display:flex; align-items:center; justify-content:center;
+    font-family:'Cinzel Decorative',serif; font-weight:700; font-size:22px;
+    border:2px solid var(--border); background:rgba(0,0,0,0.4);
+    transition: all 0.25s; position:relative;
+  }
+  .rr-die.hr { border-color:var(--gold); box-shadow:0 0 16px rgba(212,175,82,0.45); color:var(--gold-bright); }
+  .rr-die .die-label { position:absolute; bottom:-18px; font-size:9px; font-family:'Cinzel',serif; color:var(--text-muted); white-space:nowrap; letter-spacing:0.5px; }
+  .rr-sum { text-align:center; font-family:'Cinzel',serif; font-size:13px; color:var(--text-secondary); margin-bottom:8px; }
+  .rr-sum b { font-size:28px; color:var(--gold-bright); font-family:'Cinzel Decorative',serif; }
+  .rr-verdict {
+    text-align:center; font-family:'Cinzel',serif; font-size:14px; letter-spacing:1px; padding:7px 14px;
+    border-radius:8px; margin-bottom:8px;
+  }
+  .rr-verdict.fumble { background:rgba(168,40,40,0.2); border:1px solid rgba(168,40,40,0.5); color:#FF8080; }
+  .rr-verdict.crit   { background:rgba(212,175,82,0.2); border:1px solid rgba(212,175,82,0.6); color:var(--gold-bright); }
+  .rr-verdict.normal { background:rgba(0,0,0,0.2); border:1px solid var(--border); color:var(--text-secondary); }
+  .rr-hr   { text-align:center; font-family:'Cinzel',serif; font-size:12px; color:var(--text-muted); margin-bottom:6px; }
+  .rr-hr b { color:var(--gold-light); }
+  .rr-effects { display:flex; flex-direction:column; gap:4px; margin-top:8px; }
+  .rr-fx-item { font-size:13px; color:var(--arcane-light); font-style:italic; padding:4px 8px; background:rgba(123,92,196,0.1); border-radius:5px; border-left:2px solid var(--arcane); }
   .add-btn {
     margin-top: 10px; width: 100%; padding: 9px; background: rgba(212,175,82,0.08);
     border: 1px dashed var(--border-strong); border-radius: 7px; color: var(--gold-light);
@@ -466,8 +568,67 @@
     <label class="field"><span class="field-name">메모</span><textarea data-key="notes" placeholder="자유 기록"></textarea></label>
   </section>
 
+  <!-- ═══════ DICE MODAL ═══════ -->
+  <div class="dice-modal-bg" id="diceModalBg">
+    <div class="dice-modal" style="position:relative;">
+      <button class="dm-close" id="diceModalClose">✕</button>
+      <div class="dm-title">⚄ 판정 굴림</div>
+
+      <!-- 능력치 1 -->
+      <div class="dm-section">
+        <div class="dm-label">첫 번째 능력치</div>
+        <div class="attr-btns" id="attr1Btns">
+          <button class="attr-btn" data-attr="dex">민첩 DEX</button>
+          <button class="attr-btn" data-attr="ins">통찰 INS</button>
+          <button class="attr-btn" data-attr="mig">근력 MIG</button>
+          <button class="attr-btn" data-attr="wlp">의지 WLP</button>
+        </div>
+      </div>
+
+      <!-- 능력치 2 -->
+      <div class="dm-section">
+        <div class="dm-label">두 번째 능력치</div>
+        <div class="attr-btns" id="attr2Btns">
+          <button class="attr-btn" data-attr="dex">민첩 DEX</button>
+          <button class="attr-btn" data-attr="ins">통찰 INS</button>
+          <button class="attr-btn" data-attr="mig">근력 MIG</button>
+          <button class="attr-btn" data-attr="wlp">의지 WLP</button>
+        </div>
+      </div>
+
+      <!-- 장비/기술 선택 -->
+      <div class="dm-section">
+        <div class="dm-label">장비 &amp; 기술 효과 선택 (보정치 자동 합산)</div>
+        <div class="dm-checklist" id="dmChecklist"></div>
+      </div>
+
+      <!-- 수정자 합계 + 추가 수동 입력 -->
+      <div class="dm-section">
+        <div class="dm-mod-row">
+          <div class="dm-label">총 보정치</div>
+          <div class="dm-total-mod" id="dmTotalMod">+0</div>
+          <div class="dm-label" style="margin-left:12px;">추가</div>
+          <input type="number" class="dm-extra-mod" id="dmExtraMod" value="0" placeholder="±0">
+        </div>
+      </div>
+
+      <button class="dm-roll-btn" id="dmRollBtn">🎲 굴림!</button>
+
+      <!-- 결과 -->
+      <div class="roll-result" id="rollResult">
+        <div class="rr-dice" id="rrDice"></div>
+        <div style="margin-bottom:24px;"></div>
+        <div class="rr-sum" id="rrSum"></div>
+        <div class="rr-verdict" id="rrVerdict"></div>
+        <div class="rr-hr" id="rrHr"></div>
+        <div class="rr-effects" id="rrEffects"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- ═══════ TOOLBAR ═══════ -->
   <div class="toolbar">
+    <button class="tool-btn" id="rollShortcutBtn">⚄ 판정 굴림</button>
     <button class="tool-btn" id="saveBtn">💾 저장</button>
     <button class="tool-btn" id="loadBtn">📂 불러오기</button>
     <button class="tool-btn" id="printBtn">🖨 인쇄 / PDF</button>
@@ -597,8 +758,27 @@
   /* ---------- REPEATABLE ROWS ---------- */
   const templates = {
     class: () => `<div class="row" style="grid-template-columns:1fr 80px auto;"><input type="text" placeholder="직업명 (예: 가디언)" data-rk="name"><input type="number" placeholder="Lv" value="1" min="1" data-rk="lv"><button class="del-btn">✕</button></div>`,
-    equip: () => `<div class="row equip"><input type="text" placeholder="장비명" data-rk="name"><div style="display:flex;gap:8px;"><input type="text" placeholder="효과/비고" data-rk="note"><button class="del-btn">✕</button></div></div>`,
-    skill: () => `<div class="row" style="grid-template-columns:1fr auto;"><input type="text" placeholder="기술/주문 이름 — 효과, MP 비용 등" data-rk="text"><button class="del-btn">✕</button></div>`,
+    equip: () => `<div class="row equip">
+      <div class="row-main">
+        <input type="text" class="name-inp" placeholder="장비명" data-rk="name">
+        <input type="text" class="mod-inp" placeholder="±0" data-rk="mod" title="보정치 (예: +1, -2)">
+        <button class="del-btn">✕</button>
+      </div>
+      <div class="row-sub">
+        <input type="text" class="fx-inp" placeholder="효과 설명 (예: DEF+2, 빙결 면역...)" data-rk="fx">
+      </div>
+    </div>`,
+    skill: () => `<div class="row skill">
+      <div class="row-main">
+        <input type="text" class="name-inp" placeholder="기술/주문 이름" data-rk="name">
+        <input type="text" class="mod-inp" placeholder="±0" data-rk="mod" title="보정치 (예: +2)">
+        <button class="roll-btn" title="이 기술로 굴림">⚄</button>
+        <button class="del-btn">✕</button>
+      </div>
+      <div class="row-sub">
+        <input type="text" class="fx-inp" placeholder="효과 설명 (예: 【DEX+INS】 명중, HR+5 물리피해...)" data-rk="fx">
+      </div>
+    </div>`,
     item: () => `<div class="row item"><input type="text" placeholder="아이템명 / 효과" data-rk="name"><div style="display:flex;gap:8px;"><input type="text" class="qty" placeholder="수량" data-rk="qty"><button class="del-btn">✕</button></div></div>`
   };
   function addRow(type, data) {
@@ -608,6 +788,9 @@
     const row = wrap.firstChild;
     if (data) row.querySelectorAll('[data-rk]').forEach(inp => { if (data[inp.dataset.rk] !== undefined) inp.value = data[inp.dataset.rk]; });
     row.querySelector('.del-btn').addEventListener('click', () => row.remove());
+    /* 기술 행 굴림 버튼 — 해당 기술 미리 체크된 상태로 모달 오픈 */
+    const rollBtn = row.querySelector('.roll-btn');
+    if (rollBtn) rollBtn.addEventListener('click', () => openDiceModal(row));
     container.appendChild(row);
     return row;
   }
@@ -690,6 +873,247 @@
   $('level').addEventListener('input', calc);
   document.querySelectorAll('[data-attr]').forEach(s => s.addEventListener('change', calc));
   ['defBonus','mdefBonus','initBonus'].forEach(id => $(id).addEventListener('input', calc));
+
+  /* ════════════════════════════════
+     주사위 모달 로직
+  ════════════════════════════════ */
+  const DIE_SIDES = { dex: () => DIE[document.querySelector('[data-attr=dex]').value],
+                      ins: () => DIE[document.querySelector('[data-attr=ins]').value],
+                      mig: () => DIE[document.querySelector('[data-attr=mig]').value],
+                      wlp: () => DIE[document.querySelector('[data-attr=wlp]').value] };
+  const ATTR_KO = { dex:'민첩', ins:'통찰', mig:'근력', wlp:'의지력' };
+
+  let diceModalPresetRow = null; // 기술 버튼으로 열었을 때 해당 row
+  let selectedAttr1 = null, selectedAttr2 = null;
+
+  function openDiceModal(presetRow) {
+    diceModalPresetRow = presetRow || null;
+    selectedAttr1 = null; selectedAttr2 = null;
+
+    // 능력치 버튼 초기화
+    document.querySelectorAll('#attr1Btns .attr-btn, #attr2Btns .attr-btn').forEach(b => b.classList.remove('sel'));
+
+    // 체크리스트 빌드
+    buildChecklist(presetRow);
+
+    // 수정자 초기화
+    $('dmExtraMod').value = 0;
+    updateTotalMod();
+
+    // 결과 숨김
+    $('rollResult').classList.remove('show');
+
+    $('diceModalBg').classList.add('open');
+  }
+
+  function buildChecklist(presetRow) {
+    const list = $('dmChecklist');
+    list.innerHTML = '';
+    const items = [];
+
+    // 장착 슬롯 (이름+fx+mod)
+    ['slot_armor','slot_acc','slot_main','slot_off'].forEach(key => {
+      const el = document.querySelector('[data-key="' + key + '"]');
+      if (el && el.value.trim()) {
+        items.push({ name: el.value.trim(), mod: 0, fx: '', source: 'slot' });
+      }
+    });
+
+    // 소지 장비 rows
+    document.querySelectorAll('#equipRows .row').forEach(r => {
+      const name = r.querySelector('[data-rk=name]');
+      const mod  = r.querySelector('[data-rk=mod]');
+      const fx   = r.querySelector('[data-rk=fx]');
+      if (name && name.value.trim()) {
+        items.push({
+          name: name.value.trim(),
+          mod:  parseModStr(mod ? mod.value : ''),
+          fx:   fx ? fx.value.trim() : '',
+          source: 'equip'
+        });
+      }
+    });
+
+    // 기술/주문 rows
+    document.querySelectorAll('#skillRows .row').forEach(r => {
+      const name = r.querySelector('[data-rk=name]');
+      const mod  = r.querySelector('[data-rk=mod]');
+      const fx   = r.querySelector('[data-rk=fx]');
+      if (name && name.value.trim()) {
+        items.push({
+          name: name.value.trim(),
+          mod:  parseModStr(mod ? mod.value : ''),
+          fx:   fx ? fx.value.trim() : '',
+          source: 'skill',
+          row: r
+        });
+      }
+    });
+
+    items.forEach(item => {
+      const isPreset = presetRow && item.row === presetRow;
+      const div = document.createElement('div');
+      div.className = 'dm-check-item' + (isPreset ? ' checked' : '');
+
+      const cb = document.createElement('input');
+      cb.type = 'checkbox'; cb.checked = isPreset;
+
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'dm-check-name'; nameSpan.textContent = item.name;
+
+      const modSpan = document.createElement('span');
+      modSpan.className = 'dm-check-mod';
+      modSpan.textContent = item.mod !== 0 ? (item.mod > 0 ? '+' : '') + item.mod : '';
+
+      const fxSpan = document.createElement('span');
+      fxSpan.className = 'dm-check-fx'; fxSpan.textContent = item.fx || '';
+      fxSpan.title = item.fx || '';
+
+      div.appendChild(cb); div.appendChild(nameSpan); div.appendChild(modSpan); div.appendChild(fxSpan);
+
+      div.addEventListener('click', e => {
+        if (e.target === cb) return; // 체크박스 직접 클릭은 네이티브 처리
+        cb.checked = !cb.checked;
+        div.classList.toggle('checked', cb.checked);
+        updateTotalMod();
+      });
+      cb.addEventListener('change', () => {
+        div.classList.toggle('checked', cb.checked);
+        updateTotalMod();
+      });
+
+      list.appendChild(div);
+    });
+
+    if (items.length === 0) {
+      list.innerHTML = '<div style="color:var(--text-muted);font-size:13px;font-style:italic;padding:6px;">장비·기술을 먼저 시트에 입력하세요</div>';
+    }
+    updateTotalMod();
+  }
+
+  function parseModStr(s) {
+    if (!s || !s.trim()) return 0;
+    const n = parseInt(s.replace(/\s/g,''));
+    return isNaN(n) ? 0 : n;
+  }
+
+  function getCheckedItems() {
+    const items = [];
+    $('dmChecklist').querySelectorAll('.dm-check-item').forEach(div => {
+      const cb = div.querySelector('input[type=checkbox]');
+      if (!cb || !cb.checked) return;
+      const mod  = parseModStr(div.querySelector('.dm-check-mod').textContent);
+      const fx   = div.querySelector('.dm-check-fx').textContent.trim();
+      const name = div.querySelector('.dm-check-name').textContent.trim();
+      items.push({ name, mod, fx });
+    });
+    return items;
+  }
+
+  function updateTotalMod() {
+    const fromItems = getCheckedItems().reduce((s, i) => s + i.mod, 0);
+    const extra     = parseModStr($('dmExtraMod').value);
+    const total     = fromItems + extra;
+    $('dmTotalMod').textContent = (total >= 0 ? '+' : '') + total;
+  }
+
+  // 능력치 버튼 클릭
+  document.querySelectorAll('#attr1Btns .attr-btn').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('#attr1Btns .attr-btn').forEach(x => x.classList.remove('sel'));
+      b.classList.add('sel'); selectedAttr1 = b.dataset.attr;
+    });
+  });
+  document.querySelectorAll('#attr2Btns .attr-btn').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('#attr2Btns .attr-btn').forEach(x => x.classList.remove('sel'));
+      b.classList.add('sel'); selectedAttr2 = b.dataset.attr;
+    });
+  });
+
+  // 추가 수정자 변경 시 합계 갱신
+  $('dmExtraMod').addEventListener('input', updateTotalMod);
+
+  // 굴림 실행
+  $('dmRollBtn').addEventListener('click', () => {
+    if (!selectedAttr1 || !selectedAttr2) {
+      toast('능력치 두 개를 선택하세요!'); return;
+    }
+    const sides1 = DIE_SIDES[selectedAttr1]();
+    const sides2 = DIE_SIDES[selectedAttr2]();
+    const r1 = Math.ceil(Math.random() * sides1);
+    const r2 = Math.ceil(Math.random() * sides2);
+
+    const checkedItems = getCheckedItems();
+    const fromItems = checkedItems.reduce((s, i) => s + i.mod, 0);
+    const extra     = parseModStr($('dmExtraMod').value);
+    const totalMod  = fromItems + extra;
+
+    const rawSum = r1 + r2;
+    const finalSum = rawSum + totalMod;
+    const hr = Math.max(r1, r2);
+
+    // 판정 결과
+    const isFumble = r1 === 1 && r2 === 1;
+    const isCrit   = !isFumble && r1 === r2 && r1 >= 6;
+
+    // 주사위 표시
+    const diceDiv = $('rrDice'); diceDiv.innerHTML = '';
+    [[r1, 'd' + sides1, r1 >= r2], [r2, 'd' + sides2, r2 >= r1]].forEach(([val, label, isHr]) => {
+      const d = document.createElement('div');
+      d.className = 'rr-die' + (isHr ? ' hr' : '');
+      d.innerHTML = val + '<span class="die-label">' + label + '</span>';
+      diceDiv.appendChild(d);
+    });
+
+    // 수정자 표시
+    if (totalMod !== 0) {
+      const modD = document.createElement('div');
+      modD.className = 'rr-die';
+      modD.style.borderColor = totalMod > 0 ? 'var(--emerald)' : 'var(--crimson-light)';
+      modD.style.color       = totalMod > 0 ? 'var(--emerald-light)' : 'var(--hp-light)';
+      modD.style.fontSize    = '16px';
+      modD.innerHTML = (totalMod > 0 ? '+' : '') + totalMod + '<span class="die-label">보정</span>';
+      diceDiv.appendChild(modD);
+    }
+
+    // 합계
+    const attrLabel = ATTR_KO[selectedAttr1] + ' + ' + ATTR_KO[selectedAttr2]
+                    + (totalMod !== 0 ? (totalMod > 0 ? ' +' : ' ') + totalMod : '');
+    $('rrSum').innerHTML = attrLabel + '<br><b>' + finalSum + '</b>';
+
+    // 판정 결과 뱃지
+    const verdict = $('rrVerdict');
+    if (isFumble) {
+      verdict.className = 'rr-verdict fumble'; verdict.textContent = '💀 실패 — 둘 다 1! 상대방이 기회를 얻습니다';
+    } else if (isCrit) {
+      verdict.className = 'rr-verdict crit'; verdict.textContent = '✨ 대성공! 자동 성공 + 기회 발동 가능';
+    } else {
+      verdict.className = 'rr-verdict normal'; verdict.textContent = '합계 ' + finalSum + ' — 난이도와 비교하세요';
+    }
+
+    // HR
+    $('rrHr').innerHTML = '높은 굴림 (HR) <b>' + hr + '</b> — 피해·주문 효과 계산에 사용';
+
+    // 선택된 효과 텍스트
+    const fxDiv = $('rrEffects'); fxDiv.innerHTML = '';
+    checkedItems.filter(i => i.fx).forEach(i => {
+      const p = document.createElement('div');
+      p.className = 'rr-fx-item';
+      p.textContent = '⚡ [' + i.name + '] ' + i.fx;
+      fxDiv.appendChild(p);
+    });
+
+    $('rollResult').classList.add('show');
+  });
+
+  // 모달 닫기
+  $('diceModalClose').addEventListener('click', () => $('diceModalBg').classList.remove('open'));
+  $('diceModalBg').addEventListener('click', e => { if (e.target === $('diceModalBg')) $('diceModalBg').classList.remove('open'); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') $('diceModalBg').classList.remove('open'); });
+
+  // 툴바 버튼
+  $('rollShortcutBtn').addEventListener('click', () => openDiceModal(null));
 
   /* ---------- INIT ---------- */
   function seedRows() {
