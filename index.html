@@ -2452,17 +2452,7 @@
         avatarColor = ch.data.portrait && ch.data.portrait.color;
         charName    = ch.data.fields && ch.data.fields.name;
       }
-	const liveName =
-	(chars[msg.charId] &&
-	chars[msg.charId].data &&
-	chars[msg.charId].data.fields &&
-	chars[msg.charId].data.fields.name) || '';
-
-	const displayName =
-	(liveName && liveName.trim()) ||
-	(charName && charName.trim()) ||
-	msg.sender ||
-	'???';
+      const displayName = (charName && charName.trim()) || msg.sender || '???';
 
       /* 아바타 */
       const avatar = document.createElement('div');
