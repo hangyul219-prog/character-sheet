@@ -1449,12 +1449,13 @@
   .bgm-chip .chip-mute { margin-left: auto; opacity: 0.7; }
 
   .bgm-unlock {
-    position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%);
-    z-index: 360; display: none; align-items: center; gap: 8px;
-    padding: 10px 18px; border-radius: 30px; cursor: pointer;
-    background: linear-gradient(160deg, rgba(212,175,82,0.9), rgba(154,116,32,0.9));
-    color: #1a1206; font-family: 'Cinzel', serif; font-size: 13px; font-weight: 700;
-    box-shadow: 0 6px 24px rgba(0,0,0,0.5);
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    z-index: 9999; display: none; align-items: center; gap: 10px;
+    padding: 16px 28px; border-radius: 30px; cursor: pointer;
+    background: linear-gradient(160deg, rgba(212,175,82,0.97), rgba(154,116,32,0.97));
+    color: #1a1206; font-family: 'Cinzel', serif; font-size: 16px; font-weight: 700;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.7), 0 0 0 4px rgba(212,175,82,0.3);
+    white-space: nowrap;
   }
   .bgm-unlock.show { display: flex; animation: chatMsgIn 0.3s ease; }
 
@@ -2159,7 +2160,7 @@
 </div>
 <!-- 유튜브 플레이어 컨테이너 — GM 사이드바 밖에 둬야 비-GM 플레이어도 부모 display:none에 묻히지 않고 오디오 재생 가능 -->
 
-<div class="bgm-unlock" id="bgmUnlock">🔊 BGM이 재생 중입니다 — 탭하여 듣기</div>
+<div class="bgm-unlock" id="bgmUnlock">🔊 음악이 재생 중입니다 — 여기를 눌러 듣기</div>
 
 <!-- 플레이어용 BGM 상태 칩 (방의 모두에게 표시) -->
 <div class="bgm-chip" id="bgmChip" title="음소거 / 해제">
@@ -4019,11 +4020,14 @@
   function initBgm(room) {
     if (!db) return;
     bgmRef = db.ref('rooms/' + room + '/bgm/tracks');
+    let bgmFirstLoad = true;
     bgmRef.on('value', s => {
       bgmTracks = s.val() || {};
       renderBgmTracks();
       syncAllAudios();
       updateBgmChip();
+      /* ★ 방 입장 직후 첫 수신 시 — 이미 재생 중인 트랙이 있으면 즉시 배너 표시 */
+      if (bgmFirstLoad) { bgmFirstLoad = false; bgmCheckOnJoin(); }
     });
   }
 
@@ -4144,7 +4148,7 @@
   let bgmAudioUnlocked = false;
 
   function showBgmUnlock() {
-    if (bgmAudioUnlocked) return;
+    /* ★ bgmAudioUnlocked 체크 제거 — 재생이 막힐 때마다 배너를 다시 보여줌 */
     const el = $('bgmUnlock'); if (!el) return;
     el.classList.add('show');
   }
@@ -4155,11 +4159,20 @@
       bgmAudioUnlocked = true;
       Object.keys(bgmAudios).forEach(id => {
         const t = bgmTracks[id];
-        if (t && t.playing) { try { bgmAudios[id].play(); } catch(_) {} }
+        if (t && t.playing) {
+          try { bgmAudios[id].play().catch(() => {}); } catch(_) {}
+        }
       });
       unlock.classList.remove('show');
     });
   })();
+
+  /* ★ 방 입장 후 이미 재생 중인 트랙이 있으면 즉시 잠금해제 배너를 띄움
+     (브라우저 자동재생 정책으로 인해 플레이어 쪽 오디오가 막히는 문제 해결) */
+  function bgmCheckOnJoin() {
+    const hasPlaying = Object.values(bgmTracks).some(t => t.playing);
+    if (hasPlaying) showBgmUnlock();
+  }
 
   function updateBgmChip() {
     const playingIds = Object.keys(bgmTracks).filter(id => bgmTracks[id].playing);
