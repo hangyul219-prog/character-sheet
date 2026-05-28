@@ -789,7 +789,18 @@
   }
   .ptab:hover { border-color: var(--gold); color: var(--gold-light); transform: translateY(-2px); }
   .ptab.active { border-color: var(--gold); color: var(--gold-bright); background: linear-gradient(160deg, rgba(212,175,82,0.22), rgba(212,175,82,0.06)); box-shadow: 0 4px 14px rgba(0,0,0,0.4), 0 0 16px rgba(212,175,82,0.3); }
-  .ptab .dot { width:7px; height:7px; border-radius:50%; background: var(--emerald-light); box-shadow:0 0 6px var(--emerald-light); flex-shrink:0; }
+  .ptab .dot { width:7px; height:7px; border-radius:50%; background: #555; flex-shrink:0; transition: background 0.3s, box-shadow 0.3s; }
+  .ptab .dot.online { background: var(--gold-light); box-shadow: 0 0 7px var(--gold), 0 0 14px rgba(212,175,82,0.5); animation: dotPulse 2.4s ease-in-out infinite; }
+  .ptab .dot.offline { background: #555; box-shadow: none; }
+  @keyframes dotPulse {
+    0%, 100% { box-shadow: 0 0 5px var(--gold), 0 0 10px rgba(212,175,82,0.4); }
+    50% { box-shadow: 0 0 10px var(--gold), 0 0 22px rgba(212,175,82,0.75); }
+  }
+  .ptab.online-tab { border-color: rgba(212,175,82,0.55); background: linear-gradient(160deg, rgba(212,175,82,0.12), rgba(212,175,82,0.04)); box-shadow: 0 0 14px rgba(212,175,82,0.18), inset 0 0 10px rgba(212,175,82,0.06); color: var(--gold-light); }
+  .ptab.online-tab:hover { border-color: var(--gold); box-shadow: 0 0 20px rgba(212,175,82,0.35), inset 0 0 12px rgba(212,175,82,0.1); }
+  .ptab.offline-tab { border-color: rgba(100,100,100,0.35); background: linear-gradient(160deg, rgba(40,40,40,0.5), rgba(20,20,20,0.4)); color: #888; }
+  .ptab.offline-tab:hover { border-color: #777; color: #aaa; }
+  .ptab.active.online-tab { border-color: var(--gold); background: linear-gradient(160deg, rgba(212,175,82,0.28), rgba(212,175,82,0.1)); box-shadow: 0 4px 14px rgba(0,0,0,0.4), 0 0 22px rgba(212,175,82,0.45); color: var(--gold-bright); }
   .ptab .close { margin-left:2px; opacity:0.5; font-size:14px; padding:0 2px; }
   .ptab .close:hover { opacity:1; color: var(--crimson-light); }
   .ptab-add { flex-shrink:0; padding: 9px 14px; border-radius:9px; cursor:pointer; background: rgba(212,175,82,0.08); border:1px dashed var(--border-strong); color: var(--gold-light); font-family:'Cinzel',serif; font-size:13px; transition:all 0.2s; }
@@ -1235,15 +1246,13 @@
   }
   .battle-token {
     position: absolute; transform: translate(-50%, -50%);
-    border-radius: 50%; overflow: hidden; cursor: grab;
-    border: 2px solid var(--gold); background: rgba(0,0,0,0.5);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.6), 0 0 10px rgba(212,175,82,0.3);
-    touch-action: none; transition: box-shadow 0.15s;
+    cursor: grab;
+    touch-action: none; transition: filter 0.15s;
   }
   .battle-token.remote-move { transition: left 0.18s linear, top 0.18s linear; }
-  .battle-token img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; -webkit-user-drag: none; }
-  .battle-token.selected { border-color: var(--gold-bright); box-shadow: 0 0 0 2px var(--gold-bright), 0 0 16px rgba(212,175,82,0.6); z-index: 5; }
-  .battle-token.dragging { cursor: grabbing; z-index: 6; box-shadow: 0 6px 18px rgba(0,0,0,0.7), 0 0 18px rgba(212,175,82,0.6); }
+  .battle-token img { width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none; -webkit-user-drag: none; }
+  .battle-token.selected { filter: drop-shadow(0 0 6px var(--gold-bright)) drop-shadow(0 0 12px rgba(212,175,82,0.6)); z-index: 5; }
+  .battle-token.dragging { cursor: grabbing; z-index: 6; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.7)) drop-shadow(0 0 14px rgba(212,175,82,0.6)); }
   .token-tools {
     position: absolute; top: -34px; left: 50%; transform: translateX(-50%);
     display: none; gap: 4px; background: rgba(10,14,26,0.95); border: 1px solid var(--border-strong);
@@ -1899,11 +1908,11 @@
         <div class="gm-empty-note" id="bgmEmpty">재생목록이 비어 있습니다. 유튜브 URL을 추가해 보세요. 여러 곡을 동시에 재생할 수 있습니다.</div>
       </div>
       <p class="gm-hint">여러 곡을 동시에 틀 수 있습니다 (전투 음악 + 앰비언트 등). 재생 상태는 같은 방의 모두에게 공유됩니다. 모바일은 동시 재생이 제한될 수 있어요.</p>
-      <!-- 유튜브 플레이어가 생성되는 숨겨진 영역 -->
-      <div id="bgmPlayers" style="position:absolute;width:0;height:0;overflow:hidden;left:-9999px;"></div>
     </div>
   </div>
 </div>
+<!-- 유튜브 플레이어 컨테이너 — GM 사이드바 밖에 둬야 비-GM 플레이어도 부모 display:none에 묻히지 않고 오디오 재생 가능 -->
+<div id="bgmPlayers" style="position:fixed; right:0; bottom:0; width:1px; height:1px; opacity:0.01; pointer-events:none; z-index:-1; overflow:hidden;"></div>
 <div class="bgm-unlock" id="bgmUnlock">🔊 BGM이 재생 중입니다 — 탭하여 듣기</div>
 
 <!-- 플레이어용 BGM 상태 칩 (방의 모두에게 표시) -->
@@ -2800,6 +2809,8 @@
   const configured = firebaseConfig.apiKey !== "YOUR_API_KEY";
 
   let roomCode = null, userName = null, myCharId = null;
+  let presenceRef = null;          // rooms/<room>/presence 노드
+  const onlineUsers = new Set();   // 현재 온라인 중인 charId 집합
   let isGameMaster = false;
   let chars = {};
   let activeId = null;
@@ -2935,6 +2946,20 @@
       if (activeId !== myCharId) applyToSheet(activeId);
     });
 
+    /* ── Presence (접속 상태) ── */
+    presenceRef = db.ref('rooms/' + roomCode + '/presence');
+    const myPresence = presenceRef.child(myCharId);
+    myPresence.set({ name: userName, ts: Date.now() });
+    myPresence.onDisconnect().remove();
+    /* 새로고침·탭 닫기 시 즉시 정리 */
+    window.addEventListener('beforeunload', () => { try { myPresence.remove(); } catch(_) {} });
+    presenceRef.on('value', snap => {
+      onlineUsers.clear();
+      const val = snap.val() || {};
+      Object.keys(val).forEach(k => onlineUsers.add(k));
+      renderTabs();
+    });
+
     /* ── 주사위 기록 실시간 구독 ── */
     subscribeDiceLog(roomCode);
     /* ── 채팅 초기화 ── */
@@ -3025,6 +3050,8 @@
       if (interactive && isGameMaster) {
         const tools = document.createElement('div');
         tools.className = 'token-tools';
+        /* 도구 버튼 위에서 발생한 pointerdown은 토큰 드래그를 시작시키지 않도록 차단 */
+        tools.addEventListener('pointerdown', e => e.stopPropagation());
         const minus = document.createElement('button'); minus.textContent = '−'; minus.title = '작게';
         const plus  = document.createElement('button'); plus.textContent = '＋'; plus.title = '크게';
         const del   = document.createElement('button'); del.className = 'del'; del.textContent = '🗑'; del.title = '삭제';
@@ -3060,12 +3087,19 @@
 
     function pointerDown(e) {
       e.preventDefault();
+      e.stopPropagation();
+      /* 다른 토큰들에서 selected 제거하고 이 토큰만 선택 — DOM 갈아엎지 않음 */
+      const board = el.parentElement;
+      if (board) board.querySelectorAll('.battle-token.selected').forEach(t => { if (t !== el) t.classList.remove('selected'); });
+      el.classList.add('selected');
       bmSelected = id;
-      renderTokens();
       dragging = true;
       el.classList.add('dragging');
+      /* 포인터 캡쳐 — 빠른 이동도 안 놓침 */
+      try { el.setPointerCapture && el.setPointerCapture(e.pointerId); } catch(_) {}
       document.addEventListener('pointermove', pointerMove);
       document.addEventListener('pointerup', pointerUp);
+      document.addEventListener('pointercancel', pointerUp);
     }
     function pointerMove(e) {
       if (!dragging) return;
@@ -3091,6 +3125,7 @@
       if (pending && bmRef) bmRef.child('tokens').child(id).update(pending);
       document.removeEventListener('pointermove', pointerMove);
       document.removeEventListener('pointerup', pointerUp);
+      document.removeEventListener('pointercancel', pointerUp);
     }
     el.addEventListener('pointerdown', pointerDown);
   }
@@ -3392,14 +3427,24 @@
       if (!ytPlayers[id]) {
         const div = document.createElement('div');
         div.id = 'ytp_' + id;
+        /* zero-size iframe은 일부 브라우저가 오디오를 정지시킴 → 작지만 0이 아닌 크기 */
+        div.style.cssText = 'width:1px; height:1px; opacity:0.01;';
         $('bgmPlayers').appendChild(div);
         ytPlayers[id] = new YT.Player(div.id, {
-          height: '0', width: '0', videoId: t.videoId,
-          playerVars: { autoplay: 0, controls: 0, disablekb: 1, playsinline: 1 },
+          height: '1', width: '1', videoId: t.videoId,
+          playerVars: {
+            autoplay: 1, controls: 0, disablekb: 1, playsinline: 1,
+            modestbranding: 1, rel: 0, enablejsapi: 1,
+            origin: window.location.origin
+          },
           events: {
             onReady: (e) => {
               try { e.target.setVolume(t.volume != null ? t.volume : 60); } catch(_) {}
               applyTrackState(id);
+            },
+            onError: (e) => {
+              console.warn('[BGM] YouTube error for', t.videoId, e.data);
+              window.SHEET && window.SHEET.toast('재생 불가: 영상이 외부 사이트에서 막혀 있을 수 있어요 (다른 곡 시도)');
             },
             onStateChange: (e) => {
               /* 종료 시 반복 처리 */
@@ -3437,11 +3482,38 @@
       const PLAYING = (window.YT && YT.PlayerState && YT.PlayerState.PLAYING) || 1;
       if (t.playing && state !== PLAYING) {
         p.playVideo();
+        /* 1초 뒤에도 재생 상태가 아니면 자동재생 차단으로 보고 잠금 해제 배너 표시 */
+        setTimeout(() => {
+          try {
+            const s = p.getPlayerState();
+            if (bgmTracks[id] && bgmTracks[id].playing && s !== PLAYING && s !== 3 /*BUFFERING*/) {
+              showBgmUnlock();
+            }
+          } catch(_) {}
+        }, 1200);
       } else if (!t.playing && state === PLAYING) {
         p.pauseVideo();
       }
     } catch(_) {}
   }
+
+  function showBgmUnlock() {
+    if (bgmAudioUnlocked) return;
+    const el = $('bgmUnlock'); if (!el) return;
+    el.classList.add('show');
+  }
+  /* 잠금 해제 배너를 누르면 사용자 제스처와 함께 모든 재생 중 트랙을 다시 play */
+  (function bindBgmUnlock() {
+    const unlock = $('bgmUnlock'); if (!unlock) return;
+    unlock.addEventListener('click', () => {
+      bgmAudioUnlocked = true;
+      Object.keys(ytPlayers).forEach(id => {
+        const t = bgmTracks[id];
+        if (t && t.playing) { try { ytPlayers[id].playVideo(); } catch(_) {} }
+      });
+      unlock.classList.remove('show');
+    });
+  })();
 
   function updateBgmChip() {
     const playingIds = Object.keys(bgmTracks).filter(id => bgmTracks[id].playing);
@@ -3504,10 +3576,15 @@
       const editable = canEdit(id);
 
       const tab = document.createElement('div');
-      tab.className = 'ptab' + (id === activeId ? ' active' : '');
+      const isOnline = onlineUsers.size > 0 ? onlineUsers.has(id) : (id === myCharId);
+      tab.className = 'ptab'
+        + (id === activeId ? ' active' : '')
+        + (isOnline ? ' online-tab' : ' offline-tab');
 
       /* 탭 내용: 도트 + 이름 */
-      const dot = document.createElement('span'); dot.className = 'dot';
+      const dot = document.createElement('span');
+      dot.className = 'dot ' + (isOnline ? 'online' : 'offline');
+      dot.title = isOnline ? '접속 중' : '오프라인';
       const lbl = document.createElement('span'); lbl.textContent = displayName;
       tab.appendChild(dot);
       tab.appendChild(lbl);
