@@ -1436,6 +1436,124 @@
   .chat-typing .tdots span:nth-child(3) { animation-delay: 0.4s; }
   @keyframes tdot { 0%,80%,100% { opacity: 0.25; transform: scale(0.7); } 40% { opacity: 1; transform: scale(1.1); } }
 
+  /* ══════════════════════════════════════
+     몬스터 시트 스타일
+  ══════════════════════════════════════ */
+  .monster-list { display: flex; flex-direction: column; gap: 10px; }
+  .monster-card {
+    border: 1px solid var(--border-strong); border-radius: 12px;
+    background: linear-gradient(160deg, rgba(12,17,30,0.9), rgba(8,12,22,0.95));
+    overflow: hidden; position: relative;
+  }
+  .monster-card.rank-엘리트 { border-left: 3px solid var(--arcane-light); }
+  .monster-card.rank-챔피언 { border-left: 3px solid var(--gold); }
+  .monster-card.rank-보스   { border-left: 3px solid var(--crimson-light); box-shadow: 0 0 18px rgba(168,40,40,0.2); }
+  .mc-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 12px; cursor: pointer;
+    background: linear-gradient(90deg, rgba(255,255,255,0.03), transparent);
+    border-bottom: 1px solid rgba(212,175,82,0.1); user-select: none;
+  }
+  .mc-header:hover { background: linear-gradient(90deg, rgba(212,175,82,0.06), transparent); }
+  .mc-collapse-arrow { font-size: 10px; color: var(--text-muted); transition: transform 0.2s; flex-shrink: 0; }
+  .monster-card.collapsed .mc-collapse-arrow { transform: rotate(-90deg); }
+  .mc-name { font-family: 'Cinzel', serif; font-size: 14px; color: var(--gold-light); flex: 1; }
+  .mc-level-badge { font-family: 'Cinzel', serif; font-size: 10px; padding: 2px 7px; border-radius: 10px; background: rgba(212,175,82,0.12); color: var(--text-secondary); border: 1px solid rgba(212,175,82,0.25); flex-shrink: 0; }
+  .mc-rank-badge  { font-family: 'Cinzel', serif; font-size: 9px; padding: 2px 7px; border-radius: 10px; background: rgba(255,255,255,0.07); color: var(--text-muted); border: 1px solid var(--border); flex-shrink: 0; }
+  .mc-species-badge { font-family: 'Cinzel', serif; font-size: 9px; padding: 2px 7px; border-radius: 10px; background: rgba(63,166,124,0.1); color: var(--emerald-light); border: 1px solid rgba(63,166,124,0.25); flex-shrink: 0; }
+  .mc-del { flex-shrink: 0; width: 22px; height: 22px; border-radius: 5px; border: 1px solid rgba(168,40,40,0.3); background: rgba(168,40,40,0.12); color: var(--crimson-light); font-size: 12px; cursor: pointer; line-height: 1; }
+  .mc-del:hover { background: rgba(168,40,40,0.3); }
+  .mc-body { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+  .monster-card.collapsed .mc-body { display: none; }
+  .mc-traits { font-family: 'Crimson Pro', serif; font-size: 12px; color: var(--text-muted); font-style: italic; padding: 4px 0; }
+  .mc-attrs { display: grid; grid-template-columns: repeat(4,1fr) repeat(3,1fr); gap: 5px; align-items: end; }
+  .mc-attr-cell { text-align: center; background: rgba(0,0,0,0.25); border: 1px solid var(--border); border-radius: 7px; padding: 6px 3px; }
+  .mc-attr-abbr { font-family: 'Cinzel', serif; font-size: 9px; color: var(--gold); }
+  .mc-attr-val  { font-family: 'Cinzel', serif; font-size: 15px; font-weight: 700; color: var(--gold-bright); margin-top: 2px; }
+  .mc-stat-cell { text-align: center; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 7px; padding: 5px 3px; }
+  .mc-stat-lbl  { font-family: 'Cinzel', serif; font-size: 8px; color: var(--text-muted); }
+  .mc-stat-val  { font-family: 'Cinzel', serif; font-size: 12px; color: var(--text-secondary); margin-top: 1px; }
+  .mc-vitals { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .mc-vital-box { background: rgba(0,0,0,0.3); border-radius: 9px; padding: 8px 9px; border: 1px solid var(--border); }
+  .mc-vital-box.hp-box { border-color: rgba(200,52,46,0.35); }
+  .mc-vital-box.mp-box { border-color: rgba(58,120,200,0.35); }
+  .mc-vital-label { font-family: 'Cinzel', serif; font-size: 10px; color: var(--text-muted); margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between; }
+  .mc-vital-label b { font-size: 12px; }
+  .mc-vital-box.hp-box .mc-vital-label b { color: var(--hp-light); }
+  .mc-vital-box.mp-box .mc-vital-label b { color: var(--mp-light); }
+  .mc-gauge { height: 7px; border-radius: 4px; background: rgba(0,0,0,0.45); overflow: hidden; margin-bottom: 6px; }
+  .mc-gauge-fill { height: 100%; border-radius: 4px; transition: width 0.35s; }
+  .hp-box .mc-gauge-fill { background: linear-gradient(90deg, #7a1410, var(--hp)); }
+  .mp-box .mc-gauge-fill { background: linear-gradient(90deg, #163e7a, var(--mp)); }
+  .mc-vital-ctrl { display: flex; align-items: center; gap: 4px; }
+  .mc-stepper { flex-shrink: 0; width: 24px; height: 24px; border-radius: 5px; border: 1px solid var(--border); background: rgba(0,0,0,0.3); color: var(--gold-light); font-size: 13px; cursor: pointer; line-height: 1; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; transition: all 0.15s; }
+  .mc-stepper:hover { border-color: var(--gold); background: rgba(212,175,82,0.15); }
+  .mc-vital-inp { flex: 1; text-align: center; background: rgba(0,0,0,0.35); border: 1px solid var(--border); border-radius: 5px; color: var(--text-primary); font-family: 'Cinzel', serif; font-size: 12px; padding: 3px; }
+  .mc-vital-inp:focus { outline: none; border-color: var(--gold); }
+  .mc-affinities { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+  .mc-aff-label { font-family: 'Cinzel', serif; font-size: 9px; color: var(--text-muted); margin-right: 1px; }
+  .mc-aff-chip { font-family: 'Cinzel', serif; font-size: 9px; padding: 2px 6px; border-radius: 8px; border: 1px solid; }
+  .mc-aff-chip.vu { background: rgba(168,40,40,0.18); color: #FF9090; border-color: rgba(168,40,40,0.45); }
+  .mc-aff-chip.rs { background: rgba(63,166,124,0.15); color: var(--emerald-light); border-color: rgba(63,166,124,0.4); }
+  .mc-aff-chip.im { background: rgba(123,92,196,0.15); color: var(--arcane-light); border-color: rgba(123,92,196,0.4); }
+  .mc-aff-chip.ab { background: rgba(212,175,82,0.15); color: var(--gold-bright); border-color: rgba(212,175,82,0.4); }
+  .mc-section-title { font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 1.5px; color: var(--gold); text-transform: uppercase; margin-bottom: 5px; display: flex; align-items: center; gap: 6px; }
+  .mc-section-title::after { content: ''; flex: 1; height: 1px; background: rgba(212,175,82,0.2); }
+  .mc-atk-list, .mc-skill-list { display: flex; flex-direction: column; gap: 4px; }
+  .mc-atk-row { background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; font-family: 'Crimson Pro', serif; font-size: 13px; color: var(--text-secondary); display: flex; flex-direction: column; gap: 2px; position: relative; }
+  .mc-atk-top { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+  .mc-atk-top b { color: var(--text-primary); font-family: 'Cinzel', serif; font-size: 11px; }
+  .mc-atk-top .mc-atk-type { font-size: 14px; }
+  .mc-atk-check { color: var(--gold-light); font-family: 'Cinzel', serif; font-size: 11px; }
+  .mc-atk-dmg   { color: var(--hp-light); font-family: 'Cinzel', serif; font-size: 11px; }
+  .mc-atk-fx    { color: var(--text-muted); font-style: italic; font-size: 12px; }
+  .mc-skill-row { background: rgba(123,92,196,0.07); border: 1px solid rgba(123,92,196,0.25); border-radius: 6px; padding: 6px 8px; font-family: 'Crimson Pro', serif; font-size: 13px; color: var(--text-secondary); display: flex; flex-direction: column; gap: 2px; position: relative; }
+  .mc-skill-row b { color: var(--arcane-light); font-family: 'Cinzel', serif; font-size: 11px; }
+  .mc-skill-fx   { color: var(--text-muted); font-style: italic; font-size: 12px; }
+  .mc-status-row { display: flex; gap: 5px; flex-wrap: wrap; }
+  .mc-status-chip { font-family: 'Cinzel', serif; font-size: 9px; padding: 2px 8px; border-radius: 8px; cursor: pointer; border: 1px solid var(--border); background: rgba(0,0,0,0.3); color: var(--text-muted); transition: all 0.15s; user-select: none; -webkit-tap-highlight-color: transparent; }
+  .mc-status-chip.active { background: rgba(168,40,40,0.25); color: #FF9090; border-color: rgba(168,40,40,0.5); }
+  .monster-card.in-crisis .mc-header { background: linear-gradient(90deg, rgba(168,40,40,0.15), transparent); }
+  .monster-card.in-crisis .mc-name::after { content: ' ⚠'; color: var(--hp-light); animation: crisisBlink 1s steps(2) infinite; }
+  .mc-notes-area { background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; font-family: 'Crimson Pro', serif; font-size: 12px; color: var(--text-muted); font-style: italic; min-height: 40px; resize: vertical; width: 100%; box-sizing: border-box; }
+  .mc-notes-area:focus { outline: none; border-color: var(--gold); color: var(--text-secondary); }
+  /* 몬스터 생성 폼 */
+  .mc-form { display: flex; flex-direction: column; gap: 10px; }
+  .mc-form-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .mc-form-grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .mc-form-grid4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; }
+  .mc-form-lbl   { font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 3px; }
+  .mc-create-btn { width: 100%; padding: 10px; border-radius: 9px; background: linear-gradient(160deg, rgba(212,175,82,0.2), rgba(212,175,82,0.08)); border: 1px solid rgba(212,175,82,0.5); color: var(--gold-bright); font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 1px; cursor: pointer; transition: all 0.2s; }
+  .mc-create-btn:hover { background: linear-gradient(160deg, rgba(212,175,82,0.35), rgba(212,175,82,0.15)); box-shadow: 0 0 18px rgba(212,175,82,0.25); }
+  .mc-calc-hint { font-family: 'Cinzel', serif; font-size: 10px; color: var(--arcane-light); padding: 5px 8px; background: rgba(123,92,196,0.1); border-radius: 6px; border: 1px solid rgba(123,92,196,0.2); }
+  .aff-editor { display: flex; flex-wrap: wrap; gap: 4px; }
+  .aff-type-row { display: flex; flex-direction: column; gap: 3px; align-items: center; min-width: 40px; }
+  .aff-type-label { font-family: 'Cinzel', serif; font-size: 9px; color: var(--text-muted); }
+  .aff-cycle { width: 36px; height: 28px; border-radius: 6px; border: 1px solid var(--border); background: rgba(0,0,0,0.3); color: var(--text-muted); font-family: 'Cinzel', serif; font-size: 10px; cursor: pointer; transition: all 0.15s; text-align: center; -webkit-tap-highlight-color: transparent; }
+  .aff-cycle[data-v="VU"] { background: rgba(168,40,40,0.25); color: #FF9090; border-color: rgba(168,40,40,0.5); }
+  .aff-cycle[data-v="RS"] { background: rgba(63,166,124,0.2); color: var(--emerald-light); border-color: rgba(63,166,124,0.5); }
+  .aff-cycle[data-v="IM"] { background: rgba(123,92,196,0.2); color: var(--arcane-light); border-color: rgba(123,92,196,0.5); }
+  .aff-cycle[data-v="AB"] { background: rgba(212,175,82,0.2); color: var(--gold-bright); border-color: rgba(212,175,82,0.5); }
+  .mc-add-section { display: flex; flex-direction: column; gap: 6px; padding: 8px; background: rgba(0,0,0,0.2); border: 1px dashed var(--border); border-radius: 8px; }
+  .mc-add-row  { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
+  .mc-add-inp  { flex: 1; min-width: 55px; background: rgba(0,0,0,0.35); border: 1px solid var(--border); border-radius: 5px; color: var(--text-primary); font-family: 'Crimson Pro', serif; font-size: 13px; padding: 4px 6px; }
+  .mc-add-inp:focus { border-color: var(--gold); outline: none; }
+  .mc-add-inp.short { max-width: 75px; }
+  .mc-mini-btn { padding: 4px 9px; border-radius: 5px; font-family: 'Cinzel', serif; font-size: 10px; cursor: pointer; border: 1px solid var(--border); background: rgba(0,0,0,0.3); color: var(--text-secondary); transition: all 0.15s; white-space: nowrap; -webkit-tap-highlight-color: transparent; }
+  .mc-mini-btn.ok  { border-color: rgba(63,166,124,0.5); color: var(--emerald-light); }
+  .mc-mini-btn.ok:hover  { background: rgba(63,166,124,0.15); }
+  .mc-mini-btn.cancel { border-color: rgba(168,40,40,0.3); color: var(--crimson-light); }
+  .mc-mini-btn.cancel:hover { background: rgba(168,40,40,0.15); }
+  .mc-item-del { flex-shrink: 0; width: 18px; height: 18px; border-radius: 3px; border: 1px solid rgba(168,40,40,0.3); background: rgba(168,40,40,0.12); color: var(--crimson-light); font-size: 10px; cursor: pointer; line-height: 1; display: flex; align-items: center; justify-content: center; }
+  .mc-item-del:hover { background: rgba(168,40,40,0.3); }
+  .mc-add-trigger { width: 100%; padding: 5px; background: rgba(0,0,0,0.15); border: 1px dashed var(--border); border-radius: 6px; color: var(--text-muted); font-family: 'Cinzel', serif; font-size: 10px; cursor: pointer; transition: all 0.15s; text-align: center; }
+  .mc-add-trigger:hover { background: rgba(212,175,82,0.08); border-color: var(--gold); color: var(--gold-light); }
+  .mc-inline-add-wrap { display: none; }
+  .mc-inline-add-wrap.open { display: flex; flex-direction: column; gap: 5px; }
+  .mc-up-points { display: flex; align-items: center; gap: 8px; }
+  .mc-up-label { font-family: 'Cinzel', serif; font-size: 11px; color: var(--crimson-light); }
+  .mc-up-val { font-family: 'Cinzel Decorative', serif; font-size: 20px; color: var(--crimson-light); min-width: 28px; text-align: center; }
+
 </style>
 <body>
 
@@ -1819,6 +1937,7 @@
         <button class="gm-subtab active" data-pane="ultima">⬢ 울티마</button>
         <button class="gm-subtab" data-pane="clock">◴ 시계</button>
         <button class="gm-subtab" data-pane="villain">☠ 악당</button>
+        <button class="gm-subtab" data-pane="monster">🐉 몬스터</button>
         <button class="gm-subtab" data-pane="map">🗺 전투맵</button>
         <button class="gm-subtab" data-pane="bgm">🎵 BGM</button>
       </div>
@@ -1881,8 +2000,53 @@
       <p class="gm-hint">전투 중인 적·NPC의 HP/MP를 추적합니다. 챔피언은 등급 수만큼, 솔로는 여러 턴을 가집니다. 같은 방의 모두에게 공유됩니다.</p>
     </div>
 
-    <!-- 전투맵 -->
-    <div class="gm-pane" id="gmPaneMap" style="display:none;">
+    <!-- 몬스터 시트 -->
+    <div class="gm-pane" id="gmPaneMonster" style="display:none;">
+      <div class="mc-form" id="mcCreateForm">
+        <div class="mc-form-grid2">
+          <div><div class="mc-form-lbl">몬스터 이름</div><input type="text" class="gm-input" id="mcName" placeholder="예: 흰 포효자"></div>
+          <div><div class="mc-form-lbl">특성 (쉼표 구분)</div><input type="text" class="gm-input" id="mcTraits" placeholder="예: 사나운, 영역 방어, 독성"></div>
+        </div>
+        <div class="mc-form-grid3">
+          <div><div class="mc-form-lbl">레벨</div><input type="number" class="gm-input" id="mcLevel" value="10" min="5" max="60"></div>
+          <div><div class="mc-form-lbl">종 (Species)</div>
+            <select class="gm-input" id="mcSpecies">
+              <option value="야수">야수 (Beast)</option><option value="구조물">구조물 (Construct)</option>
+              <option value="악마">악마 (Demon)</option><option value="정령">정령 (Elemental)</option>
+              <option value="인간형">인간형 (Humanoid)</option><option value="몬스터" selected>몬스터 (Monster)</option>
+              <option value="식물">식물 (Plant)</option><option value="언데드">언데드 (Undead)</option>
+            </select>
+          </div>
+          <div><div class="mc-form-lbl">등급 (Rank)</div>
+            <select class="gm-input" id="mcRank">
+              <option value="일반">일반 (Soldier)</option><option value="엘리트">엘리트 (Elite)</option>
+              <option value="챔피언">챔피언 (Champion)</option><option value="보스">보스 (Boss)</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <div class="mc-form-lbl">능력치 배열</div>
+          <div class="mc-form-grid4">
+            <div><div class="mc-form-lbl">DEX</div><select class="gm-input mc-attr-sel" id="mcDex"><option>d6</option><option selected>d8</option><option>d10</option><option>d12</option></select></div>
+            <div><div class="mc-form-lbl">INS</div><select class="gm-input mc-attr-sel" id="mcIns"><option>d6</option><option selected>d8</option><option>d10</option><option>d12</option></select></div>
+            <div><div class="mc-form-lbl">MIG</div><select class="gm-input mc-attr-sel" id="mcMig"><option>d6</option><option selected>d8</option><option>d10</option><option>d12</option></select></div>
+            <div><div class="mc-form-lbl">WLP</div><select class="gm-input mc-attr-sel" id="mcWlp"><option>d6</option><option selected>d8</option><option>d10</option><option>d12</option></select></div>
+          </div>
+          <div class="mc-calc-hint" id="mcCalcHint" style="margin-top:6px;"></div>
+        </div>
+        <div>
+          <div class="mc-form-lbl">피해 친화도 — 클릭: 없음→취약(VU)→저항(RS)→면역(IM)→흡수(AB)→없음</div>
+          <div class="aff-editor" id="mcAffEditor"></div>
+        </div>
+        <button class="mc-create-btn" id="mcCreateBtn">⚔ 몬스터 추가</button>
+      </div>
+      <div class="monster-list" id="monsterList">
+        <div class="gm-empty-note" id="monsterEmpty">아직 몬스터가 없습니다. 위 폼으로 추가하세요.</div>
+      </div>
+      <p class="gm-hint">카드를 탭해 접기/펼치기. 공격·스킬을 인라인으로 추가할 수 있습니다. 방 전체에 실시간 공유됩니다.</p>
+    </div>
+
+    <!-- 전투맵 -->    <div class="gm-pane" id="gmPaneMap" style="display:none;">
       <div class="gm-toolbar">
         <button class="gm-btn" id="mapUploadBtn">🖼 맵 URL 추가</button>
         <button class="gm-btn" id="tokenUploadBtn">⊕ 토큰 URL 추가</button>
@@ -2968,6 +3132,8 @@
     initBattlemap(roomCode);
     /* ── GM 도구(울티마·시계·악당) 초기화 ── */
     initGmTools(roomCode);
+    /* ── 몬스터 시트 초기화 ── */
+    initMonsters(roomCode);
     /* ── BGM (다음 단계에서 구현 예정) ── */
     initBgm(roomCode);
 
@@ -3158,7 +3324,7 @@
     $('gmClose').addEventListener('click', () => sidebar.classList.remove('open'));
 
     /* 서브탭 전환 (울티마 / 시계 / 악당 / 전투맵 / BGM) */
-    const paneMap = { ultima:'gmPaneUltima', clock:'gmPaneClock', villain:'gmPaneVillain', map:'gmPaneMap', bgm:'gmPaneBgm' };
+    const paneMap = { ultima:'gmPaneUltima', clock:'gmPaneClock', villain:'gmPaneVillain', monster:'gmPaneMonster', map:'gmPaneMap', bgm:'gmPaneBgm' };
     document.querySelectorAll('.gm-subtab').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.gm-subtab').forEach(b => b.classList.remove('active'));
@@ -3318,6 +3484,403 @@
   }
 
   /* BGM — 다음 단계에서 구현 (지금은 안전한 빈 함수) */
+
+  /* ════════════════════════════════════════════════
+     🐉 몬스터 시트 시스템
+     데이터: rooms/<room>/monsters/{id} = { name, level, species, rank, traits, dex,ins,mig,wlp,
+             hp,hpMax,mp,mpMax,defBonus,mdefBonus,init,affinities:{type:VU|RS|IM|AB},
+             attacks:[{type,name,check,damage,fx}], skills:[{name,fx}], statusEffects:{}, notes, ts }
+     ════════════════════════════════════════════════ */
+  const DIE_VAL = { d6:6, d8:8, d10:10, d12:12 };
+  const DMG_TYPES = ['물리','공기','번개','어둠','대지','화염','얼음','빛','독'];
+  const DMG_ICONS = { '물리':'⚔','공기':'🌬','번개':'⚡','어둠':'🌑','대지':'⛰','화염':'🔥','얼음':'❄','빛':'☀','독':'☠' };
+  const AFF_CYCLE = ['','VU','RS','IM','AB'];
+  const STATUS_LIST = ['중독','혼란','느림','약화','석화','분노'];
+
+  let monsterRef = null;
+  let monsterState = {};
+
+  /* 자동 계산 */
+  function calcMonsterStats(level, dex, ins, mig, wlp) {
+    const dv = v => DIE_VAL[v] || 8;
+    const hp   = level * 2 + dv(mig) * 5;
+    const mp   = level + dv(wlp) * 5;
+    const def  = dv(dex);
+    const mdef = dv(ins);
+    const init = Math.floor((dv(dex) + dv(ins)) / 2);
+    const crisis = Math.floor(hp / 2);
+    return { hp, mp, def, mdef, init, crisis };
+  }
+
+  /* calc hint 갱신 */
+  function updateMcCalcHint() {
+    const level = parseInt(document.getElementById('mcLevel').value) || 10;
+    const dex = document.getElementById('mcDex').value;
+    const ins = document.getElementById('mcIns').value;
+    const mig = document.getElementById('mcMig').value;
+    const wlp = document.getElementById('mcWlp').value;
+    const s = calcMonsterStats(level, dex, ins, mig, wlp);
+    document.getElementById('mcCalcHint').textContent =
+      `📊 HP: ${s.hp} · 위기: ${s.crisis} · MP: ${s.mp} · DEF: +${s.def} · MDEF: +${s.mdef} · 선제권: ${s.init}`;
+  }
+
+  /* 친화도 편집기 초기화 */
+  function buildAffEditor(container, affObj, onChange) {
+    container.innerHTML = '';
+    DMG_TYPES.forEach(type => {
+      const wrap = document.createElement('div'); wrap.className = 'aff-type-row';
+      const lbl = document.createElement('div'); lbl.className = 'aff-type-label'; lbl.textContent = DMG_ICONS[type];
+      lbl.title = type;
+      const btn = document.createElement('button'); btn.className = 'aff-cycle';
+      const cur = (affObj && affObj[type]) || '';
+      btn.textContent = cur || '—';
+      btn.dataset.v = cur;
+      btn.title = type + ' ' + (cur || '없음');
+      btn.addEventListener('click', () => {
+        const idx = (AFF_CYCLE.indexOf(btn.dataset.v) + 1) % AFF_CYCLE.length;
+        const next = AFF_CYCLE[idx];
+        btn.dataset.v = next;
+        btn.textContent = next || '—';
+        btn.title = type + ' ' + (next || '없음');
+        if (onChange) onChange();
+      });
+      wrap.appendChild(lbl); wrap.appendChild(btn);
+      container.appendChild(wrap);
+    });
+  }
+
+  function getAffFromEditor(container) {
+    const aff = {};
+    container.querySelectorAll('.aff-cycle').forEach((btn, i) => {
+      if (btn.dataset.v) aff[DMG_TYPES[i]] = btn.dataset.v;
+    });
+    return aff;
+  }
+
+  /* 몬스터 Firebase 초기화 */
+  function initMonsters(room) {
+    if (!db) return;
+    monsterRef = db.ref('rooms/' + room + '/monsters');
+    monsterRef.on('value', s => {
+      monsterState = s.val() || {};
+      renderMonsters();
+    });
+  }
+
+  /* 몬스터 목록 렌더링 */
+  function renderMonsters() {
+    const list = document.getElementById('monsterList');
+    list.querySelectorAll('.monster-card').forEach(c => c.remove());
+    const ids = Object.keys(monsterState).sort((a,b) => (monsterState[a].ts||0) - (monsterState[b].ts||0));
+    document.getElementById('monsterEmpty').style.display = ids.length ? 'none' : '';
+
+    ids.forEach(id => {
+      const m = monsterState[id];
+      const card = buildMonsterCard(id, m);
+      list.appendChild(card);
+    });
+  }
+
+  function buildMonsterCard(id, m) {
+    const hp = m.hp != null ? m.hp : m.hpMax;
+    const inCrisis = hp > 0 && hp <= Math.floor(m.hpMax / 2);
+
+    const card = document.createElement('div');
+    card.className = 'monster-card rank-' + (m.rank||'일반') + (inCrisis ? ' in-crisis' : '');
+    card.dataset.id = id;
+
+    /* ─ 헤더 ─ */
+    const header = document.createElement('div'); header.className = 'mc-header';
+    const arrow  = document.createElement('span'); arrow.className = 'mc-collapse-arrow'; arrow.textContent = '▼';
+    const nm     = document.createElement('span'); nm.className = 'mc-name'; nm.textContent = m.name || '이름없음';
+    const lvBadge = document.createElement('span'); lvBadge.className = 'mc-level-badge'; lvBadge.textContent = 'Lv ' + (m.level||'?');
+    const rankBadge = document.createElement('span'); rankBadge.className = 'mc-rank-badge'; rankBadge.textContent = m.rank || '일반';
+    const spBadge = document.createElement('span'); spBadge.className = 'mc-species-badge'; spBadge.textContent = m.species || '몬스터';
+    const delBtn = document.createElement('button'); delBtn.className = 'mc-del'; delBtn.textContent = '✕'; delBtn.title = '삭제';
+    delBtn.addEventListener('click', e => { e.stopPropagation(); if (monsterRef) monsterRef.child(id).remove(); });
+    header.appendChild(arrow); header.appendChild(nm); header.appendChild(lvBadge);
+    header.appendChild(rankBadge); header.appendChild(spBadge); header.appendChild(delBtn);
+    header.addEventListener('click', () => { card.classList.toggle('collapsed'); arrow.textContent = card.classList.contains('collapsed') ? '▶' : '▼'; });
+
+    /* ─ 본문 ─ */
+    const body = document.createElement('div'); body.className = 'mc-body';
+
+    /* 특성 */
+    if (m.traits) {
+      const tr = document.createElement('div'); tr.className = 'mc-traits';
+      tr.textContent = '✦ ' + m.traits; body.appendChild(tr);
+    }
+
+    /* 능력치 */
+    const s = calcMonsterStats(m.level||10, m.dex||'d8', m.ins||'d8', m.mig||'d8', m.wlp||'d8');
+    const attrsDiv = document.createElement('div'); attrsDiv.className = 'mc-attrs';
+    [['DEX', m.dex||'d8'], ['INS', m.ins||'d8'], ['MIG', m.mig||'d8'], ['WLP', m.wlp||'d8']].forEach(([lbl, val]) => {
+      const c = document.createElement('div'); c.className = 'mc-attr-cell';
+      c.innerHTML = `<div class="mc-attr-abbr">${lbl}</div><div class="mc-attr-val">${val}</div>`;
+      attrsDiv.appendChild(c);
+    });
+    [['DEF', '+' + s.def], ['MDEF', '+' + s.mdef], ['INIT', s.init]].forEach(([lbl, val]) => {
+      const c = document.createElement('div'); c.className = 'mc-stat-cell';
+      c.innerHTML = `<div class="mc-stat-lbl">${lbl}</div><div class="mc-stat-val">${val}</div>`;
+      attrsDiv.appendChild(c);
+    });
+    body.appendChild(attrsDiv);
+
+    /* HP/MP 컨트롤 */
+    const vitalsDiv = document.createElement('div'); vitalsDiv.className = 'mc-vitals';
+    vitalsDiv.appendChild(buildMcVital(id, 'hp', 'HP', m.hp != null ? m.hp : m.hpMax, m.hpMax));
+    vitalsDiv.appendChild(buildMcVital(id, 'mp', 'MP', m.mp != null ? m.mp : m.mpMax, m.mpMax));
+    body.appendChild(vitalsDiv);
+
+    /* 친화도 */
+    const aff = m.affinities || {};
+    const hasAff = Object.values(aff).some(v => v);
+    if (hasAff) {
+      const affDiv = document.createElement('div'); affDiv.className = 'mc-affinities';
+      const affLabel = document.createElement('span'); affLabel.className = 'mc-aff-label'; affLabel.textContent = '친화도:';
+      affDiv.appendChild(affLabel);
+      const classMap = { VU:'vu', RS:'rs', IM:'im', AB:'ab' };
+      const labelMap = { VU:'취약', RS:'저항', IM:'면역', AB:'흡수' };
+      DMG_TYPES.forEach(type => {
+        if (!aff[type]) return;
+        const chip = document.createElement('span');
+        chip.className = 'mc-aff-chip ' + (classMap[aff[type]]||'');
+        chip.textContent = DMG_ICONS[type] + ' ' + labelMap[aff[type]];
+        chip.title = type;
+        affDiv.appendChild(chip);
+      });
+      body.appendChild(affDiv);
+    }
+
+    /* 공격 */
+    const atks = m.attacks || [];
+    if (atks.length > 0) {
+      const sec = document.createElement('div'); sec.className = 'mc-section-title'; sec.innerHTML = '⚔ 기본 공격<span></span>';
+      body.appendChild(sec);
+      const atkList = document.createElement('div'); atkList.className = 'mc-atk-list';
+      atks.forEach((atk, idx) => {
+        const row = document.createElement('div'); row.className = 'mc-atk-row';
+        const topRow = document.createElement('div'); topRow.className = 'mc-atk-top';
+        topRow.innerHTML = `<span class="mc-atk-type">${atk.type === '근접' ? '⚔' : '🏹'}</span><b>${atk.name || '공격'}</b>`;
+        if (atk.check) topRow.innerHTML += ` <span class="mc-atk-check">【${atk.check}】</span>`;
+        if (atk.damage) topRow.innerHTML += ` <span class="mc-atk-dmg">${atk.damage}</span>`;
+        row.appendChild(topRow);
+        if (atk.fx) { const fx = document.createElement('div'); fx.className = 'mc-atk-fx'; fx.textContent = atk.fx; row.appendChild(fx); }
+        atkList.appendChild(row);
+      });
+      body.appendChild(atkList);
+    }
+
+    /* 스킬/주문 */
+    const skills = m.skills || [];
+    if (skills.length > 0) {
+      const sec2 = document.createElement('div'); sec2.className = 'mc-section-title'; sec2.innerHTML = '✨ 기술 &amp; 주문<span></span>';
+      body.appendChild(sec2);
+      const skList = document.createElement('div'); skList.className = 'mc-skill-list';
+      skills.forEach(sk => {
+        const row = document.createElement('div'); row.className = 'mc-skill-row';
+        row.innerHTML = `<b>${sk.name || '기술'}</b>`;
+        if (sk.fx) { const fx = document.createElement('div'); fx.className = 'mc-skill-fx'; fx.textContent = sk.fx; row.appendChild(fx); }
+        skList.appendChild(row);
+      });
+      body.appendChild(skList);
+    }
+
+    /* 공격 추가 버튼 */
+    body.appendChild(buildAddAtkSection(id, m));
+    /* 스킬 추가 버튼 */
+    body.appendChild(buildAddSkillSection(id, m));
+
+    /* 상태이상 토글 */
+    const stSec = document.createElement('div'); stSec.className = 'mc-section-title'; stSec.innerHTML = '⚡ 상태이상<span></span>';
+    body.appendChild(stSec);
+    const stRow = document.createElement('div'); stRow.className = 'mc-status-row';
+    STATUS_LIST.forEach(st => {
+      const chip = document.createElement('span'); chip.className = 'mc-status-chip';
+      const isActive = m.statusEffects && m.statusEffects[st];
+      if (isActive) chip.classList.add('active');
+      chip.textContent = st;
+      chip.addEventListener('click', () => {
+        const cur = (monsterState[id] && monsterState[id].statusEffects && monsterState[id].statusEffects[st]) || false;
+        const update = {}; update['statusEffects/' + st] = !cur;
+        if (monsterRef) monsterRef.child(id).update(update);
+      });
+      stRow.appendChild(chip);
+    });
+    body.appendChild(stRow);
+
+    /* 메모 */
+    const notesSec = document.createElement('div'); notesSec.className = 'mc-section-title'; notesSec.innerHTML = '📝 메모<span></span>';
+    body.appendChild(notesSec);
+    const notesTA = document.createElement('textarea'); notesTA.className = 'mc-notes-area';
+    notesTA.placeholder = 'GM 메모 (크라이시스 효과, 루틴, 특수 규칙 등)';
+    notesTA.value = m.notes || '';
+    let noteTimer;
+    notesTA.addEventListener('input', () => {
+      clearTimeout(noteTimer);
+      noteTimer = setTimeout(() => { if (monsterRef) monsterRef.child(id).update({ notes: notesTA.value }); }, 600);
+    });
+    body.appendChild(notesTA);
+
+    card.appendChild(header); card.appendChild(body);
+    return card;
+  }
+
+  function buildMcVital(monsterId, type, label, cur, max) {
+    const box = document.createElement('div'); box.className = 'mc-vital-box ' + type + '-box';
+    const lbl = document.createElement('div'); lbl.className = 'mc-vital-label';
+    lbl.innerHTML = `<span>${type === 'hp' ? '❤' : '✦'} <b>${label}</b></span><span style="font-size:11px;">${max}</span>`;
+    const gauge = document.createElement('div'); gauge.className = 'mc-gauge';
+    const fill  = document.createElement('div'); fill.className = 'mc-gauge-fill';
+    const pct = max > 0 ? Math.max(0, Math.min(100, (cur/max)*100)) : 0;
+    fill.style.width = pct + '%';
+    gauge.appendChild(fill);
+    const ctrl = document.createElement('div'); ctrl.className = 'mc-vital-ctrl';
+    const minus5 = makeMcStepper('−5');
+    const minus1 = makeMcStepper('−');
+    const inp = document.createElement('input'); inp.type = 'number'; inp.className = 'mc-vital-inp'; inp.value = cur != null ? cur : max;
+    const plus1 = makeMcStepper('+');
+    const plus5 = makeMcStepper('+5');
+
+    function commit(val) {
+      const clamped = Math.max(0, Math.min(max, val));
+      if (monsterRef) monsterRef.child(monsterId).update({ [type]: clamped });
+    }
+    minus5.addEventListener('click', () => commit((parseInt(inp.value)||0) - 5));
+    minus1.addEventListener('click', () => commit((parseInt(inp.value)||0) - 1));
+    plus1.addEventListener('click',  () => commit((parseInt(inp.value)||0) + 1));
+    plus5.addEventListener('click',  () => commit((parseInt(inp.value)||0) + 5));
+    inp.addEventListener('change', () => commit(parseInt(inp.value)||0));
+    ctrl.appendChild(minus5); ctrl.appendChild(minus1); ctrl.appendChild(inp); ctrl.appendChild(plus1); ctrl.appendChild(plus5);
+    box.appendChild(lbl); box.appendChild(gauge); box.appendChild(ctrl);
+    return box;
+  }
+
+  function makeMcStepper(label) {
+    const b = document.createElement('button'); b.className = 'mc-stepper'; b.textContent = label; return b;
+  }
+
+  function buildAddAtkSection(monsterId, m) {
+    const wrap = document.createElement('div');
+    const trigger = document.createElement('button'); trigger.className = 'mc-add-trigger'; trigger.textContent = '+ 공격 추가';
+    const form = document.createElement('div'); form.className = 'mc-inline-add-wrap';
+    const row1 = document.createElement('div'); row1.className = 'mc-add-row';
+    const typeSelect = document.createElement('select'); typeSelect.className = 'gm-input mc-add-inp short';
+    ['근접','원거리'].forEach(t => { const o = document.createElement('option'); o.value = t; o.textContent = t; typeSelect.appendChild(o); });
+    const nameInp = document.createElement('input'); nameInp.className = 'mc-add-inp'; nameInp.placeholder = '이름 (예: 발톱 베기)';
+    const checkInp = document.createElement('input'); checkInp.className = 'mc-add-inp short'; checkInp.placeholder = '판정 (DEX+MIG)';
+    const dmgInp = document.createElement('input'); dmgInp.className = 'mc-add-inp short'; dmgInp.placeholder = 'HR+5 물리';
+    row1.appendChild(typeSelect); row1.appendChild(nameInp); row1.appendChild(checkInp); row1.appendChild(dmgInp);
+    const row2 = document.createElement('div'); row2.className = 'mc-add-row';
+    const fxInp = document.createElement('input'); fxInp.className = 'mc-add-inp'; fxInp.placeholder = '특수 효과 (선택)';
+    const okBtn = document.createElement('button'); okBtn.className = 'mc-mini-btn ok'; okBtn.textContent = '✓ 추가';
+    const cancelBtn = document.createElement('button'); cancelBtn.className = 'mc-mini-btn cancel'; cancelBtn.textContent = '취소';
+    row2.appendChild(fxInp); row2.appendChild(okBtn); row2.appendChild(cancelBtn);
+    form.appendChild(row1); form.appendChild(row2);
+    trigger.addEventListener('click', () => { form.classList.toggle('open'); trigger.style.display = 'none'; });
+    cancelBtn.addEventListener('click', () => { form.classList.remove('open'); trigger.style.display = ''; nameInp.value=''; checkInp.value=''; dmgInp.value=''; fxInp.value=''; });
+    okBtn.addEventListener('click', () => {
+      if (!nameInp.value.trim()) return;
+      const atks = (monsterState[monsterId] && monsterState[monsterId].attacks) ? [...monsterState[monsterId].attacks] : [];
+      atks.push({ type: typeSelect.value, name: nameInp.value.trim(), check: checkInp.value.trim(), damage: dmgInp.value.trim(), fx: fxInp.value.trim() });
+      if (monsterRef) monsterRef.child(monsterId).update({ attacks: atks });
+      form.classList.remove('open'); trigger.style.display = '';
+      nameInp.value=''; checkInp.value=''; dmgInp.value=''; fxInp.value='';
+    });
+    wrap.appendChild(trigger); wrap.appendChild(form);
+    return wrap;
+  }
+
+  function buildAddSkillSection(monsterId, m) {
+    const wrap = document.createElement('div');
+    const trigger = document.createElement('button'); trigger.className = 'mc-add-trigger'; trigger.textContent = '+ 기술/주문 추가';
+    const form = document.createElement('div'); form.className = 'mc-inline-add-wrap';
+    const row1 = document.createElement('div'); row1.className = 'mc-add-row';
+    const nameInp = document.createElement('input'); nameInp.className = 'mc-add-inp'; nameInp.placeholder = '기술/주문 이름';
+    row1.appendChild(nameInp);
+    const row2 = document.createElement('div'); row2.className = 'mc-add-row';
+    const fxInp = document.createElement('input'); fxInp.className = 'mc-add-inp'; fxInp.placeholder = '효과 설명';
+    const okBtn = document.createElement('button'); okBtn.className = 'mc-mini-btn ok'; okBtn.textContent = '✓ 추가';
+    const cancelBtn = document.createElement('button'); cancelBtn.className = 'mc-mini-btn cancel'; cancelBtn.textContent = '취소';
+    row2.appendChild(fxInp); row2.appendChild(okBtn); row2.appendChild(cancelBtn);
+    form.appendChild(row1); form.appendChild(row2);
+    trigger.addEventListener('click', () => { form.classList.toggle('open'); trigger.style.display = 'none'; });
+    cancelBtn.addEventListener('click', () => { form.classList.remove('open'); trigger.style.display = ''; nameInp.value=''; fxInp.value=''; });
+    okBtn.addEventListener('click', () => {
+      if (!nameInp.value.trim()) return;
+      const skills = (monsterState[monsterId] && monsterState[monsterId].skills) ? [...monsterState[monsterId].skills] : [];
+      skills.push({ name: nameInp.value.trim(), fx: fxInp.value.trim() });
+      if (monsterRef) monsterRef.child(monsterId).update({ skills });
+      form.classList.remove('open'); trigger.style.display = '';
+      nameInp.value=''; fxInp.value='';
+    });
+    wrap.appendChild(trigger); wrap.appendChild(form);
+    return wrap;
+  }
+
+  /* 몬스터 생성 폼 초기화 */
+  (function initMonsterForm() {
+    const affContainer = document.getElementById('mcAffEditor');
+    const affObj = {};
+    buildAffEditor(affContainer, affObj, null);
+    /* calc hint 실시간 갱신 */
+    updateMcCalcHint();
+    document.querySelectorAll('.mc-attr-sel').forEach(sel => sel.addEventListener('change', updateMcCalcHint));
+    document.getElementById('mcLevel').addEventListener('input', updateMcCalcHint);
+
+    document.getElementById('mcCreateBtn').addEventListener('click', () => {
+      const name = (document.getElementById('mcName').value || '').trim();
+      if (!name) { window.SHEET && window.SHEET.toast('몬스터 이름을 입력하세요'); return; }
+      const level = parseInt(document.getElementById('mcLevel').value) || 10;
+      const species = document.getElementById('mcSpecies').value;
+      const rank    = document.getElementById('mcRank').value;
+      const traits  = (document.getElementById('mcTraits').value || '').trim();
+      const dex = document.getElementById('mcDex').value;
+      const ins = document.getElementById('mcIns').value;
+      const mig = document.getElementById('mcMig').value;
+      const wlp = document.getElementById('mcWlp').value;
+      const s = calcMonsterStats(level, dex, ins, mig, wlp);
+      const affinities = getAffFromEditor(affContainer);
+
+      /* 등급에 따른 HP 조정 (룰북: 엘리트=×2) */
+      let hpFinal = s.hp;
+      if (rank === '엘리트') hpFinal = s.hp * 2;
+
+      const newMonster = {
+        name, level, species, rank, traits,
+        dex, ins, mig, wlp,
+        hpMax: hpFinal, hp: hpFinal,
+        mpMax: s.mp, mp: s.mp,
+        defBonus: s.def, mdefBonus: s.mdef, init: s.init,
+        affinities,
+        attacks: [], skills: [],
+        statusEffects: {}, notes: '',
+        ts: Date.now()
+      };
+      if (monsterRef) {
+        monsterRef.push(newMonster);
+      } else {
+        /* 오프라인 모드 */
+        const oid = 'm_' + Date.now();
+        monsterState[oid] = newMonster;
+        renderMonsters();
+      }
+      /* 폼 초기화 */
+      document.getElementById('mcName').value = '';
+      document.getElementById('mcTraits').value = '';
+      document.getElementById('mcLevel').value = 10;
+      document.getElementById('mcRank').value = '일반';
+      document.getElementById('mcDex').value = 'd8';
+      document.getElementById('mcIns').value = 'd8';
+      document.getElementById('mcMig').value = 'd8';
+      document.getElementById('mcWlp').value = 'd8';
+      buildAffEditor(affContainer, {}, null);
+      updateMcCalcHint();
+      window.SHEET && window.SHEET.toast('⚔ 몬스터 추가됨: ' + name);
+    });
+  })();
+
+
   /* ════════════════════════════════════════════════
      BGM — 유튜브 동시 재생 (방 단위 실시간 동기화)
      데이터: rooms/<room>/bgm/tracks/{id} = { videoId, title, playing, volume, loop }
