@@ -817,6 +817,44 @@
     transition: all 0.2s; -webkit-tap-highlight-color: transparent; }
   .world-open-btn:hover { background: linear-gradient(160deg, rgba(63,166,124,0.34), rgba(63,166,124,0.14)); box-shadow: 0 0 16px rgba(63,166,124,0.3); transform: translateY(-1px); }
 
+  /* ════════ 패널 리사이즈 핸들 (채팅·GM·맵 뷰어) ════════ */
+  /* 채팅 패널: 왼쪽 가장자리를 좌우 드래그 */
+  .resize-handle-l {
+    position: absolute; top: 0; left: -4px; width: 8px; height: 100%;
+    cursor: ew-resize; z-index: 5; touch-action: none;
+    background: transparent;
+  }
+  .resize-handle-l:hover, .resize-handle-l.dragging { background: linear-gradient(90deg, transparent, rgba(212,175,82,0.35), transparent); }
+  /* GM 사이드바: 오른쪽 가장자리를 좌우 드래그 */
+  .resize-handle-r {
+    position: absolute; top: 0; right: -4px; width: 8px; height: 100%;
+    cursor: ew-resize; z-index: 5; touch-action: none;
+    background: transparent;
+  }
+  .resize-handle-r:hover, .resize-handle-r.dragging { background: linear-gradient(270deg, transparent, rgba(212,175,82,0.35), transparent); }
+  /* 맵 뷰어: 우측·하단·우하단 코너 — 양방향 */
+  .resize-handle-br {
+    position: absolute; bottom: 0; right: 0; width: 18px; height: 18px;
+    cursor: nwse-resize; z-index: 6; touch-action: none;
+    background: linear-gradient(135deg, transparent 50%, var(--gold) 50%, var(--gold) 60%, transparent 60%, transparent 70%, var(--gold) 70%, var(--gold) 80%, transparent 80%);
+    opacity: 0.5; border-bottom-right-radius: 14px;
+  }
+  .resize-handle-br:hover, .resize-handle-br.dragging { opacity: 1; }
+  .resize-handle-bottom {
+    position: absolute; bottom: -4px; left: 18px; right: 18px; height: 8px;
+    cursor: ns-resize; z-index: 5; touch-action: none; background: transparent;
+  }
+  .resize-handle-bottom:hover, .resize-handle-bottom.dragging { background: linear-gradient(0deg, transparent, rgba(212,175,82,0.35), transparent); }
+  .resize-handle-right {
+    position: absolute; right: -4px; top: 0; bottom: 18px; width: 8px;
+    cursor: ew-resize; z-index: 5; touch-action: none; background: transparent;
+  }
+  .resize-handle-right:hover, .resize-handle-right.dragging { background: linear-gradient(270deg, transparent, rgba(212,175,82,0.35), transparent); }
+  /* 드래그 중 페이지 선택 방지 */
+  body.is-resizing { user-select: none; -webkit-user-select: none; cursor: ew-resize; }
+  body.is-resizing-y { user-select: none; -webkit-user-select: none; cursor: ns-resize; }
+  body.is-resizing-xy { user-select: none; -webkit-user-select: none; cursor: nwse-resize; }
+
   /* ════════ 세계 시트 모달 ════════ */
   .world-modal-bg { position: fixed; inset: 0; z-index: 200; background: rgba(6,8,16,0.86);
     backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px);
@@ -900,6 +938,8 @@
     position: fixed; top: 0; right: 0; height: 100vh; z-index: 320;
     pointer-events: none;
   }
+  /* 채팅 패널이 열리면 맵 뷰어(360)보다 위로 — 1080p에서 두 패널이 겹쳐도 채팅이 잘리지 않음 */
+  .chat-panel.open { z-index: 380; }
   /* 우측 탭 (펼치기 트리거) */
   .chat-side-tab {
     position: absolute; right: 0; top: 50%; transform: translateY(-50%);
@@ -911,7 +951,7 @@
     display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
     transition: right 0.32s cubic-bezier(0.16,1,0.3,1), background 0.2s, border-color 0.2s;
   }
-  .chat-panel.open .chat-side-tab { right: 720px; }
+  .chat-panel.open .chat-side-tab { right: var(--chat-w, 720px); }
   .chat-side-tab:hover { background: linear-gradient(180deg, #232d50, #1a2240); border-color: var(--gold); }
   .chat-side-tab .tab-icon { font-size: 15px; line-height: 1; }
   .chat-side-tab .tab-label {
@@ -972,7 +1012,7 @@
   /* 채팅 바디 — 우측 사이드바 슬라이드 */
   .chat-body {
     position: absolute; right: 0; top: 0; height: 100%;
-    width: 720px;
+    width: var(--chat-w, 720px);
     background: linear-gradient(160deg, #0f1626, #0c1220);
     border-left: 1px solid var(--border-strong);
     box-shadow: -8px 0 40px rgba(0,0,0,0.6);
@@ -1040,8 +1080,6 @@
   .chat-bubble {
     padding: 8px 12px; border-radius: 12px; font-size: 14px; line-height: 1.5;
     font-family: 'Crimson Pro', serif; word-break: break-word;
-    /* Shift+Enter로 입력된 줄바꿈(\n)을 그대로 표시 — textContent와 함께 안전하게 작동 */
-    white-space: pre-wrap;
     position: relative;
   }
   .chat-msg.mine .chat-bubble {
@@ -1197,7 +1235,7 @@
     box-shadow: 4px 0 18px rgba(0,0,0,0.5);
     transition: left 0.34s cubic-bezier(0.16,1,0.3,1), background 0.2s, border-color 0.2s;
   }
-  .gm-sidebar.open .gm-tab { left: min(720px, 92vw); }
+  .gm-sidebar.open .gm-tab { left: var(--gm-w, min(720px, 92vw)); }
   .gm-tab:hover { background: linear-gradient(180deg, #232d50, #1a2240); border-color: var(--gold); }
   .gm-tab .tab-icon { font-size: 16px; line-height: 1; }
   .gm-tab .tab-label {
@@ -1207,7 +1245,7 @@
   }
   .gm-panel {
     position: absolute; left: 0; top: 0; height: 100%;
-    width: min(720px, 92vw);
+    width: var(--gm-w, min(720px, 92vw));
     background: linear-gradient(200deg, #0f1626, #0c1220);
     border-right: 1px solid var(--border-strong);
     box-shadow: 8px 0 40px rgba(0,0,0,0.6);
@@ -1463,27 +1501,33 @@
 
   /* ── 플레이어용 맵 뷰어 (모달) ── */
   .map-viewer-bg {
-    position: fixed; inset: 0; background: rgba(5,8,16,0.85); backdrop-filter: blur(4px);
-    z-index: 360; display: flex; align-items: center; justify-content: center; padding: 16px;
+    /* 백드롭이 클릭을 막지 않음 — 채팅·굴림 사이드바·FAB 등 다른 UI는 그대로 사용 가능 */
+    position: fixed; inset: 0; pointer-events: none;
+    z-index: 360; display: flex; align-items: center; justify-content: center; padding: 12px;
   }
   .map-viewer {
-    width: min(900px, 100%); max-height: 92vh; display: flex; flex-direction: column; gap: 10px;
+    /* 기본 크기 — 사용자가 모서리를 드래그해 자유롭게 조절 가능 */
+    width: min(820px, 94vw); height: min(640px, 88vh);
+    min-width: 320px; min-height: 280px; max-width: 98vw; max-height: 96vh;
+    display: flex; flex-direction: column; gap: 10px;
     background: linear-gradient(160deg, #16203a, #0e1628); border: 1px solid var(--border-strong);
-    border-radius: 14px; padding: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+    border-radius: 14px; padding: 14px; box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+    pointer-events: auto; position: relative;
   }
-  .mv-head { display: flex; align-items: center; justify-content: space-between; }
+  .mv-head { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
   .mv-title { font-family: 'Cinzel', serif; font-size: 14px; letter-spacing: 1.5px; color: var(--gold-light); }
-  .mv-close { background: none; border: 1px solid var(--border); border-radius: 50%; width: 30px; height: 30px; color: var(--text-secondary); font-size: 14px; cursor: pointer; }
+  .mv-close { background: none; border: 1px solid var(--border); border-radius: 50%; width: 32px; height: 32px; color: var(--text-secondary); font-size: 14px; cursor: pointer; }
   .mv-close:hover { border-color: var(--gold); color: var(--gold-light); }
   .mv-board {
-    position: relative; flex: 1; min-height: 240px; background: rgba(0,0,0,0.4); border-radius: 10px;
-    overflow: hidden; border: 1px dashed var(--border); display: flex; align-items: center; justify-content: center;
+    position: relative; flex: 1; min-height: 0; background: rgba(0,0,0,0.4); border-radius: 10px;
+    overflow: auto; border: 1px dashed var(--border); display: flex; align-items: center; justify-content: center;
   }
-  .mv-map { max-width: 100%; max-height: 70vh; display: none; }
+  /* 맵+토큰을 묶는 스테이지 — GM 보드와 동일하게 맵이 100% 너비 → 토큰 퍼센트 좌표 정합 */
+  .mv-stage { position: relative; width: 100%; max-width: 100%; line-height: 0; }
+  .mv-map { display: block; width: 100%; height: auto; user-select: none; -webkit-user-drag: none; }
   .mv-empty { color: var(--text-muted); font-size: 13px; font-style: italic; padding: 30px; text-align: center; }
-  .mv-hint { font-size: 11px; color: var(--text-muted); font-style: italic; text-align: center; margin: 0; }
-  /* 토큰을 뷰어 보드에도 표시 (재사용을 위해 동일 클래스 적용 시 미니 토큰화) */
-  .mv-board .battle-token { position: absolute; }
+  .mv-hint { font-size: 11px; color: var(--text-muted); font-style: italic; text-align: center; margin: 0; flex-shrink: 0; }
+  .mv-stage .battle-token { position: absolute; pointer-events: none; }
 
   /* 맵 뷰어 FAB (비-GM용) */
   .map-fab {
@@ -2016,7 +2060,8 @@
     <span class="tab-icon">🗺</span>
     <span class="tab-label">GM 도구</span>
   </div>
-  <div class="gm-panel">
+  <div class="gm-panel" id="gmPanel">
+    <div class="resize-handle-r" id="gmResizeR" title="드래그하여 폭 조절"></div>
     <div class="gm-header">
       <div class="gm-subtabs">
         <button class="gm-subtab active" data-pane="ultima">⬢ 울티마</button>
@@ -2173,16 +2218,21 @@
 
 <!-- 플레이어용 맵 뷰어 (비-GM도 전투맵을 볼 수 있게) -->
 <div class="map-viewer-bg" id="mapViewerBg" style="display:none;">
-  <div class="map-viewer">
+  <div class="map-viewer" id="mapViewer">
     <div class="mv-head">
       <span class="mv-title">🗺 전투맵</span>
       <button class="mv-close" id="mapViewerClose">✕</button>
     </div>
     <div class="mv-board" id="mvBoard">
-      <img class="mv-map" id="mvMapImg" alt="map">
+      <div class="mv-stage" id="mvStage" style="display:none;">
+        <img class="mv-map" id="mvMapImg" alt="map">
+      </div>
       <div class="mv-empty" id="mvEmpty">맵이 아직 설정되지 않았습니다</div>
     </div>
     <p class="mv-hint">GM이 맵을 설정하면 자동으로 동기화됩니다. 토큰의 움직임도 실시간 표시됩니다.</p>
+    <div class="resize-handle-right" id="mvResizeR" title="가로 폭 조절"></div>
+    <div class="resize-handle-bottom" id="mvResizeB" title="세로 높이 조절"></div>
+    <div class="resize-handle-br" id="mvResizeBR" title="크기 조절"></div>
   </div>
 </div>
 
@@ -2240,6 +2290,7 @@
   </div>
   <!-- 본체 (사이드바 슬라이드) -->
   <div class="chat-body" id="chatBody">
+    <div class="resize-handle-l" id="chatResizeL" title="드래그하여 폭 조절"></div>
     <div class="chat-tab-bar" id="chatTabBar">
       <div class="cpanel-tabs">
         <button class="cpanel-tab active" id="cpTabChat" data-view="chat">
@@ -3301,12 +3352,14 @@
     const empty = $('battleEmpty');
     const mvImg = $('mvMapImg');
     const mvEmpty = $('mvEmpty');
+    const mvStage = $('mvStage');
     if (bmState.map && bmState.map.url) {
       img.src = bmState.map.url;
       img.style.display = 'block';
       empty.style.display = 'none';
       mvImg.src = bmState.map.url;
       mvImg.style.display = 'block';
+      if (mvStage) mvStage.style.display = 'block';
       mvEmpty.style.display = 'none';
     } else {
       img.style.display = 'none';
@@ -3314,6 +3367,7 @@
       empty.style.display = 'flex';
       mvImg.style.display = 'none';
       mvImg.removeAttribute('src');
+      if (mvStage) mvStage.style.display = 'none';
       mvEmpty.style.display = 'flex';
     }
   }
@@ -3321,8 +3375,8 @@
   function renderTokens() {
     /* GM 보드 (드래그·도구 가능) */
     renderTokensInto($('battleBoard'), true);
-    /* 플레이어 뷰어 보드 (읽기 전용) */
-    renderTokensInto($('mvBoard'), false);
+    /* 플레이어 뷰어 보드 (읽기 전용) — 부모는 맵 스테이지여야 좌표 정합이 맞음 */
+    renderTokensInto($('mvStage'), false);
   }
 
   function renderTokensInto(board, interactive) {
@@ -3478,11 +3532,9 @@
     });
 
     /* 맵 뷰어 (비-GM 플레이어가 전투맵을 읽기 전용으로 보는 모달) */
+    /* 백드롭은 pointer-events:none이라 다른 UI는 그대로 사용 가능. X 버튼만 닫음 — 빈 곳/맵 클릭으로 의도치 않게 닫히지 않음. */
     $('mapFab').addEventListener('click', () => $('mapViewerBg').style.display = 'flex');
     $('mapViewerClose').addEventListener('click', () => $('mapViewerBg').style.display = 'none');
-    $('mapViewerBg').addEventListener('click', e => {
-      if (e.target.id === 'mapViewerBg') $('mapViewerBg').style.display = 'none';
-    });
 
     /* 울티마 포인트 */
     $('upPlus').addEventListener('click', () => setUltima(gmState.ultima + 1));
@@ -5024,6 +5076,151 @@
     if (url) { img.src = url; img.style.display = ''; empty.style.display = 'none'; }
     else { img.src = ''; img.style.display = 'none'; empty.style.display = ''; }
   }
+
+  /* ════════════════════════════════════════════════
+     📐 패널 리사이즈 — 채팅 / GM 사이드바 / 맵 뷰어
+     - 드래그로 크기 조절, localStorage에 저장하여 새로고침 후에도 유지
+     - 채팅: 왼쪽 가장자리 좌우 드래그 → 폭
+     - GM:   오른쪽 가장자리 좌우 드래그 → 폭
+     - 맵:   우측·하단·우하단 코너 드래그 → 양방향
+     ════════════════════════════════════════════════ */
+  (function initPanelResize() {
+    const root = document.documentElement;
+
+    /* 저장 값 복원 */
+    try {
+      const cw = parseInt(localStorage.getItem('panel_chat_w') || '', 10);
+      if (cw && cw >= 280 && cw <= window.innerWidth - 80) root.style.setProperty('--chat-w', cw + 'px');
+      const gw = parseInt(localStorage.getItem('panel_gm_w') || '', 10);
+      if (gw && gw >= 280 && gw <= window.innerWidth - 80) root.style.setProperty('--gm-w', gw + 'px');
+      const mw = parseInt(localStorage.getItem('panel_map_w') || '', 10);
+      const mh = parseInt(localStorage.getItem('panel_map_h') || '', 10);
+      const mv = document.getElementById('mapViewer');
+      if (mv) {
+        if (mw && mw >= 320) mv.style.width = Math.min(mw, window.innerWidth - 20) + 'px';
+        if (mh && mh >= 280) mv.style.height = Math.min(mh, window.innerHeight - 20) + 'px';
+      }
+    } catch(_) {}
+
+    function bindH(handle, opts) {
+      if (!handle) return;
+      let startX = 0, startY = 0, startW = 0, startH = 0, dragging = false;
+
+      function down(e) {
+        e.preventDefault(); e.stopPropagation();
+        dragging = true;
+        handle.classList.add('dragging');
+        document.body.classList.add(opts.cursorClass || 'is-resizing');
+        const target = opts.getTarget();
+        const rect = target.getBoundingClientRect();
+        startX = e.clientX; startY = e.clientY;
+        startW = rect.width; startH = rect.height;
+        try { handle.setPointerCapture && handle.setPointerCapture(e.pointerId); } catch(_) {}
+        document.addEventListener('pointermove', move);
+        document.addEventListener('pointerup', up);
+        document.addEventListener('pointercancel', up);
+      }
+      function move(e) {
+        if (!dragging) return;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        opts.onMove(dx, dy, startW, startH);
+      }
+      function up() {
+        if (!dragging) return;
+        dragging = false;
+        handle.classList.remove('dragging');
+        document.body.classList.remove('is-resizing','is-resizing-y','is-resizing-xy');
+        document.removeEventListener('pointermove', move);
+        document.removeEventListener('pointerup', up);
+        document.removeEventListener('pointercancel', up);
+        if (opts.onEnd) opts.onEnd();
+      }
+      handle.addEventListener('pointerdown', down);
+    }
+
+    /* 채팅: 왼쪽 가장자리를 왼쪽으로 끌면 넓어짐 */
+    bindH(document.getElementById('chatResizeL'), {
+      cursorClass: 'is-resizing',
+      getTarget: () => document.getElementById('chatBody'),
+      onMove: (dx, dy, sw) => {
+        const minW = 320, maxW = Math.min(window.innerWidth - 60, 1400);
+        const w = Math.max(minW, Math.min(maxW, sw - dx));
+        root.style.setProperty('--chat-w', w + 'px');
+      },
+      onEnd: () => {
+        const cur = getComputedStyle(root).getPropertyValue('--chat-w').trim();
+        const num = parseInt(cur, 10);
+        if (num) { try { localStorage.setItem('panel_chat_w', num); } catch(_){} }
+      }
+    });
+
+    /* GM: 오른쪽 가장자리를 오른쪽으로 끌면 넓어짐 */
+    bindH(document.getElementById('gmResizeR'), {
+      cursorClass: 'is-resizing',
+      getTarget: () => document.getElementById('gmPanel'),
+      onMove: (dx, dy, sw) => {
+        const minW = 320, maxW = Math.min(window.innerWidth - 60, 1400);
+        const w = Math.max(minW, Math.min(maxW, sw + dx));
+        root.style.setProperty('--gm-w', w + 'px');
+      },
+      onEnd: () => {
+        const cur = getComputedStyle(root).getPropertyValue('--gm-w').trim();
+        const num = parseInt(cur, 10);
+        if (num) { try { localStorage.setItem('panel_gm_w', num); } catch(_){} }
+      }
+    });
+
+    /* 맵: 오른쪽 핸들 — 가로만 */
+    bindH(document.getElementById('mvResizeR'), {
+      cursorClass: 'is-resizing',
+      getTarget: () => document.getElementById('mapViewer'),
+      onMove: (dx, dy, sw, sh) => {
+        const mv = document.getElementById('mapViewer');
+        const minW = 320, maxW = window.innerWidth - 20;
+        const w = Math.max(minW, Math.min(maxW, sw + dx));
+        mv.style.width = w + 'px';
+      },
+      onEnd: () => {
+        const mv = document.getElementById('mapViewer');
+        try { localStorage.setItem('panel_map_w', parseInt(mv.getBoundingClientRect().width, 10)); } catch(_){}
+      }
+    });
+
+    /* 맵: 아래 핸들 — 세로만 */
+    bindH(document.getElementById('mvResizeB'), {
+      cursorClass: 'is-resizing-y',
+      getTarget: () => document.getElementById('mapViewer'),
+      onMove: (dx, dy, sw, sh) => {
+        const mv = document.getElementById('mapViewer');
+        const minH = 280, maxH = window.innerHeight - 20;
+        const h = Math.max(minH, Math.min(maxH, sh + dy));
+        mv.style.height = h + 'px';
+      },
+      onEnd: () => {
+        const mv = document.getElementById('mapViewer');
+        try { localStorage.setItem('panel_map_h', parseInt(mv.getBoundingClientRect().height, 10)); } catch(_){}
+      }
+    });
+
+    /* 맵: 우하단 코너 — 양방향 */
+    bindH(document.getElementById('mvResizeBR'), {
+      cursorClass: 'is-resizing-xy',
+      getTarget: () => document.getElementById('mapViewer'),
+      onMove: (dx, dy, sw, sh) => {
+        const mv = document.getElementById('mapViewer');
+        const minW = 320, maxW = window.innerWidth - 20;
+        const minH = 280, maxH = window.innerHeight - 20;
+        mv.style.width  = Math.max(minW, Math.min(maxW, sw + dx)) + 'px';
+        mv.style.height = Math.max(minH, Math.min(maxH, sh + dy)) + 'px';
+      },
+      onEnd: () => {
+        const mv = document.getElementById('mapViewer');
+        const r = mv.getBoundingClientRect();
+        try { localStorage.setItem('panel_map_w', parseInt(r.width, 10)); localStorage.setItem('panel_map_h', parseInt(r.height, 10)); } catch(_){}
+      }
+    });
+  })();
 
 })();
 
