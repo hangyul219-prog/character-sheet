@@ -11,7 +11,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-<script src="https://www.youtube.com/iframe_api"></script>
+
 <style>
 
   :root {
@@ -2144,21 +2144,21 @@
     <!-- BGM -->
     <div class="gm-pane" id="gmPaneBgm" style="display:none;">
       <div class="gm-toolbar">
-        <input type="text" id="bgmUrlInput" class="gm-input" placeholder="유튜브 URL 붙여넣기">
+        <input type="text" id="bgmUrlInput" class="gm-input" placeholder="음악 URL 붙여넣기 (mp3, 스트림 등)">
       </div>
       <div class="gm-toolbar">
         <input type="text" id="bgmTitleInput" class="gm-input" placeholder="이름 (선택, 예: 전투 BGM)" style="flex:2;">
         <button class="gm-btn" id="bgmAddBtn" style="flex:1;">＋ 추가</button>
       </div>
       <div class="bgm-tracklist" id="bgmTracklist">
-        <div class="gm-empty-note" id="bgmEmpty">재생목록이 비어 있습니다. 유튜브 URL을 추가해 보세요. 여러 곡을 동시에 재생할 수 있습니다.</div>
+        <div class="gm-empty-note" id="bgmEmpty">재생목록이 비어 있습니다. 음악 URL을 추가해 보세요. 여러 곡을 동시에 재생할 수 있습니다.</div>
       </div>
       <p class="gm-hint">여러 곡을 동시에 틀 수 있습니다 (전투 음악 + 앰비언트 등). 재생 상태는 같은 방의 모두에게 공유됩니다. 모바일은 동시 재생이 제한될 수 있어요.</p>
     </div>
   </div>
 </div>
 <!-- 유튜브 플레이어 컨테이너 — GM 사이드바 밖에 둬야 비-GM 플레이어도 부모 display:none에 묻히지 않고 오디오 재생 가능 -->
-<div id="bgmPlayers" style="position:fixed; right:0; bottom:0; width:1px; height:1px; opacity:0.01; pointer-events:none; z-index:-1; overflow:hidden;"></div>
+
 <div class="bgm-unlock" id="bgmUnlock">🔊 BGM이 재생 중입니다 — 탭하여 듣기</div>
 
 <!-- 플레이어용 BGM 상태 칩 (방의 모두에게 표시) -->
@@ -2534,7 +2534,8 @@
                       ins: () => DIE[document.querySelector('[data-attr=ins]').value],
                       mig: () => DIE[document.querySelector('[data-attr=mig]').value],
                       wlp: () => DIE[document.querySelector('[data-attr=wlp]').value] };
-  const ATTR_KO = { dex:'민첩', ins:'통찰', mig:'근력', wlp:'의지력' };
+  window.ATTR_KO = window.ATTR_KO || { dex:'민첩', ins:'통찰', mig:'근력', wlp:'의지력' };
+  const ATTR_KO = window.ATTR_KO;
 
   let diceModalPresetRow = null; // 기술 버튼으로 열었을 때 해당 row
   let selectedAttr1 = null, selectedAttr2 = null;
@@ -2831,7 +2832,8 @@
     // 능력치
     const attrs = document.createElement('div');
     attrs.className = 'dl-attrs';
-    attrs.textContent = ATTR_KO[entry.attr1] + ' + ' + ATTR_KO[entry.attr2];
+    const attrMap = (typeof ATTR_KO !== 'undefined' ? ATTR_KO : null) || window.ATTR_KO || { dex:'민첩', ins:'통찰', mig:'근력', wlp:'의지력' };
+    attrs.textContent = (attrMap[entry.attr1] || entry.attr1 || '?') + ' + ' + (attrMap[entry.attr2] || entry.attr2 || '?');
 
     // 주사위 행
     const diceRow = document.createElement('div');
@@ -4006,32 +4008,13 @@
 
 
   /* ════════════════════════════════════════════════
-     BGM — 유튜브 동시 재생 (방 단위 실시간 동기화)
-     데이터: rooms/<room>/bgm/tracks/{id} = { videoId, title, playing, volume, loop }
-     GM이 컨트롤 → Firebase로 전파 → 모든 클라이언트가 자기 브라우저에서 YT.Player로 재생
+     BGM — 외부 링크 재생 (방 단위 실시간 동기화)
+     데이터: rooms/<room>/bgm/tracks/{id} = { url, title, playing, volume, loop }
+     GM이 컨트롤 → Firebase로 전파 → 모든 클라이언트가 자기 브라우저에서 Audio로 재생
      ════════════════════════════════════════════════ */
   let bgmRef = null;
   let bgmTracks = {};        // Firebase에서 받아온 트랙 상태
-  let ytPlayers = {};        // id -> YT.Player 인스턴스
-  let ytApiReady = false;
-  let bgmAudioUnlocked = false;
-
-  /* YouTube IFrame API 로드 완료 콜백 (전역) */
-  window.onYouTubeIframeAPIReady = function() {
-    ytApiReady = true;
-    /* 이미 트랙이 들어와 있다면 플레이어 생성 시도 */
-    syncAllPlayers();
-  };
-
-  function parseYouTubeId(url) {
-    if (!url) return null;
-    /* youtu.be/<id> | youtube.com/watch?v=<id> | youtube.com/embed/<id> | shorts/<id> */
-    const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([A-Za-z0-9_-]{11})/);
-    if (m) return m[1];
-    /* 그냥 ID만 넣은 경우 */
-    if (/^[A-Za-z0-9_-]{11}$/.test(url.trim())) return url.trim();
-    return null;
-  }
+  let bgmAudios = {};        // id -> HTMLAudioElement
 
   function initBgm(room) {
     if (!db) return;
@@ -4039,7 +4022,7 @@
     bgmRef.on('value', s => {
       bgmTracks = s.val() || {};
       renderBgmTracks();
-      syncAllPlayers();
+      syncAllAudios();
       updateBgmChip();
     });
   }
@@ -4057,7 +4040,7 @@
 
       const head = document.createElement('div'); head.className = 'btc-head';
       const title = document.createElement('div'); title.className = 'btc-title';
-      title.innerHTML = (t.playing ? '<span class="btc-eq">🎵</span>' : '') + (t.title || ('유튜브 — ' + t.videoId));
+      title.innerHTML = (t.playing ? '<span class="btc-eq">🎵</span>' : '') + escHtml(t.title || t.url || '제목 없음');
       const del = document.createElement('button'); del.className = 'btc-del'; del.textContent = '✕'; del.title = '삭제';
       del.addEventListener('click', () => { if (bgmRef) bgmRef.child(id).remove(); });
       head.appendChild(title); head.appendChild(del);
@@ -4079,6 +4062,17 @@
         bgmRef.child(id).update({ loop: !t.loop });
       });
 
+      /* 외부 링크로 직접 열기 버튼 */
+      const linkBtn = document.createElement('a');
+      linkBtn.href = t.url || '#';
+      linkBtn.target = '_blank';
+      linkBtn.rel = 'noopener noreferrer';
+      linkBtn.title = '새 탭에서 열기';
+      linkBtn.textContent = '🔗';
+      linkBtn.style.cssText = 'font-size:14px; text-decoration:none; padding:4px 8px; border:1px solid var(--border); border-radius:6px; color:var(--text-muted); display:inline-flex; align-items:center;';
+      linkBtn.addEventListener('mouseenter', () => { linkBtn.style.borderColor = 'var(--gold)'; linkBtn.style.color = 'var(--gold-light)'; });
+      linkBtn.addEventListener('mouseleave', () => { linkBtn.style.borderColor = 'var(--border)'; linkBtn.style.color = 'var(--text-muted)'; });
+
       const volWrap = document.createElement('div'); volWrap.className = 'btc-vol';
       const volLabel = document.createElement('span'); volLabel.textContent = '🔊';
       const vol = document.createElement('input'); vol.type = 'range'; vol.min = 0; vol.max = 100;
@@ -4086,117 +4080,82 @@
       const volNum = document.createElement('span'); volNum.style.cssText = 'font-size:11px;width:26px;text-align:right;'; volNum.textContent = vol.value;
       vol.addEventListener('input', () => {
         volNum.textContent = vol.value;
-        /* 즉시 로컬 적용 (반응성) */
-        if (ytPlayers[id] && ytPlayers[id].setVolume) {
-          try { ytPlayers[id].setVolume(parseInt(vol.value)); } catch(_) {}
-        }
+        if (bgmAudios[id]) bgmAudios[id].volume = parseInt(vol.value) / 100;
       });
       vol.addEventListener('change', () => {
         if (bgmRef) bgmRef.child(id).update({ volume: parseInt(vol.value) });
       });
       volWrap.appendChild(volLabel); volWrap.appendChild(vol); volWrap.appendChild(volNum);
 
-      ctrls.appendChild(play); ctrls.appendChild(loop); ctrls.appendChild(volWrap);
+      ctrls.appendChild(play); ctrls.appendChild(loop); ctrls.appendChild(linkBtn); ctrls.appendChild(volWrap);
       card.appendChild(head); card.appendChild(ctrls);
       list.appendChild(card);
     });
   }
 
-  /* Firebase 상태 → 실제 YT 플레이어 동기화 (모든 클라이언트에서 실행) */
-  function syncAllPlayers() {
-    if (!ytApiReady || !window.YT || !window.YT.Player) return;
+  /* Firebase 상태 → 실제 Audio 동기화 (모든 클라이언트에서 실행) */
+  function syncAllAudios() {
     const ids = Object.keys(bgmTracks);
 
-    /* 새로운 트랙 → 플레이어 생성 */
     ids.forEach(id => {
       const t = bgmTracks[id];
-      if (!t.videoId) return;
-      if (!ytPlayers[id]) {
-        const div = document.createElement('div');
-        div.id = 'ytp_' + id;
-        /* zero-size iframe은 일부 브라우저가 오디오를 정지시킴 → 작지만 0이 아닌 크기 */
-        div.style.cssText = 'width:1px; height:1px; opacity:0.01;';
-        $('bgmPlayers').appendChild(div);
-        ytPlayers[id] = new YT.Player(div.id, {
-          height: '1', width: '1', videoId: t.videoId,
-          playerVars: {
-            autoplay: 1, controls: 0, disablekb: 1, playsinline: 1,
-            modestbranding: 1, rel: 0, enablejsapi: 1,
-            origin: window.location.origin
-          },
-          events: {
-            onReady: (e) => {
-              try { e.target.setVolume(t.volume != null ? t.volume : 60); } catch(_) {}
-              applyTrackState(id);
-            },
-            onError: (e) => {
-              console.warn('[BGM] YouTube error for', t.videoId, e.data);
-              window.SHEET && window.SHEET.toast('재생 불가: 영상이 외부 사이트에서 막혀 있을 수 있어요 (다른 곡 시도)');
-            },
-            onStateChange: (e) => {
-              /* 종료 시 반복 처리 */
-              if (e.data === YT.PlayerState.ENDED) {
-                const tr = bgmTracks[id];
-                if (tr && tr.loop && ytPlayers[id] && ytPlayers[id].playVideo) {
-                  try { ytPlayers[id].seekTo(0); ytPlayers[id].playVideo(); } catch(_) {}
-                }
-              }
-            }
-          }
+      if (!t.url) return;
+
+      if (!bgmAudios[id]) {
+        const audio = new Audio();
+        audio.src = t.url;
+        audio.volume = (t.volume != null ? t.volume : 60) / 100;
+        audio.loop = !!t.loop;
+        audio.crossOrigin = 'anonymous';
+        audio.addEventListener('ended', () => {
+          const tr = bgmTracks[id];
+          if (tr && tr.loop) { try { audio.currentTime = 0; audio.play(); } catch(_) {} }
         });
-      } else {
-        applyTrackState(id);
+        audio.addEventListener('error', () => {
+          console.warn('[BGM] Audio error for', t.url);
+          window.SHEET && window.SHEET.toast('재생 불가: 해당 URL을 직접 재생할 수 없어요 (🔗 링크 버튼으로 열어보세요)');
+        });
+        bgmAudios[id] = audio;
+      }
+
+      const audio = bgmAudios[id];
+      audio.volume = (t.volume != null ? t.volume : 60) / 100;
+      audio.loop = !!t.loop;
+
+      if (t.playing && audio.paused) {
+        const playPromise = audio.play();
+        if (playPromise) {
+          playPromise.catch(() => { showBgmUnlock(); });
+        }
+      } else if (!t.playing && !audio.paused) {
+        audio.pause();
       }
     });
 
-    /* 사라진 트랙 → 플레이어 제거 */
-    Object.keys(ytPlayers).forEach(id => {
+    /* 사라진 트랙 → Audio 제거 */
+    Object.keys(bgmAudios).forEach(id => {
       if (!bgmTracks[id]) {
-        try { ytPlayers[id].destroy && ytPlayers[id].destroy(); } catch(_) {}
-        const el = document.getElementById('ytp_' + id);
-        if (el && el.parentNode) el.parentNode.removeChild(el);
-        delete ytPlayers[id];
+        try { bgmAudios[id].pause(); bgmAudios[id].src = ''; } catch(_) {}
+        delete bgmAudios[id];
       }
     });
   }
 
-  function applyTrackState(id) {
-    const p = ytPlayers[id]; const t = bgmTracks[id];
-    if (!p || !t || !p.getPlayerState) return;
-    try {
-      if (t.volume != null && p.setVolume) p.setVolume(t.volume);
-      const state = p.getPlayerState();
-      const PLAYING = (window.YT && YT.PlayerState && YT.PlayerState.PLAYING) || 1;
-      if (t.playing && state !== PLAYING) {
-        p.playVideo();
-        /* 1초 뒤에도 재생 상태가 아니면 자동재생 차단으로 보고 잠금 해제 배너 표시 */
-        setTimeout(() => {
-          try {
-            const s = p.getPlayerState();
-            if (bgmTracks[id] && bgmTracks[id].playing && s !== PLAYING && s !== 3 /*BUFFERING*/) {
-              showBgmUnlock();
-            }
-          } catch(_) {}
-        }, 1200);
-      } else if (!t.playing && state === PLAYING) {
-        p.pauseVideo();
-      }
-    } catch(_) {}
-  }
+  let bgmAudioUnlocked = false;
 
   function showBgmUnlock() {
     if (bgmAudioUnlocked) return;
     const el = $('bgmUnlock'); if (!el) return;
     el.classList.add('show');
   }
-  /* 잠금 해제 배너를 누르면 사용자 제스처와 함께 모든 재생 중 트랙을 다시 play */
+
   (function bindBgmUnlock() {
     const unlock = $('bgmUnlock'); if (!unlock) return;
     unlock.addEventListener('click', () => {
       bgmAudioUnlocked = true;
-      Object.keys(ytPlayers).forEach(id => {
+      Object.keys(bgmAudios).forEach(id => {
         const t = bgmTracks[id];
-        if (t && t.playing) { try { ytPlayers[id].playVideo(); } catch(_) {} }
+        if (t && t.playing) { try { bgmAudios[id].play(); } catch(_) {} }
       });
       unlock.classList.remove('show');
     });
@@ -4213,7 +4172,7 @@
     chip.classList.add('show');
     if (playingIds.length === 1) {
       const t = bgmTracks[playingIds[0]];
-      text.textContent = t.title || ('유튜브 — ' + t.videoId);
+      text.textContent = t.title || t.url || '재생 중';
     } else {
       text.textContent = playingIds.length + '곡 재생 중';
     }
@@ -4224,11 +4183,10 @@
     if (!bgmRef) { window.SHEET.toast('방 입장 후 사용 가능합니다'); return; }
     const url = ($('bgmUrlInput').value || '').trim();
     const title = ($('bgmTitleInput').value || '').trim();
-    const id = parseYouTubeId(url);
-    if (!id) { window.SHEET.toast('유효한 유튜브 URL이 아닙니다'); return; }
+    if (!url || !/^https?:\/\//i.test(url)) { window.SHEET.toast('http(s):// 로 시작하는 유효한 URL을 입력해 주세요'); return; }
     bgmRef.push({
-      videoId: id,
-      title: title || ('유튜브 — ' + id),
+      url: url,
+      title: title || url,
       playing: false,
       volume: 60,
       loop: false,
@@ -4243,13 +4201,14 @@
     $('bgmChip').addEventListener('click', () => {
       chipMuted = !chipMuted;
       $('bgmChipMute').textContent = chipMuted ? '🔇' : '🔊';
-      Object.keys(ytPlayers).forEach(id => {
-        const p = ytPlayers[id];
-        try { if (chipMuted) p.mute && p.mute(); else p.unMute && p.unMute(); } catch(_) {}
+      Object.keys(bgmAudios).forEach(id => {
+        const a = bgmAudios[id];
+        try { a.muted = chipMuted; } catch(_) {}
       });
     });
   }
   bindBgmChip();
+
 
   /* ── 탭 렌더링 ── */
   function renderTabs() {
@@ -4389,6 +4348,8 @@
   function subscribeDiceLog(room) {
     if (!db) return;
     diceLogRef = db.ref('rooms/' + room + '/diceLog');
+    /* ★ 접속 시각 기록 — 이 시각 이전에 굴린 항목은 과거 기록이므로 무시 */
+    const joinedAt = Date.now();
     /* 최신 50개만 구독, 새로 추가되는 항목만 처리 */
     diceLogRef.limitToLast(50).on('child_added', snap => {
       const entry = snap.val();
@@ -4399,6 +4360,8 @@
       /* ★ 내가 방금 굴린 항목(clientId 일치)은 이미 로컬에서 렌더했으므로 스킵 */
       if (entry.clientId && myRollIds.has(entry.clientId)) return;
       if (entry._local) return;
+      /* ★ 접속 이전에 저장된 항목은 과거 기록 — 재접속 시 중복 표시 방지 */
+      if ((entry.ts || 0) < joinedAt) return;
       window.DICE_LOG && window.DICE_LOG.receiveRemote(entry);
     });
   }
