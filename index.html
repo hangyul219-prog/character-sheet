@@ -911,7 +911,7 @@
     display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
     transition: right 0.32s cubic-bezier(0.16,1,0.3,1), background 0.2s, border-color 0.2s;
   }
-  .chat-panel.open .chat-side-tab { right: 360px; }
+  .chat-panel.open .chat-side-tab { right: 720px; }
   .chat-side-tab:hover { background: linear-gradient(180deg, #232d50, #1a2240); border-color: var(--gold); }
   .chat-side-tab .tab-icon { font-size: 15px; line-height: 1; }
   .chat-side-tab .tab-label {
@@ -972,7 +972,7 @@
   /* 채팅 바디 — 우측 사이드바 슬라이드 */
   .chat-body {
     position: absolute; right: 0; top: 0; height: 100%;
-    width: 360px;
+    width: 720px;
     background: linear-gradient(160deg, #0f1626, #0c1220);
     border-left: 1px solid var(--border-strong);
     box-shadow: -8px 0 40px rgba(0,0,0,0.6);
@@ -1195,7 +1195,7 @@
     box-shadow: 4px 0 18px rgba(0,0,0,0.5);
     transition: left 0.34s cubic-bezier(0.16,1,0.3,1), background 0.2s, border-color 0.2s;
   }
-  .gm-sidebar.open .gm-tab { left: min(460px, 92vw); }
+  .gm-sidebar.open .gm-tab { left: min(720px, 92vw); }
   .gm-tab:hover { background: linear-gradient(180deg, #232d50, #1a2240); border-color: var(--gold); }
   .gm-tab .tab-icon { font-size: 16px; line-height: 1; }
   .gm-tab .tab-label {
@@ -1205,7 +1205,7 @@
   }
   .gm-panel {
     position: absolute; left: 0; top: 0; height: 100%;
-    width: min(460px, 92vw);
+    width: min(720px, 92vw);
     background: linear-gradient(200deg, #0f1626, #0c1220);
     border-right: 1px solid var(--border-strong);
     box-shadow: 8px 0 40px rgba(0,0,0,0.6);
