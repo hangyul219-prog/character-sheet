@@ -3206,12 +3206,13 @@
   /* 시트 외부(채팅 모듈 등)에서도 호출 가능하게 노출 */
   window.SKILL_REVEAL = addSkillRevealEntry;
 
-  function addDiceLogEntry({ attr1, attr2, sides1, sides2, r1, r2, totalMod, finalSum, hr, isFumble, isCrit, checkedItems }) {
+  function addDiceLogEntry({ attr1, attr2, sides1, sides2, r1, r2, totalMod, finalSum, hr, isFumble, isCrit, checkedItems, rolledBy }) {
     diceLogCounter++;
     const now = new Date();
     const timeStr = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0') + ':' + now.getSeconds().toString().padStart(2,'0');
 
     const entry = { id: diceLogCounter, timeStr, attr1, attr2, sides1, sides2, r1, r2, totalMod, finalSum, hr, isFumble, isCrit, checkedItems };
+    if (rolledBy) entry.rolledBy = rolledBy;
     /* ★ 중복 방지용 클라이언트 고유 ID — Firebase push 키가 늦게 도착해도 내 굴림을 식별 */
     entry.clientId = 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
     diceLogEntries.unshift(entry);
@@ -3450,7 +3451,7 @@
     updateDiceLogCount();
   }
 
-  window.DICE_LOG = { receiveRemote, count: () => diceLogEntries.length };
+  window.DICE_LOG = { receiveRemote, count: () => diceLogEntries.length, addEntry: addDiceLogEntry };
 
   /* ── INIT ── */
   function seedRows() {
@@ -4298,6 +4299,46 @@
         topRow.innerHTML = `<span class="mc-atk-type">${atk.type === '근접' ? '⚔' : '🏹'}</span><b>${atk.name || '공격'}</b>`;
         if (atk.check) topRow.innerHTML += ` <span class="mc-atk-check">【${atk.check}】</span>`;
         if (atk.damage) topRow.innerHTML += ` <span class="mc-atk-dmg">${atk.damage}</span>`;
+        /* ── 공격 굴림 버튼 (check 필드가 있는 공격에만 표시) ── */
+        if (atk.check) {
+          const atkRollBtn = document.createElement('button');
+          atkRollBtn.className = 'roll-btn';
+          atkRollBtn.title = atk.check + ' 굴림';
+          atkRollBtn.textContent = '⚄';
+          atkRollBtn.style.cssText = 'margin-left:auto; align-self:center; flex-shrink:0;';
+          atkRollBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            /* 주사위 면수 매핑 */
+            const D = { d6:6, d8:8, d10:10, d12:12 };
+            /* 이 몬스터의 능력치 → 주사위 타입 */
+            const mA = { DEX: m.dex||'d8', INS: m.ins||'d8', MIG: m.mig||'d8', WLP: m.wlp||'d8' };
+            /* check 문자열 파싱 (예: "DEX+MIG", "INS+WLP") */
+            const pts = atk.check.toUpperCase().replace(/\s/g,'').split('+');
+            const a1 = pts[0] || 'DEX';
+            const a2 = pts[1] || pts[0] || 'DEX';
+            const s1 = D[mA[a1] || 'd8'] || 8;
+            const s2 = D[mA[a2] || 'd8'] || 8;
+            /* 굴림 */
+            const r1 = Math.ceil(Math.random() * s1);
+            const r2 = Math.ceil(Math.random() * s2);
+            const hr = Math.max(r1, r2);
+            const isFumble = r1 === 1 && r2 === 1;
+            const isCrit = !isFumble && r1 === r2 && r1 >= 6;
+            /* 특수 효과가 있으면 체크 아이템으로 포함 */
+            const items = atk.fx ? [{ name: atk.name || '공격', mod: 0, fx: atk.fx }] : [];
+            /* 굴림 기록에 추가 */
+            if (window.DICE_LOG && window.DICE_LOG.addEntry) {
+              window.DICE_LOG.addEntry({
+                attr1: a1.toLowerCase(), attr2: a2.toLowerCase(),
+                sides1: s1, sides2: s2, r1, r2,
+                totalMod: 0, finalSum: r1 + r2, hr,
+                isFumble, isCrit, checkedItems: items,
+                rolledBy: '👾 ' + (m.name || '몬스터')
+              });
+            }
+          });
+          topRow.appendChild(atkRollBtn);
+        }
         row.appendChild(topRow);
         if (atk.fx) { const fx = document.createElement('div'); fx.className = 'mc-atk-fx'; fx.textContent = atk.fx; row.appendChild(fx); }
         atkList.appendChild(row);
