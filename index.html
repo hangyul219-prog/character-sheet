@@ -4347,65 +4347,126 @@
     renderTokensInto($('mvStage'), false);
   }
 
+  function _buildTokenElement(id, t, interactive) {
+    const el = document.createElement('div');
+    el.className = 'battle-token' + (interactive && id === bmSelected ? ' selected' : '');
+    el.dataset.id = id;
+    el.dataset.tokenUrl = t.url || '';
+    const size = t.size || 48;
+    el.style.width = size + 'px';
+    el.style.height = size + 'px';
+    el.style.left = (t.x != null ? t.x : 50) + '%';
+    el.style.top  = (t.y != null ? t.y : 50) + '%';
+
+    const normT = normalizeMediaUrl(t.url || '');
+    const tokenUrl = normT.url;
+    const tokenIsVideo = normT.mediaType === 'video' || isVideoMedia(t);
+    let media;
+    if (tokenIsVideo) {
+      media = document.createElement('video');
+      media.src = tokenUrl;
+      media.autoplay = true; media.loop = true; media.muted = true;
+      media.playsInline = true;
+      media.setAttribute('playsinline', '');
+      media.setAttribute('webkit-playsinline', '');
+      media.preload = 'auto';
+      const tryPlay = () => media.play && media.play().catch(() => {});
+      media.addEventListener('loadeddata', tryPlay);
+      tryPlay();
+    } else {
+      media = document.createElement('img');
+      media.src = tokenUrl; media.loading = 'lazy';
+    }
+    media.alt = t.name || '';
+    el.appendChild(media);
+
+    if (interactive && isGameMaster) {
+      const tools = document.createElement('div');
+      tools.className = 'token-tools';
+      tools.addEventListener('pointerdown', e => e.stopPropagation());
+      const minus = document.createElement('button'); minus.textContent = '−'; minus.title = '작게';
+      const plus  = document.createElement('button'); plus.textContent = '＋'; plus.title = '크게';
+      const dmg   = document.createElement('button'); dmg.className = 'dmg'; dmg.textContent = '💥'; dmg.title = '데미지';
+      const del   = document.createElement('button'); del.className = 'del'; del.textContent = '🗑'; del.title = '삭제';
+      minus.addEventListener('click', e => { e.stopPropagation(); resizeToken(id, -8); });
+      plus.addEventListener('click',  e => { e.stopPropagation(); resizeToken(id, +8); });
+      dmg.addEventListener('click',   e => { e.stopPropagation(); applyDamageToToken(id); });
+      del.addEventListener('click',   e => { e.stopPropagation(); deleteToken(id); });
+      tools.appendChild(minus); tools.appendChild(plus); tools.appendChild(dmg); tools.appendChild(del);
+      el.appendChild(tools);
+      attachTokenDrag(el, id);
+    } else {
+      el.style.pointerEvents = 'none';
+    }
+    return el;
+  }
+
   function renderTokensInto(board, interactive) {
-    board.querySelectorAll('.battle-token').forEach(t => t.remove());
+    const stateIds = new Set(Object.keys(bmState.tokens));
+
+    /* ① 사라진 토큰 제거 */
+    board.querySelectorAll('.battle-token').forEach(el => {
+      if (!stateIds.has(el.dataset.id)) el.remove();
+    });
+
     Object.keys(bmState.tokens).forEach(id => {
       const t = bmState.tokens[id];
-      const el = document.createElement('div');
-      el.className = 'battle-token' + (interactive && id === bmSelected ? ' selected' : '');
-      el.dataset.id = id;
+      const existing = board.querySelector('.battle-token[data-id="' + id + '"]');
+      const newUrl = t.url || '';
       const size = t.size || 48;
-      el.style.width = size + 'px';
-      el.style.height = size + 'px';
-      el.style.left = (t.x != null ? t.x : 50) + '%';
-      el.style.top  = (t.y != null ? t.y : 50) + '%';
+      const x = (t.x != null ? t.x : 50) + '%';
+      const y = (t.y != null ? t.y : 50) + '%';
 
-      /* 영상 토큰(webm·mp4 등)이면 <video>, 아니면 기존대로 <img> */
-      /* Firebase에 embed URL이 저장된 구 데이터도 읽을 때 변환 */
-      const normT = normalizeMediaUrl(t.url || '');
-      const tokenUrl = normT.url;
-      const tokenIsVideo = normT.mediaType === 'video' || isVideoMedia(t);
-      let media;
-      if (tokenIsVideo) {
-        media = document.createElement('video');
-        media.src = tokenUrl;
-        media.autoplay = true; media.loop = true; media.muted = true;
-        media.playsInline = true;
-        media.setAttribute('playsinline', '');
-        media.setAttribute('webkit-playsinline', '');
-        media.preload = 'auto';
-        /* 자동재생 차단 환경 대비 */
-        const tryPlay = () => media.play && media.play().catch(() => {});
-        media.addEventListener('loadeddata', tryPlay);
-        tryPlay();
-      } else {
-        media = document.createElement('img');
-        media.src = tokenUrl; media.loading = 'lazy';
-      }
-      media.alt = t.name || '';
-      el.appendChild(media);
+      if (existing) {
+        /* ② 기존 엘리먼트 재사용 — URL이 바뀌었을 때만 미디어 교체 */
+        if (existing.dataset.tokenUrl !== newUrl) {
+          /* URL이 달라진 경우: 미디어 엘리먼트만 교체 */
+          existing.dataset.tokenUrl = newUrl;
+          const oldMedia = existing.querySelector('img, video');
+          if (oldMedia) oldMedia.remove();
+          const normT = normalizeMediaUrl(newUrl);
+          const tokenUrl = normT.url;
+          const tokenIsVideo = normT.mediaType === 'video' || isVideoMedia(t);
+          let media;
+          if (tokenIsVideo) {
+            media = document.createElement('video');
+            media.src = tokenUrl;
+            media.autoplay = true; media.loop = true; media.muted = true;
+            media.playsInline = true;
+            media.setAttribute('playsinline', '');
+            media.setAttribute('webkit-playsinline', '');
+            media.preload = 'auto';
+            const tryPlay = () => media.play && media.play().catch(() => {});
+            media.addEventListener('loadeddata', tryPlay);
+            tryPlay();
+          } else {
+            media = document.createElement('img');
+            media.src = tokenUrl; media.loading = 'lazy';
+          }
+          media.alt = t.name || '';
+          existing.insertBefore(media, existing.firstChild);
+        }
 
-      if (interactive && isGameMaster) {
-        const tools = document.createElement('div');
-        tools.className = 'token-tools';
-        /* 도구 버튼 위에서 발생한 pointerdown은 토큰 드래그를 시작시키지 않도록 차단 */
-        tools.addEventListener('pointerdown', e => e.stopPropagation());
-        const minus = document.createElement('button'); minus.textContent = '−'; minus.title = '작게';
-        const plus  = document.createElement('button'); plus.textContent = '＋'; plus.title = '크게';
-        const dmg   = document.createElement('button'); dmg.className = 'dmg'; dmg.textContent = '💥'; dmg.title = '데미지';
-        const del   = document.createElement('button'); del.className = 'del'; del.textContent = '🗑'; del.title = '삭제';
-        minus.addEventListener('click', e => { e.stopPropagation(); resizeToken(id, -8); });
-        plus.addEventListener('click',  e => { e.stopPropagation(); resizeToken(id, +8); });
-        dmg.addEventListener('click',   e => { e.stopPropagation(); applyDamageToToken(id); });
-        del.addEventListener('click',   e => { e.stopPropagation(); deleteToken(id); });
-        tools.appendChild(minus); tools.appendChild(plus); tools.appendChild(dmg); tools.appendChild(del);
-        el.appendChild(tools);
-        attachTokenDrag(el, id);
+        /* ③ 크기·위치 업데이트 — 자신이 드래그 중이 아닐 때만 (드래그 중이면 pointerMove가 직접 제어) */
+        if (!existing.classList.contains('dragging')) {
+          /* 다른 클라이언트가 보낸 이동에는 부드러운 CSS 트랜지션 적용 */
+          existing.classList.add('remote-move');
+          existing.style.width  = size + 'px';
+          existing.style.height = size + 'px';
+          existing.style.left   = x;
+          existing.style.top    = y;
+          /* 트랜지션 끝나면 클래스 제거 — 자신의 드래그와 충돌 방지 */
+          existing.addEventListener('transitionend', () => existing.classList.remove('remote-move'), { once: true });
+        }
+
+        /* selected 상태 동기화 */
+        if (interactive) {
+          existing.classList.toggle('selected', id === bmSelected);
+        }
       } else {
-        /* 비-GM 또는 뷰어 보드: 포인터 이벤트 차단 */
-        el.style.pointerEvents = 'none';
+        /* ④ 새 토큰 생성 */
+        board.appendChild(_buildTokenElement(id, t, interactive));
       }
-      board.appendChild(el);
     });
   }
 
@@ -5003,6 +5064,86 @@
     return aff;
   }
 
+  /* ────────── 몬스터 주사위 결과를 모달에 표시 ────────── */
+  function showMonsterRollInModal({ a1, a2, sides1, sides2, r1, r2, hr, totalMod, finalSum, isCrit, isFumble, checkedItems, rolledBy }) {
+    const ATTR_KO_LOCAL = { dex:'민첩 DEX', ins:'통찰 INS', mig:'근력 MIG', wlp:'의지 WLP' };
+
+    /* 능력치 버튼 하이라이트 */
+    document.querySelectorAll('#attr1Btns .attr-btn').forEach(b => b.classList.toggle('sel', b.dataset.attr === a1));
+    document.querySelectorAll('#attr2Btns .attr-btn').forEach(b => b.classList.toggle('sel', b.dataset.attr === a2));
+
+    /* 체크리스트 영역 — 몬스터 굴림임을 표시 */
+    const cl = $('dmChecklist');
+    cl.innerHTML = '';
+    if (rolledBy) {
+      const lbl = document.createElement('div');
+      lbl.style.cssText = 'color:var(--gold-light);font-family:Cinzel,serif;font-size:12px;letter-spacing:1px;padding:4px 0;';
+      lbl.textContent = '🐉 ' + rolledBy;
+      cl.appendChild(lbl);
+    }
+    checkedItems.forEach(ci => {
+      if (!ci.fx) return;
+      const row = document.createElement('div');
+      row.style.cssText = 'font-size:13px;color:var(--text-secondary);padding:2px 0;';
+      row.textContent = '⚡ ' + ci.name + ': ' + ci.fx;
+      cl.appendChild(row);
+    });
+
+    /* 수정자 */
+    $('dmExtraMod').value = 0;
+    $('dmTotalMod').textContent = (totalMod >= 0 ? '+' : '') + totalMod;
+
+    /* ── 주사위 표시 ── */
+    const diceDiv = $('rrDice'); diceDiv.innerHTML = '';
+    [[r1, 'd' + sides1, r1 >= r2], [r2, 'd' + sides2, r2 >= r1]].forEach(([val, label, isHr]) => {
+      const d = document.createElement('div');
+      d.className = 'rr-die' + (isHr ? ' hr' : '');
+      d.innerHTML = val + '<span class="die-label">' + label + '</span>';
+      diceDiv.appendChild(d);
+    });
+    if (totalMod !== 0) {
+      const modD = document.createElement('div');
+      modD.className = 'rr-die';
+      modD.style.borderColor = totalMod > 0 ? 'var(--emerald)' : 'var(--crimson-light)';
+      modD.style.color       = totalMod > 0 ? 'var(--emerald-light)' : 'var(--hp-light)';
+      modD.style.fontSize    = '16px';
+      modD.innerHTML = (totalMod > 0 ? '+' : '') + totalMod + '<span class="die-label">보정</span>';
+      diceDiv.appendChild(modD);
+    }
+
+    /* 합계 */
+    const attrLabel = ATTR_KO_LOCAL[a1] + ' + ' + ATTR_KO_LOCAL[a2]
+                    + (totalMod !== 0 ? (totalMod > 0 ? ' +' : ' ') + totalMod : '');
+    $('rrSum').innerHTML = attrLabel + '<br><b>' + finalSum + '</b>';
+
+    /* 판정 결과 뱃지 */
+    const verdict = $('rrVerdict');
+    if (isFumble) {
+      verdict.className = 'rr-verdict fumble'; verdict.textContent = '💀 실패 — 둘 다 1! 상대방이 기회를 얻습니다';
+    } else if (isCrit) {
+      verdict.className = 'rr-verdict crit'; verdict.textContent = '✨ 대성공! 자동 성공 + 기회 발동 가능';
+    } else {
+      verdict.className = 'rr-verdict normal'; verdict.textContent = '합계 ' + finalSum + ' — 난이도와 비교하세요';
+    }
+
+    /* HR */
+    $('rrHr').innerHTML = '높은 굴림 (HR) <b>' + hr + '</b> — 피해·주문 효과 계산에 사용';
+
+    /* 효과 텍스트 */
+    const fxDiv = $('rrEffects'); fxDiv.innerHTML = '';
+    checkedItems.filter(i => i.fx).forEach(i => {
+      const p = document.createElement('div');
+      p.className = 'rr-fx-item';
+      p.textContent = '⚡ [' + i.name + '] ' + i.fx;
+      fxDiv.appendChild(p);
+    });
+
+    $('rollResult').classList.add('show');
+    $('diceModalBg').classList.add('open');
+    /* 모달 내 결과 영역으로 스크롤 */
+    setTimeout(() => { const el = $('rollResult'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 80);
+  }
+
   /* ────────── 몬스터 공격 주사위 굴리기 ────────── */
   function rollMonsterAttack(monsterId, atk) {
     const m = monsterState[monsterId];
@@ -5040,6 +5181,10 @@
     if (atk.damage) checkedItems.push({ name: '피해', fx: atk.damage });
     if (atk.fx)     checkedItems.push({ name: '효과', fx: atk.fx });
 
+    /* ① 모달에 결과 표시 */
+    showMonsterRollInModal({ a1, a2, sides1, sides2, r1, r2, hr, totalMod, finalSum, isCrit, isFumble, checkedItems, rolledBy: (m.name || '몬스터') + ' · ' + (atk.name || '공격') });
+
+    /* ② 사이드바 기록 추가 */
     addDiceLogEntry({
       attr1: a1, attr2: a2,
       sides1, sides2, r1, r2,
