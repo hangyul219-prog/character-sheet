@@ -2053,6 +2053,16 @@
   .mc-atk-check { color: var(--gold-light); font-family: 'Cinzel', serif; font-size: 11px; }
   .mc-atk-dmg   { color: var(--hp-light); font-family: 'Cinzel', serif; font-size: 11px; }
   .mc-atk-fx    { color: var(--text-muted); font-style: italic; font-size: 12px; }
+  .mc-roll-btn  {
+    margin-left: auto; flex-shrink: 0; align-self: center;
+    width: 26px; height: 22px; border-radius: 5px;
+    border: 1px solid rgba(212,175,82,0.35); background: rgba(212,175,82,0.1);
+    color: var(--gold-light); font-size: 13px; cursor: pointer; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s; -webkit-tap-highlight-color: transparent;
+  }
+  .mc-roll-btn:hover { background: rgba(212,175,82,0.28); border-color: var(--gold); transform: scale(1.1); }
+  .mc-roll-btn:active { transform: scale(0.95); }
   .mc-skill-row { background: rgba(123,92,196,0.07); border: 1px solid rgba(123,92,196,0.25); border-radius: 6px; padding: 6px 8px; font-family: 'Crimson Pro', serif; font-size: 13px; color: var(--text-secondary); display: flex; flex-direction: column; gap: 2px; position: relative; }
   .mc-skill-row b { color: var(--arcane-light); font-family: 'Cinzel', serif; font-size: 11px; }
   .mc-skill-fx   { color: var(--text-muted); font-style: italic; font-size: 12px; }
@@ -3646,12 +3656,13 @@
   /* 시트 외부(채팅 모듈 등)에서도 호출 가능하게 노출 */
   window.SKILL_REVEAL = addSkillRevealEntry;
 
-  function addDiceLogEntry({ attr1, attr2, sides1, sides2, r1, r2, totalMod, finalSum, hr, isFumble, isCrit, checkedItems }) {
+  function addDiceLogEntry({ attr1, attr2, sides1, sides2, r1, r2, totalMod, finalSum, hr, isFumble, isCrit, checkedItems, rolledBy }) {
     diceLogCounter++;
     const now = new Date();
     const timeStr = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0') + ':' + now.getSeconds().toString().padStart(2,'0');
 
     const entry = { id: diceLogCounter, timeStr, attr1, attr2, sides1, sides2, r1, r2, totalMod, finalSum, hr, isFumble, isCrit, checkedItems };
+    if (rolledBy) entry.rolledBy = rolledBy;
     /* ★ 중복 방지용 클라이언트 고유 ID — Firebase push 키가 늦게 도착해도 내 굴림을 식별 */
     entry.clientId = 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
     diceLogEntries.unshift(entry);
@@ -4245,10 +4256,40 @@
   function isVideoMedia(m) {
     if (!m) return false;
     if (m.mediaType === 'video') return true;
+    const rawUrl = m.url || '';
+    /* embed 페이지 URL은 mediaType 값과 무관하게 항상 video로 처리
+       (구버전 코드로 'image'로 잘못 저장된 데이터 대비) */
+    if (/player\.cloudinary\.com\/embed/i.test(rawUrl)) return true;
+    /* mediaType이 'image'로 명시돼 있으면 더 이상 검사 안 함 */
     if (m.mediaType === 'image') return false;
     /* 폴백: URL 확장자 검사 */
-    const u = (m.url || '').toLowerCase().split('?')[0].split('#')[0];
-    return /\.(webm|mp4|mov|m4v|ogv)$/.test(u);
+    const u = rawUrl.toLowerCase().split('?')[0].split('#')[0];
+    if (/\.(webm|mp4|mov|m4v|ogv)$/.test(u)) return true;
+    /* Cloudinary res.cloudinary.com/*/video/upload/* — 확장자 없는 경우도 video */
+    if (/res\.cloudinary\.com\/[^/]+\/video\/upload\//i.test(u)) return true;
+    return false;
+  }
+
+  /**
+   * Cloudinary player embed URL 등 embed 페이지 URL을 직접 미디어 URL로 변환.
+   * 변환 불가 시 원본 URL을 그대로 반환.
+   * @returns {{ url: string, mediaType: 'video'|'image'|null }}
+   */
+  function normalizeMediaUrl(rawUrl) {
+    try {
+      const u = new URL(rawUrl);
+      /* ── Cloudinary player embed ──
+         https://player.cloudinary.com/embed/?cloud_name=X&public_id=Y[&...]
+         → https://res.cloudinary.com/X/video/upload/Y.webm              */
+      if (u.hostname === 'player.cloudinary.com' && u.pathname.startsWith('/embed')) {
+        const cloud = u.searchParams.get('cloud_name');
+        const pid   = u.searchParams.get('public_id');
+        if (cloud && pid) {
+          return { url: `https://res.cloudinary.com/${cloud}/video/upload/${pid}.webm`, mediaType: 'video' };
+        }
+      }
+    } catch(_) {}
+    return { url: rawUrl, mediaType: null };
   }
 
   function renderBattleMap() {
@@ -4261,8 +4302,10 @@
     const mvStage = $('mvStage');
 
     if (bmState.map && bmState.map.url) {
-      const url = bmState.map.url;
-      const useVideo = isVideoMedia(bmState.map);
+      /* 구 데이터(embed URL)도 읽을 때 변환 */
+      const normMap = normalizeMediaUrl(bmState.map.url);
+      const url = normMap.url;
+      const useVideo = normMap.mediaType === 'video' || isVideoMedia(bmState.map);
 
       if (useVideo) {
         /* GM 보드 */
@@ -4318,11 +4361,14 @@
       el.style.top  = (t.y != null ? t.y : 50) + '%';
 
       /* 영상 토큰(webm·mp4 등)이면 <video>, 아니면 기존대로 <img> */
-      const tokenIsVideo = isVideoMedia(t);
+      /* Firebase에 embed URL이 저장된 구 데이터도 읽을 때 변환 */
+      const normT = normalizeMediaUrl(t.url || '');
+      const tokenUrl = normT.url;
+      const tokenIsVideo = normT.mediaType === 'video' || isVideoMedia(t);
       let media;
       if (tokenIsVideo) {
         media = document.createElement('video');
-        media.src = t.url;
+        media.src = tokenUrl;
         media.autoplay = true; media.loop = true; media.muted = true;
         media.playsInline = true;
         media.setAttribute('playsinline', '');
@@ -4334,7 +4380,7 @@
         tryPlay();
       } else {
         media = document.createElement('img');
-        media.src = t.url; media.loading = 'lazy';
+        media.src = tokenUrl; media.loading = 'lazy';
       }
       media.alt = t.name || '';
       el.appendChild(media);
@@ -4695,11 +4741,17 @@
     const label = kind === 'map' ? '맵' : '토큰';
     const url = prompt(label + ' URL을 붙여넣으세요 (이미지·GIF·webm·mp4 가능):');
     if (!url) return;
-    const trimmed = url.trim();
-    if (!/^https?:\/\//i.test(trimmed)) { window.SHEET.toast('http(s):// 로 시작하는 URL이어야 합니다'); return; }
+    const raw = url.trim();
+    if (!/^https?:\/\//i.test(raw)) { window.SHEET.toast('http(s):// 로 시작하는 URL이어야 합니다'); return; }
+
+    /* Cloudinary embed 등 embed 페이지 URL → 직접 미디어 URL 변환 */
+    const { url: trimmed, mediaType: detectedType } = normalizeMediaUrl(raw);
+
     const name = (prompt('이름 (선택):') || '').trim();
     const lo = trimmed.toLowerCase().split('?')[0].split('#')[0];
-    const isVid = /\.(webm|mp4|mov|m4v|ogv)$/.test(lo);
+    const isVid = detectedType === 'video'
+      || /\.(webm|mp4|mov|m4v|ogv)$/.test(lo)
+      || /res\.cloudinary\.com\/[^/]+\/video\/upload\//.test(lo);
     if (kind === 'map') {
       bmRef.child('map').set({ url: trimmed, name, mediaType: isVid ? 'video' : 'image', by: userName || '익명' });
     } else {
@@ -4951,6 +5003,58 @@
     return aff;
   }
 
+  /* ────────── 몬스터 공격 주사위 굴리기 ────────── */
+  function rollMonsterAttack(monsterId, atk) {
+    const m = monsterState[monsterId];
+    if (!m) return;
+
+    /* 판정 파싱: "DEX+MIG", "INS+WLP" 등 */
+    const rawCheck = (atk.check || '').trim();
+    const parts = rawCheck.toUpperCase().split('+').map(s => s.trim()).filter(Boolean);
+    const VALID = { DEX: 'dex', INS: 'ins', MIG: 'mig', WLP: 'wlp' };
+    const a1 = VALID[parts[0]] || 'dex';
+    const a2 = VALID[parts[1]] || VALID[parts[0]] || 'dex';
+
+    /* 주사위 면수 */
+    const sides1 = parseInt((m[a1] || 'd8').toString().replace(/\D/g,''), 10) || 8;
+    const sides2 = parseInt((m[a2] || 'd8').toString().replace(/\D/g,''), 10) || 8;
+
+    /* 굴리기 */
+    const r1 = Math.floor(Math.random() * sides1) + 1;
+    const r2 = Math.floor(Math.random() * sides2) + 1;
+    const hr = Math.max(r1, r2);
+
+    /* 데미지 보정치 파싱: "HR+5 물리" → +5 */
+    let totalMod = 0;
+    if (atk.damage) {
+      const dm = atk.damage.match(/HR\s*([+-]\s*\d+)/i);
+      if (dm) totalMod = parseInt(dm[1].replace(/\s/g,''), 10) || 0;
+    }
+
+    const finalSum = hr + totalMod;
+    const isCrit   = (r1 === sides1 && r2 === sides2);
+    const isFumble = (r1 === 1 && r2 === 1);
+
+    /* checkedItems — 피해/효과 표시 */
+    const checkedItems = [];
+    if (atk.damage) checkedItems.push({ name: '피해', fx: atk.damage });
+    if (atk.fx)     checkedItems.push({ name: '효과', fx: atk.fx });
+
+    addDiceLogEntry({
+      attr1: a1, attr2: a2,
+      sides1, sides2, r1, r2,
+      totalMod, finalSum, hr,
+      isFumble, isCrit,
+      checkedItems,
+      rolledBy: (m.name || '몬스터') + ' · ' + (atk.name || '공격')
+    });
+
+    /* 음향 효과 (있으면) */
+    if (window.SHEET && window.SHEET.playSound) {
+      window.SHEET.playSound(isCrit ? 'crit' : (isFumble ? 'fumble' : 'roll'));
+    }
+  }
+
   /* 몬스터 Firebase 초기화 */
   function initMonsters(room) {
     if (!db) return;
@@ -5058,6 +5162,12 @@
         topRow.innerHTML = `<span class="mc-atk-type">${atk.type === '근접' ? '⚔' : '🏹'}</span><b>${atk.name || '공격'}</b>`;
         if (atk.check) topRow.innerHTML += ` <span class="mc-atk-check">【${atk.check}】</span>`;
         if (atk.damage) topRow.innerHTML += ` <span class="mc-atk-dmg">${atk.damage}</span>`;
+        /* 🎲 주사위 굴리기 버튼 */
+        const rollBtn = document.createElement('button');
+        rollBtn.className = 'mc-roll-btn'; rollBtn.title = '주사위 굴리기';
+        rollBtn.textContent = '🎲';
+        rollBtn.addEventListener('click', e => { e.stopPropagation(); rollMonsterAttack(id, atk); });
+        topRow.appendChild(rollBtn);
         row.appendChild(topRow);
         if (atk.fx) { const fx = document.createElement('div'); fx.className = 'mc-atk-fx'; fx.textContent = atk.fx; row.appendChild(fx); }
         atkList.appendChild(row);
@@ -5653,7 +5763,7 @@
     payload.checkedItems = (entry.checkedItems || []).map(i => ({ name: i.name, mod: i.mod, fx: i.fx }));
     /* type 필드 기본값 보정 (스킬 공개 카드는 'skillReveal') */
     if (!payload.type) payload.type = 'roll';
-    payload.rolledBy = userName || '익명';
+    payload.rolledBy = payload.rolledBy || userName || '익명';
     payload.ts = Date.now();
     delete payload._local;
     /* ★ push() 호출 전에 clientId를 등록 — Firebase가 child_added를 동기적으로 즉시
