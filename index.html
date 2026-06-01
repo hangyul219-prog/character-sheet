@@ -3431,6 +3431,19 @@
 .gm-btn.ghost { background:rgba(0,0,0,.22); color:var(--text-muted); border-color:var(--border); }
 .gm-btn.ghost:hover { color:var(--text-secondary); border-color:var(--border-strong); }
 .npc-card.editing { border-color:var(--gold); box-shadow:0 0 0 1px var(--gold) inset, 0 0 14px rgba(212,175,82,.18); }
+.npc-standings-field { display:flex; flex-direction:column; gap:6px; }
+.npc-standings-head { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.npc-standings-title { font-family:'Cinzel',serif; font-size:11px; letter-spacing:1px; text-transform:uppercase; color:var(--text-muted); }
+.npc-standing-rows { display:flex; flex-direction:column; gap:6px; }
+.npc-standing-row { display:grid; grid-template-columns: 1fr 110px auto; gap:6px; align-items:center; }
+.npc-standing-row .ns-url { min-width:0; }
+.npc-standing-row .ns-label { min-width:0; }
+.npc-standing-row .ns-del {
+  border:1px solid rgba(168,40,40,.45); background:rgba(168,40,40,.1); color:var(--crimson-light);
+  border-radius:8px; width:32px; height:32px; cursor:pointer; font-size:14px; line-height:1; flex:0 0 auto;
+}
+.npc-standing-row .ns-del:hover { background:rgba(168,40,40,.22); }
+@media (max-width:640px){ .npc-standing-row { grid-template-columns: 1fr 90px auto; } }
 .link-modal-bg, .backup-modal-bg, .help-modal-bg {
   position:fixed; inset:0; z-index:900; display:none; align-items:center; justify-content:center;
   background:rgba(0,0,0,.68); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);
@@ -4600,13 +4613,19 @@ https://.../standing_cast.webm"></textarea>
     <div class="gm-pane" id="gmPaneNpc" style="display:none;">
       <div class="npc-form-grid">
         <input type="text" id="npcNameInput" class="gm-input full" placeholder="NPC 이름">
-        <input type="text" id="npcPortraitInput" class="gm-input full" placeholder="스탠딩 이미지/영상 URL (대사 연출용)">
+        <div class="npc-standings-field full">
+          <div class="npc-standings-head">
+            <span class="npc-standings-title">스탠딩 (대사 연출용)</span>
+            <button type="button" class="standing-ghost-btn" id="npcStandingAddRow">＋ 스탠딩 추가</button>
+          </div>
+          <div id="npcStandingRows" class="npc-standing-rows"></div>
+        </div>
         <select id="npcStandingType" class="gm-input">
           <option value="image">이미지/GIF</option>
           <option value="video">비디오 WEBM/MP4</option>
         </select>
         <input type="color" id="npcColorInput" class="gm-input" value="#D4AF52" title="말풍선 색">
-        <input type="text" id="npcChatPortraitInput" class="gm-input full" placeholder="채팅 프로필 이미지 URL (선택 — 비우면 스탠딩 이미지 사용)">
+        <input type="text" id="npcChatPortraitInput" class="gm-input full" placeholder="채팅 프로필 이미지 URL (선택 — 비우면 첫 스탠딩 이미지 사용)">
         <textarea id="npcNoteInput" class="gm-input full" placeholder="메모 / 성격 / 목소리" rows="3"></textarea>
       </div>
       <div class="npc-form-actions">
@@ -4614,7 +4633,7 @@ https://.../standing_cast.webm"></textarea>
         <button class="gm-btn ghost" id="npcCancelEditBtn" style="display:none;">수정 취소</button>
       </div>
       <div class="npc-list" id="npcList"><div class="gm-empty-note" id="npcEmpty">NPC를 등록하면 채팅 발화자로 선택할 수 있습니다.</div></div>
-      <p class="gm-hint">채팅 프로필은 작은 원형 아이콘용 이미지입니다. 스탠딩이 영상이면 채팅 프로필 이미지를 따로 넣어주세요. 비우면 스탠딩 이미지를 쓰고, 그것도 영상이면 이름 첫 글자로 표시됩니다.</p>
+      <p class="gm-hint">스탠딩마다 URL과 표정/상황 라벨(예: 미소, 분노)을 함께 넣으면, 채팅에서 “스탠딩” 토글을 켤 때 라벨로 골라 띄울 수 있습니다. 채팅 프로필은 작은 원형 아이콘용 이미지로, 비우면 첫 스탠딩 이미지를 쓰고 그것도 영상이면 이름 첫 글자로 표시됩니다.</p>
     </div>
 
     <!-- 몬스터 시트 -->
@@ -8688,6 +8707,20 @@ https://.../standing_cast.webm"></textarea>
       });
     });
 
+    // NPC 스탠딩 (GM 전용) — 표정/상황 라벨로 노출
+    if (isGameMaster) {
+      const npcIds = Object.keys(npcState || {}).sort((a,b) => ((npcState[a].name||'').localeCompare((npcState[b].name||''), 'ko')));
+      npcIds.forEach(id => {
+        const n = npcState[id] || {};
+        const label = (n.name || 'NPC');
+        const items = getNpcStandingItems(n);
+        items.forEach((it, idx) => {
+          const tag = it.label ? (label + ' — ' + it.label) : (label + ' · 스탠딩 ' + (idx + 1));
+          add('npcStanding:' + id + ':' + idx, tag + ' (NPC)');
+        });
+      });
+    }
+
     if (Array.from(sel.options).some(o => o.value === prev)) sel.value = prev;
     else sel.value = 'auto';
   }
@@ -8698,6 +8731,20 @@ https://.../standing_cast.webm"></textarea>
     const sel = $('chatStandingSourceSelect');
     const value = sel && sel.value ? sel.value : 'auto';
     if (!value || value === 'auto') return null;
+    /* NPC 스탠딩 선택 (npcStanding:id:idx) */
+    if (value.startsWith('npcStanding:')) {
+      const rest = value.slice('npcStanding:'.length);
+      const ci = rest.lastIndexOf(':');
+      const id = ci >= 0 ? rest.slice(0, ci) : rest;
+      const idx = ci >= 0 ? (parseInt(rest.slice(ci + 1), 10) || 0) : 0;
+      const n = npcState[id] || {};
+      const items = getNpcStandingItems(n);
+      const url = (items[idx] && items[idx].url) || '';
+      if (!url) return null;
+      /* 미디어 타입: NPC 설정이 video거나 URL이 영상 확장자면 video */
+      const isVideo = n.mediaType === 'video' || /\.(webm|mp4|mov|m4v|ogv)(\?|#|$)/i.test(url) || /res\.cloudinary\.com\/[^/]+\/video\/upload\//i.test(url);
+      return { source: isVideo ? 'video' : 'image', url, mirror: !!n.mirror, color: n.color || '#D4AF52' };
+    }
     let mode = null, id = null;
     if (value.startsWith('charStanding:')) {
       const rest = value.slice('charStanding:'.length);
@@ -8717,9 +8764,11 @@ https://.../standing_cast.webm"></textarea>
     if (val === 'gm') return { sender: userName || 'GM', speakerName: 'GM', speakerColor: '#D4AF52', speakerKind: 'gm' };
     if (val.startsWith('npc:')) {
       const id = val.slice(4), n = npcState[id] || {};
-      /* 채팅 아바타용 이미지: 채팅 프로필 우선 → 없으면 스탠딩이 이미지일 때만 사용(영상이면 비움) */
-      const chatAvatar = (n.chatPortrait || '').trim() || (n.mediaType === 'video' ? '' : (n.portrait || ''));
-      return { sender: userName || 'GM', speakerName: n.name || 'NPC', speakerPortrait: chatAvatar, speakerColor: n.color || '#D4AF52', speakerKind: 'npc', speakerId: id, standing: { source: n.mediaType === 'video' ? 'video' : 'image', url: n.portrait || '', mirror: !!n.mirror } };
+      const stds = getNpcStandings(n);
+      const firstStanding = stds[0] || '';
+      /* 채팅 아바타용 이미지: 채팅 프로필 우선 → 없으면 첫 스탠딩이 이미지일 때만 사용(영상이면 비움) */
+      const chatAvatar = (n.chatPortrait || '').trim() || (n.mediaType === 'video' ? '' : firstStanding);
+      return { sender: userName || 'GM', speakerName: n.name || 'NPC', speakerPortrait: chatAvatar, speakerColor: n.color || '#D4AF52', speakerKind: 'npc', speakerId: id, standing: { source: n.mediaType === 'video' ? 'video' : 'image', url: firstStanding, mirror: !!n.mirror } };
     }
     if (val.startsWith('monster:')) {
       const id = val.slice(8), m = monsterState[id] || {};
@@ -10848,6 +10897,7 @@ https://.../standing_cast.webm"></textarea>
       npcState = snap.val() || {};
       renderNpcs();
       updateChatSpeakerOptions();
+      if (typeof updateChatStandingSourceOptions === 'function') updateChatStandingSourceOptions();
     });
   }
 
@@ -10879,7 +10929,8 @@ https://.../standing_cast.webm"></textarea>
       const lines = [];
       if (n.notes) lines.push(n.notes);
       if (n.chatPortrait) lines.push('채팅 프로필: ' + n.chatPortrait);
-      if (n.portrait) lines.push('스탠딩(' + (n.mediaType === 'video' ? '영상' : '이미지') + '): ' + n.portrait);
+      const stds = getNpcStandings(n);
+      if (stds.length) lines.push('스탠딩(' + (n.mediaType === 'video' ? '영상' : '이미지') + ') ' + stds.length + '개');
       note.textContent = lines.join('\n');
       card.appendChild(head); card.appendChild(note); list.appendChild(card);
     });
@@ -10887,11 +10938,81 @@ https://.../standing_cast.webm"></textarea>
 
   let npcEditingId = null;   /* 현재 수정 중인 NPC id (null이면 신규 추가 모드) */
 
+  /** 기능: NPC 데이터에서 스탠딩 항목 목록을 얻습니다 [{url,label}].
+     - 신버전: standings = [{url,label}]
+     - 구버전: standings = ['url', ...] (문자열 배열) 또는 portrait 단일값 */
+  function getNpcStandingItems(n) {
+    if (!n) return [];
+    if (Array.isArray(n.standings)) {
+      return n.standings.map(s => {
+        if (s && typeof s === 'object') {
+          const url = String(s.url || '').trim();
+          return url ? { url, label: String(s.label || '').trim() } : null;
+        }
+        const url = String(s || '').trim();
+        return url ? { url, label: '' } : null;
+      }).filter(Boolean);
+    }
+    const p = String(n.portrait || '').trim();
+    return p ? [{ url: p, label: '' }] : [];
+  }
+
+  /** 기능: NPC 스탠딩 URL 목록만 반환합니다(기존 호출 호환용). */
+  function getNpcStandings(n) {
+    return getNpcStandingItems(n).map(it => it.url);
+  }
+
+  /** 기능: 스탠딩 항목에 표시할 라벨(없으면 번호)을 만듭니다. */
+  function npcStandingDisplayLabel(item, idx) {
+    return (item && item.label) ? item.label : ('스탠딩 ' + (idx + 1));
+  }
+
+  /** 기능: 스탠딩 입력 행 하나를 만들어 추가합니다. */
+  function npcAddStandingRow(url, label) {
+    const rows = $('npcStandingRows');
+    if (!rows) return;
+    const row = document.createElement('div'); row.className = 'npc-standing-row';
+    const urlInp = document.createElement('input');
+    urlInp.type = 'text'; urlInp.className = 'gm-input ns-url';
+    urlInp.placeholder = '스탠딩 이미지/영상 URL';
+    urlInp.value = url || '';
+    const lblInp = document.createElement('input');
+    lblInp.type = 'text'; lblInp.className = 'gm-input ns-label';
+    lblInp.placeholder = '표정/상황';
+    lblInp.value = label || '';
+    const del = document.createElement('button');
+    del.type = 'button'; del.className = 'ns-del'; del.textContent = '✕'; del.title = '이 스탠딩 삭제';
+    del.addEventListener('click', () => row.remove());
+    row.appendChild(urlInp); row.appendChild(lblInp); row.appendChild(del);
+    rows.appendChild(row);
+    return row;
+  }
+
+  /** 기능: 스탠딩 입력 행들을 모두 비우고 주어진 항목들로 채웁니다. */
+  function npcSetStandingRows(items) {
+    const rows = $('npcStandingRows');
+    if (!rows) return;
+    rows.innerHTML = '';
+    (items && items.length ? items : [{ url: '', label: '' }]).forEach(it => npcAddStandingRow(it.url, it.label));
+  }
+
+  /** 기능: 스탠딩 입력 행들에서 {url,label} 목록을 수집합니다(빈 URL 제외). */
+  function npcCollectStandingRows() {
+    const rows = $('npcStandingRows');
+    if (!rows) return [];
+    return Array.from(rows.querySelectorAll('.npc-standing-row')).map(row => {
+      const url = (row.querySelector('.ns-url')?.value || '').trim();
+      const label = (row.querySelector('.ns-label')?.value || '').trim();
+      return url ? { url, label } : null;
+    }).filter(Boolean);
+  }
+
   /** 기능: NPC 입력 폼을 비웁니다(신규 추가 상태로). */
   function npcClearForm() {
-    ['npcNameInput','npcPortraitInput','npcChatPortraitInput','npcNoteInput'].forEach(id => { if ($(id)) $(id).value = ''; });
+    ['npcNameInput','npcChatPortraitInput','npcNoteInput'].forEach(id => { if ($(id)) $(id).value = ''; });
     if ($('npcStandingType')) $('npcStandingType').value = 'image';
     if ($('npcColorInput')) $('npcColorInput').value = '#D4AF52';
+    npcSetStandingRows([]);
   }
 
   /** 기능: 수정 모드를 끝내고 신규 추가 상태로 되돌립니다. */
@@ -10908,9 +11029,11 @@ https://.../standing_cast.webm"></textarea>
     if (!npcRef) { window.SHEET && window.SHEET.toast('방 입장 후 NPC를 추가할 수 있습니다'); return; }
     const name = ($('npcNameInput')?.value || '').trim();
     if (!name) { window.SHEET && window.SHEET.toast('NPC 이름을 입력하세요'); return; }
+    const standings = npcCollectStandingRows();   /* [{url,label}] */
     const data = {
       name,
-      portrait: ($('npcPortraitInput')?.value || '').trim(),
+      standings,                          /* 스탠딩 항목 배열 (URL+라벨) */
+      portrait: (standings[0] && standings[0].url) || '',   /* 하위호환: 첫 스탠딩 URL을 단일값으로도 보관 */
       chatPortrait: ($('npcChatPortraitInput')?.value || '').trim(),
       mediaType: $('npcStandingType')?.value || 'image',
       color: $('npcColorInput')?.value || '#D4AF52',
@@ -10936,7 +11059,7 @@ https://.../standing_cast.webm"></textarea>
     if (npcEditingId === id) { npcCancelEdit(); return; }   /* 같은 카드 다시 누르면 취소 */
     npcEditingId = id;
     if ($('npcNameInput')) $('npcNameInput').value = n.name || '';
-    if ($('npcPortraitInput')) $('npcPortraitInput').value = n.portrait || '';
+    npcSetStandingRows(getNpcStandingItems(n));
     if ($('npcChatPortraitInput')) $('npcChatPortraitInput').value = n.chatPortrait || '';
     if ($('npcStandingType')) $('npcStandingType').value = n.mediaType || 'image';
     if ($('npcColorInput')) $('npcColorInput').value = n.color || '#D4AF52';
@@ -10951,6 +11074,9 @@ https://.../standing_cast.webm"></textarea>
 
   $('npcAddBtn')?.addEventListener('click', addNpc);
   $('npcCancelEditBtn')?.addEventListener('click', npcCancelEdit);
+  $('npcStandingAddRow')?.addEventListener('click', () => npcAddStandingRow('', ''));
+  /* 최초 1줄 표시 */
+  npcSetStandingRows([]);
 
   /* BGM — 다음 단계에서 구현 (지금은 안전한 빈 함수) */
 
