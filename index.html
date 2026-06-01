@@ -3426,6 +3426,11 @@
 .npc-card-name { font-family:'Cinzel',serif; color:var(--gold-light); font-size:13px; }
 .npc-card-note { color:var(--text-muted); font-size:12px; line-height:1.35; white-space:pre-wrap; }
 .npc-card-actions { display:flex; gap:6px; }
+.npc-form-actions { display:flex; gap:8px; align-items:center; }
+.npc-form-actions .gm-btn { flex:0 0 auto; }
+.gm-btn.ghost { background:rgba(0,0,0,.22); color:var(--text-muted); border-color:var(--border); }
+.gm-btn.ghost:hover { color:var(--text-secondary); border-color:var(--border-strong); }
+.npc-card.editing { border-color:var(--gold); box-shadow:0 0 0 1px var(--gold) inset, 0 0 14px rgba(212,175,82,.18); }
 .link-modal-bg, .backup-modal-bg, .help-modal-bg {
   position:fixed; inset:0; z-index:900; display:none; align-items:center; justify-content:center;
   background:rgba(0,0,0,.68); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);
@@ -4595,17 +4600,21 @@ https://.../standing_cast.webm"></textarea>
     <div class="gm-pane" id="gmPaneNpc" style="display:none;">
       <div class="npc-form-grid">
         <input type="text" id="npcNameInput" class="gm-input full" placeholder="NPC 이름">
-        <input type="text" id="npcPortraitInput" class="gm-input" placeholder="포트레이트/스탠딩 이미지 URL">
+        <input type="text" id="npcPortraitInput" class="gm-input full" placeholder="스탠딩 이미지/영상 URL (대사 연출용)">
         <select id="npcStandingType" class="gm-input">
           <option value="image">이미지/GIF</option>
           <option value="video">비디오 WEBM/MP4</option>
         </select>
         <input type="color" id="npcColorInput" class="gm-input" value="#D4AF52" title="말풍선 색">
+        <input type="text" id="npcChatPortraitInput" class="gm-input full" placeholder="채팅 프로필 이미지 URL (선택 — 비우면 스탠딩 이미지 사용)">
         <textarea id="npcNoteInput" class="gm-input full" placeholder="메모 / 성격 / 목소리" rows="3"></textarea>
       </div>
-      <button class="gm-btn" id="npcAddBtn">＋ NPC 추가</button>
+      <div class="npc-form-actions">
+        <button class="gm-btn" id="npcAddBtn">＋ NPC 추가</button>
+        <button class="gm-btn ghost" id="npcCancelEditBtn" style="display:none;">수정 취소</button>
+      </div>
       <div class="npc-list" id="npcList"><div class="gm-empty-note" id="npcEmpty">NPC를 등록하면 채팅 발화자로 선택할 수 있습니다.</div></div>
-      <p class="gm-hint">GM 채팅창의 발화자 선택에서 NPC를 고르면 해당 이름과 스탠딩으로 대사를 출력합니다.</p>
+      <p class="gm-hint">채팅 프로필은 작은 원형 아이콘용 이미지입니다. 스탠딩이 영상이면 채팅 프로필 이미지를 따로 넣어주세요. 비우면 스탠딩 이미지를 쓰고, 그것도 영상이면 이름 첫 글자로 표시됩니다.</p>
     </div>
 
     <!-- 몬스터 시트 -->
@@ -8708,7 +8717,9 @@ https://.../standing_cast.webm"></textarea>
     if (val === 'gm') return { sender: userName || 'GM', speakerName: 'GM', speakerColor: '#D4AF52', speakerKind: 'gm' };
     if (val.startsWith('npc:')) {
       const id = val.slice(4), n = npcState[id] || {};
-      return { sender: userName || 'GM', speakerName: n.name || 'NPC', speakerPortrait: n.portrait || '', speakerColor: n.color || '#D4AF52', speakerKind: 'npc', speakerId: id, standing: { source: n.mediaType === 'video' ? 'video' : 'image', url: n.portrait || '', mirror: !!n.mirror } };
+      /* 채팅 아바타용 이미지: 채팅 프로필 우선 → 없으면 스탠딩이 이미지일 때만 사용(영상이면 비움) */
+      const chatAvatar = (n.chatPortrait || '').trim() || (n.mediaType === 'video' ? '' : (n.portrait || ''));
+      return { sender: userName || 'GM', speakerName: n.name || 'NPC', speakerPortrait: chatAvatar, speakerColor: n.color || '#D4AF52', speakerKind: 'npc', speakerId: id, standing: { source: n.mediaType === 'video' ? 'video' : 'image', url: n.portrait || '', mirror: !!n.mirror } };
     }
     if (val.startsWith('monster:')) {
       const id = val.slice(8), m = monsterState[id] || {};
@@ -10854,22 +10865,45 @@ https://.../standing_cast.webm"></textarea>
     ids.forEach(id => {
       const n = npcState[id] || {};
       const card = document.createElement('div'); card.className = 'npc-card';
+      if (id === npcEditingId) card.classList.add('editing');
       const head = document.createElement('div'); head.className = 'npc-card-head';
       const name = document.createElement('div'); name.className = 'npc-card-name'; name.textContent = n.name || '이름 없는 NPC';
       const actions = document.createElement('div'); actions.className = 'npc-card-actions';
-      const edit = document.createElement('button'); edit.className = 'scene-mini-btn'; edit.textContent = '수정';
+      const edit = document.createElement('button'); edit.className = 'scene-mini-btn'; edit.textContent = (id === npcEditingId ? '편집 중' : '수정');
       edit.addEventListener('click', () => editNpc(id));
       const del = document.createElement('button'); del.className = 'scene-mini-btn danger'; del.textContent = '삭제';
-      del.addEventListener('click', () => { if (confirm('NPC를 삭제할까요?')) npcRef && npcRef.child(id).remove(); });
+      del.addEventListener('click', () => { if (confirm('NPC를 삭제할까요?')) { if (id === npcEditingId) npcCancelEdit(); npcRef && npcRef.child(id).remove(); } });
       actions.appendChild(edit); actions.appendChild(del);
       head.appendChild(name); head.appendChild(actions);
       const note = document.createElement('div'); note.className = 'npc-card-note';
-      note.textContent = (n.notes || '') + (n.portrait ? '\n스탠딩: ' + n.portrait : '');
+      const lines = [];
+      if (n.notes) lines.push(n.notes);
+      if (n.chatPortrait) lines.push('채팅 프로필: ' + n.chatPortrait);
+      if (n.portrait) lines.push('스탠딩(' + (n.mediaType === 'video' ? '영상' : '이미지') + '): ' + n.portrait);
+      note.textContent = lines.join('\n');
       card.appendChild(head); card.appendChild(note); list.appendChild(card);
     });
   }
 
-  /** 기능: 새 NPC 시트를 추가합니다. */
+  let npcEditingId = null;   /* 현재 수정 중인 NPC id (null이면 신규 추가 모드) */
+
+  /** 기능: NPC 입력 폼을 비웁니다(신규 추가 상태로). */
+  function npcClearForm() {
+    ['npcNameInput','npcPortraitInput','npcChatPortraitInput','npcNoteInput'].forEach(id => { if ($(id)) $(id).value = ''; });
+    if ($('npcStandingType')) $('npcStandingType').value = 'image';
+    if ($('npcColorInput')) $('npcColorInput').value = '#D4AF52';
+  }
+
+  /** 기능: 수정 모드를 끝내고 신규 추가 상태로 되돌립니다. */
+  function npcCancelEdit() {
+    npcEditingId = null;
+    npcClearForm();
+    const btn = $('npcAddBtn'); if (btn) btn.textContent = '＋ NPC 추가';
+    const cancel = $('npcCancelEditBtn'); if (cancel) cancel.style.display = 'none';
+    renderNpcs();
+  }
+
+  /** 기능: NPC를 추가하거나(신규), 수정 모드면 기존 NPC를 갱신합니다. */
   function addNpc() {
     if (!npcRef) { window.SHEET && window.SHEET.toast('방 입장 후 NPC를 추가할 수 있습니다'); return; }
     const name = ($('npcNameInput')?.value || '').trim();
@@ -10877,28 +10911,46 @@ https://.../standing_cast.webm"></textarea>
     const data = {
       name,
       portrait: ($('npcPortraitInput')?.value || '').trim(),
+      chatPortrait: ($('npcChatPortraitInput')?.value || '').trim(),
       mediaType: $('npcStandingType')?.value || 'image',
       color: $('npcColorInput')?.value || '#D4AF52',
-      notes: ($('npcNoteInput')?.value || '').trim(),
-      ts: Date.now(), by: userName || 'GM'
+      notes: ($('npcNoteInput')?.value || '').trim()
     };
-    npcRef.push(data);
-    ['npcNameInput','npcPortraitInput','npcNoteInput'].forEach(id => { if ($(id)) $(id).value = ''; });
+    if (npcEditingId) {
+      /* 수정: 기존 ts/by 유지하고 나머지 갱신 */
+      data.updated = Date.now();
+      npcRef.child(npcEditingId).update(data);
+      npcCancelEdit();
+      window.SHEET && window.SHEET.toast && window.SHEET.toast('NPC를 수정했습니다');
+    } else {
+      data.ts = Date.now();
+      data.by = userName || 'GM';
+      npcRef.push(data);
+      npcClearForm();
+    }
   }
 
-  /** 기능: 기존 NPC 시트를 수정 모드로 엽니다. */
+  /** 기능: 기존 NPC 시트를 폼에 불러와 수정 모드로 전환합니다. */
   function editNpc(id) {
     const n = npcState[id] || {};
-    const name = prompt('NPC 이름', n.name || 'NPC');
-    if (name === null) return;
-    const portrait = prompt('포트레이트/스탠딩 URL', n.portrait || '');
-    if (portrait === null) return;
-    const notes = prompt('메모', n.notes || '');
-    if (notes === null) return;
-    npcRef && npcRef.child(id).update({ name: name.trim() || 'NPC', portrait: portrait.trim(), notes, updated: Date.now() });
+    if (npcEditingId === id) { npcCancelEdit(); return; }   /* 같은 카드 다시 누르면 취소 */
+    npcEditingId = id;
+    if ($('npcNameInput')) $('npcNameInput').value = n.name || '';
+    if ($('npcPortraitInput')) $('npcPortraitInput').value = n.portrait || '';
+    if ($('npcChatPortraitInput')) $('npcChatPortraitInput').value = n.chatPortrait || '';
+    if ($('npcStandingType')) $('npcStandingType').value = n.mediaType || 'image';
+    if ($('npcColorInput')) $('npcColorInput').value = n.color || '#D4AF52';
+    if ($('npcNoteInput')) $('npcNoteInput').value = n.notes || '';
+    const btn = $('npcAddBtn'); if (btn) btn.textContent = '✔ 수정 저장';
+    const cancel = $('npcCancelEditBtn'); if (cancel) cancel.style.display = '';
+    renderNpcs();
+    /* 폼이 보이도록 위로 스크롤 */
+    const form = document.querySelector('.npc-form-grid');
+    if (form && form.scrollIntoView) form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
   $('npcAddBtn')?.addEventListener('click', addNpc);
+  $('npcCancelEditBtn')?.addEventListener('click', npcCancelEdit);
 
   /* BGM — 다음 단계에서 구현 (지금은 안전한 빈 함수) */
 
@@ -12179,6 +12231,11 @@ https://.../standing_cast.webm"></textarea>
       if (avatarImg) {
         const aimg = document.createElement('img');
         aimg.src = avatarImg; aimg.alt = displayName; aimg.loading = 'lazy';
+        /* 이미지 로드 실패(잘못된 URL·영상·핫링크 차단) 시 이름 첫 글자로 폴백 → 깨진 아이콘 방지 */
+        aimg.addEventListener('error', () => {
+          aimg.remove();
+          if (!avatar.textContent) avatar.textContent = displayName.slice(0, 1).toUpperCase();
+        });
         avatar.appendChild(aimg);
       } else {
         avatar.textContent = displayName.slice(0, 1).toUpperCase();
@@ -14406,26 +14463,40 @@ https://.../standing_cast.webm"></textarea>
       0 0 calc(10px + var(--fx-glow, 0.6) * 34px) rgba(var(--fx-rgb, 212,175,82), calc(var(--fx-glow, 0.6) * 0.9)),
       0 2px 6px rgba(0,0,0,0.85),
       0 0 2px rgba(0,0,0,0.9);
-    /* 등장→유지→퇴장: 중간 속도(총 3.0초) */
-    animation: textfxInOut 3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+  /* 모래 알갱이처럼 글자가 흩어졌다 모였다 다시 흩어짐 — 글자별 span 단위로 애니메이션 */
+  .textfx-card .fx-ch {
+    display: inline-block;
+    white-space: pre;        /* 공백 보존 */
+    will-change: transform, opacity, filter;
+    /* JS가 글자마다 --dx/--dy/--rot(흩어지는 방향)와 --d-in/--d-out(시간차)을 주입 */
+    animation:
+      fxSandIn  0.75s cubic-bezier(0.22, 1, 0.36, 1) var(--d-in, 0s) both,
+      fxSandOut 0.7s  cubic-bezier(0.55, 0, 0.85, 0.3) var(--d-out, 2.4s) forwards;
+  }
+  /* 등장: 흩어진 알갱이가 제자리로 빨려들어오며 또렷해짐 */
+  @keyframes fxSandIn {
+    0%   { opacity: 0; transform: translate(var(--dx, 0px), var(--dy, 0px)) scale(0.4) rotate(var(--rot, 0deg)); filter: blur(6px); }
+    60%  { opacity: 1; filter: blur(1px); }
+    100% { opacity: 1; transform: translate(0,0) scale(1) rotate(0deg); filter: blur(0); }
+  }
+  /* 퇴장: 다시 알갱이로 흩어지며 날아가 사라짐 */
+  @keyframes fxSandOut {
+    0%   { opacity: 1; transform: translate(0,0) scale(1) rotate(0deg); filter: blur(0); }
+    100% { opacity: 0; transform: translate(calc(var(--dx, 0px) * -0.8), calc(var(--dy, 0px) * -0.8 - 30px)) scale(0.5) rotate(calc(var(--rot, 0deg) * -1)); filter: blur(7px); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    /* 모션 최소화 설정 시: 흩어짐 없이 부드러운 페이드만 */
+    .textfx-card .fx-ch {
+      animation: fxChFade 3s linear var(--d-in, 0s) forwards;
+    }
+    @keyframes fxChFade { 0% { opacity: 0; } 8% { opacity: 1; } 82% { opacity: 1; } 100% { opacity: 0; } }
   }
   /* 크기 4단계 */
   .textfx-card.size-small  { font-size: clamp(20px, 5vw, 34px); }
   .textfx-card.size-medium { font-size: clamp(28px, 8vw, 54px); }
   .textfx-card.size-large  { font-size: clamp(38px, 11vw, 78px); }
   .textfx-card.size-huge   { font-size: clamp(48px, 15vw, 110px); }
-
-  @keyframes textfxInOut {
-    0%   { opacity: 0; transform: scale(0.7) translateY(24px); }
-    18%  { opacity: 1; transform: scale(1.04) translateY(0); }
-    26%  { transform: scale(1) translateY(0); }
-    74%  { opacity: 1; transform: scale(1) translateY(0); }
-    100% { opacity: 0; transform: scale(1.08) translateY(-18px); }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .textfx-card { animation: textfxFade 3s linear forwards; }
-    @keyframes textfxFade { 0%,12%,80% { opacity: 1; } 0% { opacity: 0; } 100% { opacity: 0; } }
-  }
 
   /* ── GM 패널 — 연출 탭 컨트롤 ── */
   .fx-field { margin-bottom: 14px; }
@@ -14531,16 +14602,46 @@ https://.../standing_cast.webm"></textarea>
     positionLayerOverScene(layer);
     const card = document.createElement('div');
     card.className = 'textfx-card size-' + size;
-    card.textContent = text;
     card.style.setProperty('--fx-border', color);
     card.style.setProperty('--fx-rgb', hexToRgb(color));
     card.style.setProperty('--fx-glow', glow.toFixed(2));
+
+    /* ── 글자를 한 자씩 span 으로 쪼개 모래처럼 흩어졌다 모였다 흩어지게 ── */
+    const chars = Array.from(text);          /* 이모지·결합문자 안전 분해 */
+    const STEP_IN = 0.055;                    /* 글자당 등장 시간차(초) */
+    const STEP_OUT = 0.04;                    /* 글자당 퇴장 시간차(초) */
+    const HOLD = 1.6;                         /* 다 모인 뒤 유지 시간(초) */
+    const IN_DUR = 0.75, OUT_DUR = 0.7;       /* CSS 애니메이션 길이와 일치 */
+    const inEnd = (chars.length - 1) * STEP_IN + IN_DUR;   /* 마지막 글자까지 다 모이는 시점 */
+
+    chars.forEach((ch, i) => {
+      const span = document.createElement('span');
+      span.className = 'fx-ch';
+      span.textContent = ch;
+      /* 공백은 자리만 차지하고 애니메이션 제외 */
+      if (ch.trim() === '') { span.style.animation = 'none'; card.appendChild(span); return; }
+      /* 글자마다 흩어지는 방향·거리·회전을 랜덤하게 (모래 알갱이 느낌) */
+      const ang = Math.random() * Math.PI * 2;
+      const dist = 50 + Math.random() * 90;
+      const dx = Math.cos(ang) * dist;
+      const dy = Math.sin(ang) * dist - 20;   /* 살짝 위쪽 편향 */
+      const rot = (Math.random() * 80 - 40);
+      span.style.setProperty('--dx', dx.toFixed(1) + 'px');
+      span.style.setProperty('--dy', dy.toFixed(1) + 'px');
+      span.style.setProperty('--rot', rot.toFixed(1) + 'deg');
+      span.style.setProperty('--d-in', (i * STEP_IN).toFixed(3) + 's');
+      /* 퇴장도 글자 순서대로 시간차 — 다 모인 뒤 HOLD 만큼 머물렀다 흩어짐 */
+      span.style.setProperty('--d-out', (inEnd + HOLD + i * STEP_OUT).toFixed(3) + 's');
+      card.appendChild(span);
+    });
+
     layer.appendChild(card);
     /* 레이아웃이 늦게 잡히는 경우 대비해 한 번 더 보정 */
     requestAnimationFrame(() => positionLayerOverScene(layer));
-    /* 애니메이션(3초) 종료 후 DOM 제거 */
-    card.addEventListener('animationend', () => card.remove());
-    setTimeout(() => { if (card.parentNode) card.remove(); }, 3400);
+
+    /* 전체 연출이 끝나는 시점에 DOM 제거 (마지막 글자 퇴장 완료 + 여유) */
+    const totalMs = (inEnd + HOLD + (chars.length - 1) * STEP_OUT + OUT_DUR) * 1000 + 300;
+    setTimeout(() => { if (card.parentNode) card.remove(); }, totalMs);
   }
   /* 다른 모듈/원격에서 호출 가능하게 노출 */
   window.SHOW_TEXT_FX = showTextFx;
@@ -14628,6 +14729,22 @@ https://.../standing_cast.webm"></textarea>
         refreshPreview();
       });
     });
+
+    /* 미리보기 영역 클릭 → 실제 모래 연출을 장면 위에 한 번 재생(나만 보임, 방송 안 함) */
+    if (preview && preview.dataset.fxPlayBound !== '1') {
+      preview.dataset.fxPlayBound = '1';
+      preview.style.cursor = 'pointer';
+      preview.title = '클릭하면 현재 장면에 연출을 미리 재생합니다 (나만 보임)';
+      preview.addEventListener('click', () => {
+        const text = (textEl && textEl.value.trim()) || '제1막 — 폭풍 전야';
+        showTextFx({
+          text,
+          size: curSize,
+          color: colorEl ? colorEl.value : '#D4AF52',
+          glow: glowEl ? parseInt(glowEl.value, 10) : 60
+        });
+      });
+    }
 
     /* 띄우기 */
     fireBtn.addEventListener('click', () => {
