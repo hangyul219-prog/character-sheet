@@ -10335,8 +10335,17 @@ https://.../standing_cast.webm"></textarea>
       });
     }
 
-    /* GM 보드 + 플레이어 뷰어 양쪽에 표시 */
+    /* GM 보드 + 플레이어 뷰어 + 현재 장면 등 여러 곳에 같은 토큰이 렌더됨.
+       숨겨진(display:none) 보드의 토큰은 offsetParent가 null → 제외.
+       그래도 보이는 보드가 둘 이상이면 화면상 같은 위치엔 한 번만 띄워 중복(겹침)을 막는다. */
+    const seenPos = new Set();
     document.querySelectorAll('.battle-token[data-id="' + tokenId + '"]').forEach(tok => {
+      if (tok.offsetParent === null) return;               /* 숨겨진 보드의 토큰은 건너뜀 */
+      const r = tok.getBoundingClientRect();
+      const key = Math.round(r.left) + ',' + Math.round(r.top);
+      if (seenPos.has(key)) return;                        /* 같은 화면 위치엔 한 번만 */
+      seenPos.add(key);
+
       /* 토큰 흔들기 — 크리티컬이면 더 격렬 */
       const hitCls = isCrit ? 'hit-crit' : 'hit';
       tok.classList.remove('hit', 'hit-crit');
@@ -10365,7 +10374,14 @@ https://.../standing_cast.webm"></textarea>
   /** 기능: 토큰 위에 초록 HEAL 라벨과 붉은 회복 수치를 띄웁니다. */
   function showHealOnToken(tokenId, amount, resource, delay) {
     setTimeout(() => {
+      const seenPos = new Set();
       document.querySelectorAll('.battle-token[data-id="' + tokenId + '"]').forEach(tok => {
+        if (tok.offsetParent === null) return;             /* 숨겨진 보드의 토큰은 건너뜀 */
+        const r = tok.getBoundingClientRect();
+        const key = Math.round(r.left) + ',' + Math.round(r.top);
+        if (seenPos.has(key)) return;                      /* 같은 화면 위치엔 한 번만 */
+        seenPos.add(key);
+
         tok.classList.remove('hit', 'hit-crit');
         const fx = document.createElement('div');
         fx.className = 'token-damage heal' + (resource === 'MP' ? ' mp' : '');
@@ -14367,7 +14383,7 @@ https://.../standing_cast.webm"></textarea>
 <style id="textFxStyle">
   /* 화면 전체를 덮는 오버레이 — pointer-events:none 이라 토큰·맵 조작을 방해하지 않음 */
   .textfx-layer {
-    position: fixed; inset: 0;
+    position: fixed; left: 0; top: 0; right: 0; bottom: 0;
     z-index: 2147483550;  /* 주사위 모달(…500)보다 위, 결과 팝업(…600)보다 아래 */
     display: flex; align-items: center; justify-content: center;
     pointer-events: none;
@@ -14380,22 +14396,16 @@ https://.../standing_cast.webm"></textarea>
     line-height: 1.15;
     letter-spacing: 1px;
     color: #fff;
-    padding: 0.3em 0.6em;
-    border-radius: 14px;
-    border: 3px solid var(--fx-border, #D4AF52);
-    background: rgba(8, 11, 20, 0.55);
-    backdrop-filter: blur(3px);
-    -webkit-backdrop-filter: blur(3px);
+    padding: 0.1em 0.2em;
     max-width: 92vw;
     word-break: keep-all;
     white-space: pre-wrap;
-    /* 광원: 테두리 색 기반 외부 글로우 + 텍스트 글로우, 세기는 --fx-glow(0~1) */
-    box-shadow:
-      0 0 calc(18px + var(--fx-glow, 0.6) * 60px) rgba(var(--fx-rgb, 212,175,82), calc(var(--fx-glow, 0.6) * 0.85)),
-      inset 0 0 calc(8px + var(--fx-glow, 0.6) * 26px) rgba(var(--fx-rgb, 212,175,82), calc(var(--fx-glow, 0.6) * 0.4));
+    /* 박스 없이 글자에만 광원: 선택한 색 기반 글로우 + 가독성용 어두운 외곽 그림자 */
     text-shadow:
-      0 0 calc(6px + var(--fx-glow, 0.6) * 22px) rgba(var(--fx-rgb, 212,175,82), calc(var(--fx-glow, 0.6) * 0.95)),
-      0 2px 4px rgba(0,0,0,0.6);
+      0 0 calc(4px + var(--fx-glow, 0.6) * 14px) rgba(var(--fx-rgb, 212,175,82), calc(0.55 + var(--fx-glow, 0.6) * 0.45)),
+      0 0 calc(10px + var(--fx-glow, 0.6) * 34px) rgba(var(--fx-rgb, 212,175,82), calc(var(--fx-glow, 0.6) * 0.9)),
+      0 2px 6px rgba(0,0,0,0.85),
+      0 0 2px rgba(0,0,0,0.9);
     /* 등장→유지→퇴장: 중간 속도(총 3.0초) */
     animation: textfxInOut 3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
   }
@@ -14450,10 +14460,11 @@ https://.../standing_cast.webm"></textarea>
   }
   .fx-preview-text {
     font-family: 'Cinzel Decorative', 'Cinzel', serif; font-weight: 900; text-align: center;
-    color: #fff; font-size: 30px; line-height: 1.15; padding: 0.25em 0.5em; border-radius: 10px;
-    border: 3px solid var(--fx-border, #D4AF52);
-    box-shadow: 0 0 calc(12px + var(--fx-glow,0.6)*44px) rgba(var(--fx-rgb,212,175,82), calc(var(--fx-glow,0.6)*0.85));
-    text-shadow: 0 0 calc(5px + var(--fx-glow,0.6)*18px) rgba(var(--fx-rgb,212,175,82), calc(var(--fx-glow,0.6)*0.9)), 0 2px 4px rgba(0,0,0,0.6);
+    color: #fff; font-size: 30px; line-height: 1.15; padding: 0.1em 0.2em;
+    text-shadow:
+      0 0 calc(4px + var(--fx-glow,0.6)*14px) rgba(var(--fx-rgb,212,175,82), calc(0.55 + var(--fx-glow,0.6)*0.45)),
+      0 0 calc(10px + var(--fx-glow,0.6)*34px) rgba(var(--fx-rgb,212,175,82), calc(var(--fx-glow,0.6)*0.9)),
+      0 2px 6px rgba(0,0,0,0.85), 0 0 2px rgba(0,0,0,0.9);
     word-break: keep-all; white-space: pre-wrap; max-width: 100%;
   }
   .fx-fire-btn {
@@ -14490,6 +14501,26 @@ https://.../standing_cast.webm"></textarea>
     }
     return fxLayer;
   }
+  /* 연출 레이어를 현재 장면(#sceneStage) 영역에 맞춰 배치. 장면이 없으면 화면 전체로 폴백 */
+  function positionLayerOverScene(layer){
+    const stage = document.getElementById('sceneStage');
+    if (stage && stage.offsetParent !== null) {
+      const r = stage.getBoundingClientRect();
+      if (r.width > 0 && r.height > 0) {
+        layer.style.left   = r.left + 'px';
+        layer.style.top    = r.top + 'px';
+        layer.style.width  = r.width + 'px';
+        layer.style.height = r.height + 'px';
+        layer.style.right  = 'auto';
+        layer.style.bottom = 'auto';
+        return;
+      }
+    }
+    /* 폴백: 화면 전체 */
+    layer.style.left = '0'; layer.style.top = '0';
+    layer.style.right = '0'; layer.style.bottom = '0';
+    layer.style.width = ''; layer.style.height = '';
+  }
   function showTextFx(opts){
     const text = (opts && opts.text || '').trim();
     if (!text) return;
@@ -14497,6 +14528,7 @@ https://.../standing_cast.webm"></textarea>
     const color = opts.color || '#D4AF52';
     const glow = Math.max(0, Math.min(1, (opts.glow != null ? opts.glow : 60) / 100));
     const layer = ensureLayer();
+    positionLayerOverScene(layer);
     const card = document.createElement('div');
     card.className = 'textfx-card size-' + size;
     card.textContent = text;
@@ -14504,6 +14536,8 @@ https://.../standing_cast.webm"></textarea>
     card.style.setProperty('--fx-rgb', hexToRgb(color));
     card.style.setProperty('--fx-glow', glow.toFixed(2));
     layer.appendChild(card);
+    /* 레이아웃이 늦게 잡히는 경우 대비해 한 번 더 보정 */
+    requestAnimationFrame(() => positionLayerOverScene(layer));
     /* 애니메이션(3초) 종료 후 DOM 제거 */
     card.addEventListener('animationend', () => card.remove());
     setTimeout(() => { if (card.parentNode) card.remove(); }, 3400);
@@ -14513,6 +14547,7 @@ https://.../standing_cast.webm"></textarea>
 
   /* ── Firebase 동기화 ── */
   let fxRef = null;
+  const myFxKeys = new Set();   /* 내가 push 한 연출 키 — 원격 콜백에서 중복 표시 방지 */
   window.TEXTFX_INIT = function(room){
     try {
       if (!window.firebase || !firebase.apps || !firebase.apps.length) return;
@@ -14522,6 +14557,7 @@ https://.../standing_cast.webm"></textarea>
       fxRef.limitToLast(5).on('child_added', snap => {
         const v = snap.val();
         if (!v || (v.ts || 0) < joinedAt) return; /* 과거 연출은 무시 */
+        if (myFxKeys.has(snap.key)) { myFxKeys.delete(snap.key); return; } /* 내가 띄운 건 이미 로컬 표시됨 → 건너뜀 */
         showTextFx(v);
       });
     } catch(e){ console.warn('[textfx] init failed', e); }
@@ -14529,7 +14565,11 @@ https://.../standing_cast.webm"></textarea>
   function broadcastTextFx(opts){
     showTextFx(opts);          /* 본인 화면 즉시 표시 */
     if (fxRef) {
-      try { fxRef.push(Object.assign({ ts: Date.now() }, opts)); } catch(e){}
+      try {
+        const newRef = fxRef.push();   /* 키를 먼저 확보해 내 것으로 기록 */
+        myFxKeys.add(newRef.key);
+        newRef.set(Object.assign({ ts: Date.now() }, opts));
+      } catch(e){}
     }
   }
 
