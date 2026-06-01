@@ -2098,7 +2098,7 @@
 
   /* 플레이어용 BGM 상태 칩 (비-GM 포함 모두 표시) */
   .bgm-chip {
-    position: fixed; left: 14px; bottom: 14px; z-index: 290;
+    position: fixed; left: 14px; bottom: 64px; z-index: 290;
     display: none; align-items: center; gap: 8px; max-width: 240px;
     padding: 8px 13px; border-radius: 22px; cursor: pointer;
     background: linear-gradient(160deg, rgba(16,25,46,0.96), rgba(13,20,37,0.96));
@@ -2109,6 +2109,41 @@
   .bgm-chip .chip-eq { font-size: 13px; }
   .bgm-chip .chip-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .bgm-chip .chip-mute { margin-left: auto; opacity: 0.7; }
+
+  /* ── 로컬 오디오 설정 버튼/패널 ── */
+  .audio-settings-btn {
+    position: fixed; left: 14px; bottom: 14px; z-index: 291;
+    width: 42px; height: 42px; border-radius: 50%; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; font-size: 18px;
+    background: linear-gradient(160deg, rgba(16,25,46,0.96), rgba(13,20,37,0.96));
+    border: 1px solid var(--border-strong); box-shadow: 0 4px 18px rgba(0,0,0,0.5);
+    color: var(--gold-light); transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+  }
+  .audio-settings-btn:hover { border-color: var(--gold); box-shadow: 0 0 16px rgba(212,175,82,0.3); }
+  .audio-settings-btn.open { border-color: var(--gold); color: var(--gold-bright); transform: scale(1.05); }
+  .audio-settings-panel {
+    position: fixed; left: 14px; bottom: 64px; z-index: 292;
+    display: none; flex-direction: column; gap: 11px; width: 268px; max-width: calc(100vw - 28px);
+    padding: 14px 15px; border-radius: 14px;
+    background: linear-gradient(160deg, rgba(18,28,50,0.98), rgba(13,20,37,0.98));
+    border: 1px solid var(--border-strong); box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+  }
+  .audio-settings-panel.show { display: flex; animation: chatMsgIn 0.2s ease; }
+  body.audio-panel-open .bgm-chip { display: none !important; }
+  .asp-title { font-family: 'Cinzel', serif; font-size: 13px; color: var(--gold-bright); display: flex; align-items: baseline; gap: 8px; }
+  .asp-title .asp-sub { font-size: 10px; color: var(--text-muted); font-family: 'Crimson Pro', serif; letter-spacing: 0; }
+  .asp-row { display: flex; align-items: center; gap: 10px; }
+  .asp-toggle { display: flex; align-items: center; gap: 6px; min-width: 78px; font-family: 'Cinzel', serif; font-size: 12px; color: var(--text-secondary); cursor: pointer; }
+  .asp-toggle input { width: 15px; height: 15px; accent-color: var(--gold); cursor: pointer; }
+  .asp-row input[type=range] {
+    flex: 1; min-width: 0; height: 4px; border-radius: 3px; appearance: none; -webkit-appearance: none;
+    background: linear-gradient(90deg, var(--gold-dark), var(--gold)); outline: none; cursor: pointer;
+  }
+  .asp-row input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--gold-bright); border: 1px solid var(--gold-dark); cursor: pointer; }
+  .asp-row input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--gold-bright); border: 1px solid var(--gold-dark); cursor: pointer; }
+  .asp-row input[type=range]:disabled { opacity: 0.35; cursor: default; }
+  .asp-num { font-family: 'Cinzel', serif; font-size: 11px; color: var(--text-muted); width: 30px; text-align: right; }
+  .asp-hint { font-size: 10.5px; color: var(--text-muted); font-family: 'Crimson Pro', serif; line-height: 1.45; }
 
   .bgm-unlock {
     position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -3107,8 +3142,9 @@
     position: absolute; bottom: 0; width: min(34%, 300px); max-height: 92%;
     display: flex; align-items: flex-end; justify-content: center;
     opacity: 0; visibility: hidden; filter: drop-shadow(0 10px 30px rgba(0,0,0,0.45));
-    transition: opacity 0.28s ease, transform 0.28s ease, visibility 0.28s ease;
+    transition: opacity 0.55s ease, transform 0.55s ease, visibility 0.55s ease;
     transform: translateY(16px);
+    pointer-events: auto; cursor: pointer;   /* 더블클릭으로 스탠딩 빠르게 끄기 */
   }
   .scene-standing.left { left: 14px; }
   .scene-standing.right { right: 14px; }
@@ -3132,6 +3168,7 @@
     padding: 14px 18px 16px;
     opacity: 0; visibility: hidden; transform: translateY(14px);
     transition: opacity 0.28s ease, transform 0.28s ease, visibility 0.28s ease;
+    pointer-events: auto; cursor: pointer;   /* 더블클릭으로 스탠딩/대사 빠르게 끄기 */
   }
   .scene-dialogue-box.show { opacity: 1; visibility: visible; transform: translateY(0); }
   .scene-dialogue-box::before {
@@ -4250,15 +4287,15 @@ body.chat-open .scene-dashboard {
             </label>
             <label class="standing-check"><input type="checkbox" id="standingMirror"> 좌우 반전</label>
           </div>
-          <label class="field" id="standingUrlField" style="display:none;">
-            <span class="field-name">추가 외부 스탠딩 URL 목록</span>
-            <textarea id="standingUrls" rows="4" placeholder="한 줄에 하나씩 입력
-https://.../standing_idle.png
-https://.../standing_angry.webp
-https://.../standing_cast.webm"></textarea>
+          <div class="field npc-standings-field" id="standingUrlField" style="display:none;">
+            <div class="npc-standings-head">
+              <span class="field-name">추가 외부 스탠딩 (URL + 태그)</span>
+              <button class="standing-ghost-btn" id="standingAddRow" type="button">＋ 스탠딩 추가</button>
+            </div>
+            <div id="standingRows" class="npc-standing-rows"></div>
             <input type="hidden" id="standingUrl">
-            <div class="hint">포트레이트가 있으면 스탠딩 1번은 포트레이트가 되고, 여기에 넣은 외부 URL은 2번부터 추가됩니다. 여러 개는 줄바꿈으로 입력하세요.</div>
-          </label>
+            <div class="hint">스탠딩마다 URL과 표정/상황 태그(예: 미소, 분노)를 함께 넣으면, 채팅에서 “스탠딩”을 켤 때 태그로 골라 띄울 수 있습니다. 포트레이트가 있으면 스탠딩 1번은 포트레이트가 되고, 여기에 넣은 외부 스탠딩은 그 다음 번호로 추가됩니다.</div>
+          </div>
           <div class="field" style="display:none;">
             <span class="field-name">등장 위치</span>
             <div class="standing-pos-group" id="standingPosGroup">
@@ -4813,6 +4850,26 @@ https://.../standing_cast.webm"></textarea>
   <span class="chip-eq">🎵</span>
   <span class="chip-text" id="bgmChipText">재생 중</span>
   <span class="chip-mute" id="bgmChipMute">🔊</span>
+</div>
+
+<!-- 로컬 오디오 설정 (효과음/BGM 음량 — 내 브라우저에만 적용) -->
+<button class="audio-settings-btn" id="audioSettingsBtn" type="button" title="효과음 / BGM 음량 설정 (내 브라우저에만 적용)">🎚</button>
+<div class="audio-settings-panel" id="audioSettingsPanel">
+  <div class="asp-title">🎧 내 오디오 설정<span class="asp-sub">이 브라우저에만 적용</span></div>
+
+  <div class="asp-row">
+    <label class="asp-toggle"><input type="checkbox" id="aspSfxOn"> <span>효과음</span></label>
+    <input type="range" id="aspSfxVol" min="0" max="100" step="1">
+    <span class="asp-num" id="aspSfxNum">100</span>
+  </div>
+
+  <div class="asp-row">
+    <label class="asp-toggle"><input type="checkbox" id="aspBgmOn"> <span>BGM</span></label>
+    <input type="range" id="aspBgmVol" min="0" max="100" step="1">
+    <span class="asp-num" id="aspBgmNum">100</span>
+  </div>
+
+  <div class="asp-hint">BGM의 곡별 음량은 GM이 정하고, 여기 값은 그 위에 곱해집니다.</div>
 </div>
 
 <!-- 플레이어용 맵 뷰어 (비-GM도 전투맵을 볼 수 있게) -->
@@ -7172,6 +7229,25 @@ https://.../standing_cast.webm"></textarea>
   let _wsCtx = null;
   let _wsMuted = false;   /* 굴림 모달 사운드 토글 (UI 없이 일단 켜둠) */
 
+  /* ════════════════════════════════════════════════
+     [로컬 오디오 설정] 사용자(플레이어/GM)별로 자기 브라우저에서만 적용되는
+     효과음·BGM 음량/켜짐 설정. localStorage에 저장되어 새로고침해도 유지된다.
+       - SFX_GAIN  : 효과음(무기/피격) 전체 음량 배율 0~1
+       - SFX_ENABLED : 효과음 켜짐 여부
+       - BGM_GAIN  : BGM 로컬 음량 배율 0~1 (GM이 정한 트랙 음량 위에 곱해짐)
+       - BGM_LOCAL_MUTED : BGM 로컬 음소거 여부
+     ════════════════════════════════════════════════ */
+  (function initLocalAudioSettings() {
+    const num = (k, d) => { const v = parseFloat(localStorage.getItem(k)); return isNaN(v) ? d : Math.max(0, Math.min(1, v)); };
+    const bool = (k, d) => { const v = localStorage.getItem(k); return v == null ? d : v === '1'; };
+    window.SFX_GAIN = num('audio_sfx_gain', 1);
+    window.SFX_ENABLED = bool('audio_sfx_on', true);
+    window.BGM_GAIN = num('audio_bgm_gain', 1);
+    window.BGM_LOCAL_MUTED = bool('audio_bgm_muted', false);
+  })();
+  /** 기능: 효과음 음량 배율을 반환합니다(꺼져 있으면 0). */
+  function sfxGain() { return window.SFX_ENABLED ? (window.SFX_GAIN != null ? window.SFX_GAIN : 1) : 0; }
+
   window.WEAPON_CAT_LABELS = window.WEAPON_CAT_LABELS || {
     sword:'⚔ 검', dagger:'🗡 단검', heavy:'🪓 도끼/둔기', spear:'⤴ 창', bow:'🏹 활',
     gun:'🔫 화기', brawl:'👊 격투', arcane:'✨ 마법무기', shield:'🛡 방패', armor:'🥋 갑옷'
@@ -7190,9 +7266,10 @@ https://.../standing_cast.webm"></textarea>
   function playCustomWeaponSound(cat) {
     const url = getCustomWeaponSfxUrl(cat);
     if (!url) return false;
+    if (!window.SFX_ENABLED) return true;  /* 효과음 꺼짐: 기본음 합성으로도 안 넘어가게 true 반환 */
     try {
       const audio = new Audio(url);
-      audio.volume = 0.85;
+      audio.volume = Math.max(0, Math.min(1, 0.85 * sfxGain()));
       audio.preload = 'auto';
       const p = audio.play();
       if (p && p.catch) p.catch(err => console.warn('[SFX] custom weapon sound blocked/failed:', err));
@@ -7258,14 +7335,15 @@ https://.../standing_cast.webm"></textarea>
   /** 기능: 효과음/모션/대사 재생을 처리합니다. */
   function playWeaponSound(cat) {
     if (_wsMuted) return;
+    if (!window.SFX_ENABLED) return;
     if (playCustomWeaponSound(cat)) return;
     const ctx = getWeaponAudioCtx();
     if (!ctx) return;
     /* 자동재생 정책: 굴림 버튼 클릭이라는 사용자 제스처에 묶여있으므로 resume() 가능 */
     if (ctx.state === 'suspended') { try { ctx.resume(); } catch(_) {} }
 
-    /* 마스터 음량 한 단계 낮춰서 깜짝 놀라지 않게 */
-    const master = ctx.createGain(); master.gain.value = 0.7; master.connect(ctx.destination);
+    /* 마스터 음량 한 단계 낮춰서 깜짝 놀라지 않게 (로컬 효과음 음량 배율 적용) */
+    const master = ctx.createGain(); master.gain.value = 0.7 * sfxGain(); master.connect(ctx.destination);
 
     switch (cat) {
       case 'sword':
@@ -8222,27 +8300,81 @@ https://.../standing_cast.webm"></textarea>
     return splitStandingUrls(data.url || '');
   }
 
-  /** 기능: 스탠딩 URL textarea 값을 배열로 읽어옵니다. */
+  /** 기능: 저장된 스탠딩 데이터에서 URL과 평행한 태그(라벨) 배열을 꺼냅니다. */
+  function normalizeStandingLabels(data) {
+    if (!data || !Array.isArray(data.labels)) return [];
+    return data.labels.map(v => String(v || '').trim());
+  }
+
+  /* ── 플레이어 스탠딩 입력 행 (URL + 태그) ── */
+  /** 기능: 스탠딩 입력 행 하나(URL+태그)를 만들어 추가합니다. */
+  function standingAddRow(url, label) {
+    const rows = $('standingRows');
+    if (!rows) return;
+    const row = document.createElement('div'); row.className = 'npc-standing-row';
+    const urlInp = document.createElement('input');
+    urlInp.type = 'text'; urlInp.className = 'gm-input ns-url';
+    urlInp.placeholder = '스탠딩 이미지/영상 URL';
+    urlInp.value = url || '';
+    const lblInp = document.createElement('input');
+    lblInp.type = 'text'; lblInp.className = 'gm-input ns-label';
+    lblInp.placeholder = '표정/상황 태그';
+    lblInp.value = label || '';
+    const del = document.createElement('button');
+    del.type = 'button'; del.className = 'ns-del'; del.textContent = '✕'; del.title = '이 스탠딩 삭제';
+    del.addEventListener('click', () => {
+      row.remove();
+      if ($('standingUrl')) $('standingUrl').value = getStandingUrlListFromInput()[0] || '';
+      if (window.SHEET_ONCHANGE) window.SHEET_ONCHANGE();
+    });
+    row.appendChild(urlInp); row.appendChild(lblInp); row.appendChild(del);
+    rows.appendChild(row);
+    return row;
+  }
+
+  /** 기능: 스탠딩 입력 행들을 모두 비우고 주어진 항목들로 채웁니다. */
+  function standingSetRows(items) {
+    const rows = $('standingRows');
+    if (!rows) return;
+    rows.innerHTML = '';
+    (items && items.length ? items : [{ url: '', label: '' }]).forEach(it => standingAddRow(it.url, it.label));
+  }
+
+  /** 기능: 스탠딩 입력 행들에서 {url,label} 목록을 수집합니다(빈 URL 제외). */
+  function standingCollectRows() {
+    const rows = $('standingRows');
+    if (!rows) return [];
+    return Array.from(rows.querySelectorAll('.npc-standing-row')).map(row => {
+      const url = (row.querySelector('.ns-url')?.value || '').trim();
+      const label = (row.querySelector('.ns-label')?.value || '').trim();
+      return url ? { url, label } : null;
+    }).filter(Boolean);
+  }
+
+  /** 기능: 스탠딩 입력 행에서 URL 배열만 읽어옵니다(기존 호출 호환용). */
   function getStandingUrlListFromInput() {
-    const multi = $('standingUrls');
-    if (multi) return splitStandingUrls(multi.value);
+    if ($('standingRows')) return standingCollectRows().map(it => it.url);
     return splitStandingUrls(($('standingUrl')?.value || '').trim());
   }
 
-  /** 기능: 저장된 스탠딩 URL 배열을 textarea에 다시 채웁니다. */
-  function setStandingUrlListToInput(urls) {
+  /** 기능: 저장된 스탠딩 URL/태그 배열을 입력 행으로 다시 채웁니다. */
+  function setStandingUrlListToInput(urls, labels) {
     const list = Array.isArray(urls) ? urls.map(v => String(v || '').trim()).filter(Boolean) : splitStandingUrls(urls);
-    if ($('standingUrls')) $('standingUrls').value = list.join('\n');
+    const lbls = Array.isArray(labels) ? labels : [];
+    standingSetRows(list.map((u, i) => ({ url: u, label: lbls[i] || '' })));
     if ($('standingUrl')) $('standingUrl').value = list[0] || '';
   }
 
-  /** 기능: 스탠딩 소스, URL 목록, 위치, 반전 설정을 데이터로 수집합니다. */
+  /** 기능: 스탠딩 소스, URL/태그 목록, 위치, 반전 설정을 데이터로 수집합니다. */
   function collectStandingSettings() {
-    const urls = getStandingUrlListFromInput();
+    const items = standingCollectRows();
+    const urls = items.map(it => it.url);
+    const labels = items.map(it => it.label || '');
     return {
       source: $('standingSource')?.value || 'portrait',
       url: urls[0] || '',
       urls,
+      labels,            /* URL과 평행한 표정/상황 태그 배열 */
       pos: standingPosition || 'right',
       mirror: !!$('standingMirror')?.checked
     };
@@ -8252,8 +8384,9 @@ https://.../standing_cast.webm"></textarea>
   function applyStandingSettings(st) {
     const data = st || {};
     const urls = normalizeStandingUrls(data);
+    const labels = normalizeStandingLabels(data);
     if ($('standingSource')) $('standingSource').value = data.source || (urls.length ? 'image' : 'portrait');
-    setStandingUrlListToInput(urls);
+    setStandingUrlListToInput(urls, labels);
     if ($('standingMirror')) $('standingMirror').checked = !!data.mirror;
     setStandingPosition(data.pos || 'right');
     updateStandingSourceUI();
@@ -8310,9 +8443,11 @@ https://.../standing_cast.webm"></textarea>
     btn.addEventListener('click', () => setStandingPosition(btn.dataset.pos || 'left'));
   });
   $('standingSource')?.addEventListener('change', () => { updateStandingSourceUI(); if (window.SHEET_ONCHANGE) window.SHEET_ONCHANGE(); });
-  $('standingUrls')?.addEventListener('input', () => {
-    if ($('standingUrl')) $('standingUrl').value = getStandingUrlListFromInput()[0] || '';
-    if (window.SHEET_ONCHANGE) window.SHEET_ONCHANGE();
+  $('standingAddRow')?.addEventListener('click', () => {
+    standingAddRow('', '');
+    const rows = $('standingRows');
+    const last = rows && rows.lastElementChild && rows.lastElementChild.querySelector('.ns-url');
+    if (last) last.focus();
   });
   $('standingUrl')?.addEventListener('input', () => { if (window.SHEET_ONCHANGE) window.SHEET_ONCHANGE(); });
   $('standingMirror')?.addEventListener('change', () => { if (window.SHEET_ONCHANGE) window.SHEET_ONCHANGE(); });
@@ -8596,15 +8731,15 @@ https://.../standing_cast.webm"></textarea>
     if (!sel) return;
     sel.style.display = isGameMaster ? '' : 'none';
     if (!isGameMaster) return;
-    const prev = sel.value || 'active';
+    const prev = sel.value || 'gm';
     sel.innerHTML = '';
     const add = (value, label) => { const o = document.createElement('option'); o.value = value; o.textContent = label; sel.appendChild(o); };
-    add('active', '현재 시트');
+    /* GM 발화자: GM 본인 + NPC + 몬스터 시트만 선택 가능 (PC/현재 시트는 제외) */
     add('gm', 'GM');
-    Object.keys(chars || {}).forEach(id => add('char:' + id, 'PC · ' + getCharDisplayName(id)));
     Object.keys(npcState || {}).forEach(id => add('npc:' + id, 'NPC · ' + ((npcState[id] && npcState[id].name) || '이름 없음')));
     Object.keys(monsterState || {}).forEach(id => add('monster:' + id, '몬스터 · ' + ((monsterState[id] && monsterState[id].name) || '몬스터')));
     if (Array.from(sel.options).some(o => o.value === prev)) sel.value = prev;
+    else sel.value = 'gm';
     if (window.UPDATE_CHAT_STANDING_SOURCES) window.UPDATE_CHAT_STANDING_SOURCES();
   }
 
@@ -8629,6 +8764,12 @@ https://.../standing_cast.webm"></textarea>
     if (!raw) return [];
     // 포트레이트/dataURL은 내부에 콤마가 있으므로 절대 콤마로 자르지 않는다.
     return raw.split(/\r?\n/).map(v => v.trim()).filter(Boolean);
+  }
+
+  /** 기능: 캐릭터 데이터에서 스탠딩 URL과 평행한 태그(라벨) 배열을 꺼냅니다. */
+  function getStandingLabelsFromData(st) {
+    if (!st || !Array.isArray(st.labels)) return [];
+    return st.labels.map(v => String(v || '').trim());
   }
 
   /** 기능: 캐릭터 데이터에서 기본 스탠딩 소스 유형을 확인합니다. */
@@ -8688,37 +8829,55 @@ https://.../standing_cast.webm"></textarea>
     };
     add('auto', '시트 기본');
 
-    const ids = Object.keys(chars || {}).filter(canUseCharStanding).sort((a,b) => getCharStandingLabel(a).localeCompare(getCharStandingLabel(b), 'ko'));
-    ids.forEach(id => {
+    /* GM이 발화자로 특정 NPC/몬스터 시트를 고르면, 그 시트의 스탠딩만 노출한다.
+       플레이어(비-GM)는 발화자 선택이 없으므로 본인이 쓸 수 있는 시트 스탠딩을 노출. */
+    const speakerSel = $('chatSpeakerSelect');
+    const speaker = (isGameMaster && speakerSel && speakerSel.value) ? speakerSel.value : '';
+
+    /* 캐릭터 시트 스탠딩 한 개 추가하는 헬퍼 (태그 라벨 포함) */
+    const addCharStandings = (id) => {
       const label = getCharStandingLabel(id);
       const c = chars[id] && chars[id].data ? chars[id].data : {};
       const hasPortrait = !!(c.portrait && c.portrait.img);
       const st = c.standing || {};
       const urls = getStandingUrlsFromData(st);
+      const labels = getStandingLabelsFromData(st);
       let num = 1;
-
-      // 포트레이트가 있으면 항상 스탠딩 1번으로 노출
       if (hasPortrait) {
         add('charStanding:' + id, '스탠딩 ' + (num++) + ' · ' + label + ' (포트레이트)');
       }
-      // 외부 URL은 포트레이트 다음 번호로 노출
       urls.forEach((url, idx) => {
-        add('charStanding:' + id + ':' + idx, '스탠딩 ' + (num + idx) + ' · ' + label);
+        const tag = labels[idx] ? (label + ' — ' + labels[idx]) : ('스탠딩 ' + (num + idx) + ' · ' + label);
+        add('charStanding:' + id + ':' + idx, tag);
       });
-    });
+    };
 
-    // NPC 스탠딩 (GM 전용) — 표정/상황 라벨로 노출
-    if (isGameMaster) {
-      const npcIds = Object.keys(npcState || {}).sort((a,b) => ((npcState[a].name||'').localeCompare((npcState[b].name||''), 'ko')));
-      npcIds.forEach(id => {
-        const n = npcState[id] || {};
-        const label = (n.name || 'NPC');
-        const items = getNpcStandingItems(n);
-        items.forEach((it, idx) => {
-          const tag = it.label ? (label + ' — ' + it.label) : (label + ' · 스탠딩 ' + (idx + 1));
-          add('npcStanding:' + id + ':' + idx, tag + ' (NPC)');
-        });
+    /* NPC 시트 스탠딩 추가 헬퍼 */
+    const addNpcStandings = (id) => {
+      const n = npcState[id] || {};
+      const label = (n.name || 'NPC');
+      const items = getNpcStandingItems(n);
+      items.forEach((it, idx) => {
+        const tag = it.label ? (label + ' — ' + it.label) : (label + ' · 스탠딩 ' + (idx + 1));
+        add('npcStanding:' + id + ':' + idx, tag + ' (NPC)');
       });
+    };
+
+    if (isGameMaster && speaker) {
+      /* ── GM: 선택한 발화자 시트의 스탠딩만 ── */
+      if (speaker.startsWith('npc:')) {
+        addNpcStandings(speaker.slice(4));
+      } else if (speaker.startsWith('monster:')) {
+        const id = speaker.slice(8);
+        const m = monsterState[id] || {};
+        const img = (m.img || m.portrait || '').trim();
+        if (img) add('monster:' + id, (m.name || '몬스터') + ' (몬스터)');
+      }
+      /* speaker === 'gm' 이면 시트 스탠딩 없음 → '시트 기본'만 */
+    } else {
+      /* ── 플레이어: 본인이 쓸 수 있는 캐릭터 시트 스탠딩 ── */
+      const ids = Object.keys(chars || {}).filter(canUseCharStanding).sort((a,b) => getCharStandingLabel(a).localeCompare(getCharStandingLabel(b), 'ko'));
+      ids.forEach(addCharStandings);
     }
 
     if (Array.from(sel.options).some(o => o.value === prev)) sel.value = prev;
@@ -8746,6 +8905,15 @@ https://.../standing_cast.webm"></textarea>
       return { source: isVideo ? 'video' : 'image', url, mirror: !!n.mirror, color: n.color || '#D4AF52' };
     }
     let mode = null, id = null;
+    /* 몬스터 스탠딩 선택 (monster:id) — 몬스터 이미지 1장 */
+    if (value.startsWith('monster:')) {
+      const mid = value.slice('monster:'.length);
+      const m = monsterState[mid] || {};
+      const url = (m.img || m.portrait || '').trim();
+      if (!url) return null;
+      const isVideo = /\.(webm|mp4|mov|m4v|ogv)(\?|#|$)/i.test(url) || /res\.cloudinary\.com\/[^/]+\/video\/upload\//i.test(url);
+      return { source: isVideo ? 'video' : 'image', url, mirror: false, color: '#C8342E' };
+    }
     if (value.startsWith('charStanding:')) {
       const rest = value.slice('charStanding:'.length);
       const parts = rest.split(':');
@@ -10152,6 +10320,7 @@ https://.../standing_cast.webm"></textarea>
 
   /** 기능: 일반 피격 효과음을 재생합니다. */
   function playHitSound(amount) {
+    if (!window.SFX_ENABLED) return;
     const ctx = getHitCtx();
     if (!ctx) return;
     if (ctx.state === 'suspended') { try { ctx.resume(); } catch(_) {} }
@@ -10162,7 +10331,7 @@ https://.../standing_cast.webm"></textarea>
     const now = ctx.currentTime;
 
     const master = ctx.createGain();
-    master.gain.value = 0.55 * intensity;
+    master.gain.value = 0.55 * intensity * sfxGain();
     master.connect(ctx.destination);
 
     impactLayers(ctx, master, now, intensity);
@@ -10224,6 +10393,7 @@ https://.../standing_cast.webm"></textarea>
   /* ══ 크리티컬 피격음 — 강력한 이중 임팩트 + 금속 슬래시 + 짙은 잔향 ══ */
   /** 기능: 크리티컬 피격 효과음을 재생합니다. */
   function playCritHitSound(amount) {
+    if (!window.SFX_ENABLED) return;
     const ctx = getHitCtx(); if (!ctx) return;
     if (ctx.state === 'suspended') { try { ctx.resume(); } catch(_) {} }
 
@@ -10233,7 +10403,7 @@ https://.../standing_cast.webm"></textarea>
     const now = ctx.currentTime;
 
     const master = ctx.createGain();
-    master.gain.value = 0.75;
+    master.gain.value = 0.75 * sfxGain();
     master.connect(ctx.destination);
 
     /* (a) 빌드업 휘이익 — 직전 0.08초 */
@@ -11711,7 +11881,7 @@ https://.../standing_cast.webm"></textarea>
       const volNum = document.createElement('span'); volNum.style.cssText = 'font-size:11px;width:26px;text-align:right;'; volNum.textContent = vol.value;
       vol.addEventListener('input', () => {
         volNum.textContent = vol.value;
-        if (bgmAudios[id]) bgmAudios[id].volume = parseInt(vol.value) / 100;
+        if (bgmAudios[id]) bgmAudios[id].volume = Math.max(0, Math.min(1, parseInt(vol.value) / 100 * (window.BGM_GAIN != null ? window.BGM_GAIN : 1)));
       });
       vol.addEventListener('change', () => {
         if (bgmRef) bgmRef.child(id).update({ volume: parseInt(vol.value) });
@@ -11736,7 +11906,8 @@ https://.../standing_cast.webm"></textarea>
       if (!bgmAudios[id]) {
         const audio = new Audio();
         audio.src = t.url;
-        audio.volume = (t.volume != null ? t.volume : 60) / 100;
+        audio.volume = Math.max(0, Math.min(1, (t.volume != null ? t.volume : 60) / 100 * (window.BGM_GAIN != null ? window.BGM_GAIN : 1)));
+        audio.muted = !!window.BGM_LOCAL_MUTED;
         audio.loop = !!t.loop;
         audio.crossOrigin = 'anonymous';
         audio.addEventListener('ended', () => {
@@ -11751,7 +11922,8 @@ https://.../standing_cast.webm"></textarea>
       }
 
       const audio = bgmAudios[id];
-      audio.volume = (t.volume != null ? t.volume : 60) / 100;
+      audio.volume = Math.max(0, Math.min(1, (t.volume != null ? t.volume : 60) / 100 * (window.BGM_GAIN != null ? window.BGM_GAIN : 1)));
+      audio.muted = !!window.BGM_LOCAL_MUTED;
       audio.loop = !!t.loop;
 
       if (t.playing && audio.paused) {
@@ -11841,19 +12013,96 @@ https://.../standing_cast.webm"></textarea>
   }
 
   /* BGM 칩 — 자기 브라우저만 음소거 (모든 트랙에 적용) */
-  let chipMuted = false;
+  /** 기능: 로컬 BGM 음량/음소거 설정을 현재 재생 중인 모든 트랙에 다시 적용합니다. */
+  function applyLocalBgmVolume() {
+    Object.keys(bgmAudios).forEach(id => {
+      const a = bgmAudios[id]; if (!a) return;
+      const t = bgmTracks[id] || {};
+      try {
+        a.volume = Math.max(0, Math.min(1, (t.volume != null ? t.volume : 60) / 100 * (window.BGM_GAIN != null ? window.BGM_GAIN : 1)));
+        a.muted = !!window.BGM_LOCAL_MUTED;
+      } catch(_) {}
+    });
+    const mute = $('bgmChipMute');
+    if (mute) mute.textContent = window.BGM_LOCAL_MUTED ? '🔇' : '🔊';
+  }
+  window.APPLY_LOCAL_BGM_VOLUME = applyLocalBgmVolume;
+
   /** 기능: BGM 상태 칩 클릭/제어 이벤트를 연결합니다. */
   function bindBgmChip() {
     $('bgmChip').addEventListener('click', () => {
-      chipMuted = !chipMuted;
-      $('bgmChipMute').textContent = chipMuted ? '🔇' : '🔊';
-      Object.keys(bgmAudios).forEach(id => {
-        const a = bgmAudios[id];
-        try { a.muted = chipMuted; } catch(_) {}
-      });
+      window.BGM_LOCAL_MUTED = !window.BGM_LOCAL_MUTED;
+      try { localStorage.setItem('audio_bgm_muted', window.BGM_LOCAL_MUTED ? '1' : '0'); } catch(_) {}
+      applyLocalBgmVolume();
     });
   }
   bindBgmChip();
+
+  /* ── 로컬 오디오 설정 패널 (효과음/BGM 음량 — 내 브라우저에만 적용) ── */
+  (function bindAudioSettings() {
+    const btn = $('audioSettingsBtn');
+    const panel = $('audioSettingsPanel');
+    if (!btn || !panel) return;
+
+    const sfxOn = $('aspSfxOn'), sfxVol = $('aspSfxVol'), sfxNum = $('aspSfxNum');
+    const bgmOn = $('aspBgmOn'), bgmVol = $('aspBgmVol'), bgmNum = $('aspBgmNum');
+
+    /* 저장된 값으로 컨트롤 초기화 */
+    function syncControls() {
+      sfxOn.checked = !!window.SFX_ENABLED;
+      sfxVol.value = Math.round((window.SFX_GAIN != null ? window.SFX_GAIN : 1) * 100);
+      sfxNum.textContent = sfxVol.value;
+      sfxVol.disabled = !window.SFX_ENABLED;
+
+      bgmOn.checked = !window.BGM_LOCAL_MUTED;
+      bgmVol.value = Math.round((window.BGM_GAIN != null ? window.BGM_GAIN : 1) * 100);
+      bgmNum.textContent = bgmVol.value;
+      bgmVol.disabled = !!window.BGM_LOCAL_MUTED;
+    }
+    syncControls();
+
+    function save(k, v) { try { localStorage.setItem(k, v); } catch(_) {} }
+
+    /* ── 효과음 ── */
+    sfxOn.addEventListener('change', () => {
+      window.SFX_ENABLED = sfxOn.checked;
+      save('audio_sfx_on', sfxOn.checked ? '1' : '0');
+      sfxVol.disabled = !sfxOn.checked;
+    });
+    sfxVol.addEventListener('input', () => {
+      window.SFX_GAIN = parseInt(sfxVol.value, 10) / 100;
+      sfxNum.textContent = sfxVol.value;
+      save('audio_sfx_gain', window.SFX_GAIN);
+    });
+
+    /* ── BGM ── */
+    bgmOn.addEventListener('change', () => {
+      window.BGM_LOCAL_MUTED = !bgmOn.checked;
+      save('audio_bgm_muted', window.BGM_LOCAL_MUTED ? '1' : '0');
+      bgmVol.disabled = !!window.BGM_LOCAL_MUTED;
+      applyLocalBgmVolume();
+    });
+    bgmVol.addEventListener('input', () => {
+      window.BGM_GAIN = parseInt(bgmVol.value, 10) / 100;
+      bgmNum.textContent = bgmVol.value;
+      save('audio_bgm_gain', window.BGM_GAIN);
+      applyLocalBgmVolume();
+    });
+
+    /* ── 열기/닫기 ── */
+    function openPanel() { syncControls(); panel.classList.add('show'); btn.classList.add('open'); document.body.classList.add('audio-panel-open'); }
+    function closePanel() { panel.classList.remove('show'); btn.classList.remove('open'); document.body.classList.remove('audio-panel-open'); }
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      if (panel.classList.contains('show')) closePanel(); else openPanel();
+    });
+    /* 패널 바깥 클릭 시 닫기 */
+    document.addEventListener('click', e => {
+      if (!panel.classList.contains('show')) return;
+      if (panel.contains(e.target) || btn.contains(e.target)) return;
+      closePanel();
+    });
+  })();
 
 
   /* ── 탭 렌더링 ── */
@@ -12568,6 +12817,7 @@ https://.../standing_cast.webm"></textarea>
     updateChatStandingSourceOptions();
   });
   $('chatStandingSourceSelect')?.addEventListener('change', () => updateChatStandingSourceOptions());
+  $('chatSpeakerSelect')?.addEventListener('change', () => updateChatStandingSourceOptions());
   updateChatStandingSourceOptions();
   $('chatSendBtn').addEventListener('click', sendChatMsg);
   $('chatTextInput').addEventListener('keydown', e => {
@@ -13129,9 +13379,9 @@ https://.../standing_cast.webm"></textarea>
   let typingDone = false;
 
   const TYPE_SPEED = 30;      // 타자기 속도(ms/글자) — 차분하게 읽히도록 늦춤
-  const MIN_HOLD = 1400;      // 타이핑 끝난 뒤 최소 유지 시간 (읽을 여유)
-  const MAX_HOLD = 3600;      // 너무 길게 붙잡지 않기
-  const FADE_TIME = 320;
+  const MIN_HOLD = 3200;      // 타이핑 끝난 뒤 최소 유지 시간 (읽을 여유) — 스탠딩이 너무 빨리 사라지지 않게 늘림
+  const MAX_HOLD = 9000;      // 긴 대사는 더 오래 유지
+  const FADE_TIME = 600;      // 사라질 때 페이드아웃 시간 — 부드럽게 늘림
 
   /** 기능: 대사 타이핑/자동 진행 타이머를 정리합니다. */
   function clearTimers() {
@@ -13260,7 +13510,7 @@ https://.../standing_cast.webm"></textarea>
       // 등장 모션이 살짝 끝난 뒤 글자가 타이핑되도록
       typeTimer = setTimeout(() => {
         typeText(textEl, payload.text || '', token, () => {
-          const lengthHold = Math.min(MAX_HOLD, Math.max(MIN_HOLD, Array.from(payload.text || '').length * 40));
+          const lengthHold = Math.min(MAX_HOLD, Math.max(MIN_HOLD, Array.from(payload.text || '').length * 80));
           hideTimer = setTimeout(() => {
             hideDialogue(false, () => {
               playing = false;
@@ -13283,7 +13533,7 @@ https://.../standing_cast.webm"></textarea>
       textEl.textContent = currentPayload.text || '';
       textEl.classList.remove('typing');
       typingDone = true;
-      const lengthHold = Math.min(MAX_HOLD, Math.max(MIN_HOLD, Array.from(currentPayload.text || '').length * 32));
+      const lengthHold = Math.min(MAX_HOLD, Math.max(MIN_HOLD, Array.from(currentPayload.text || '').length * 70));
       hideTimer = setTimeout(() => {
         hideDialogue(false, () => { playing = false; currentPayload = null; playNext(); });
       }, lengthHold);
@@ -13294,6 +13544,27 @@ https://.../standing_cast.webm"></textarea>
   }
 
   $('sceneDialogueBox')?.addEventListener('click', e => { e.stopPropagation(); skipOrNextDialogue(); });
+
+  /** 기능: 현재 떠 있는 스탠딩/대사를 빠르게(짧은 페이드로) 끄고 대기열도 비웁니다. */
+  function quickDismissDialogue() {
+    queue.length = 0;                 /* 대기 중인 대사도 모두 취소 */
+    const stand = $('sceneStandingWrap');
+    const box = $('sceneDialogueBox');
+    const fast = 'opacity 0.15s ease, transform 0.15s ease, visibility 0.15s ease';
+    if (stand) stand.style.transition = fast;   /* 더블클릭은 빠르게 사라지도록 일시적으로 짧은 페이드 */
+    if (box) box.style.transition = fast;
+    hideDialogue(false, () => {
+      playing = false;
+      currentPayload = null;
+      if (stand) stand.style.transition = '';   /* 다음 등장은 다시 기본(부드러운) 속도로 */
+      if (box) box.style.transition = '';
+      playNext();
+    });
+  }
+
+  /* 더블클릭 → 스탠딩 빠르게 끄기 (대사 박스 + 스탠딩 이미지 모두) */
+  $('sceneDialogueBox')?.addEventListener('dblclick', e => { e.stopPropagation(); e.preventDefault(); quickDismissDialogue(); });
+  $('sceneStandingWrap')?.addEventListener('dblclick', e => { e.stopPropagation(); e.preventDefault(); quickDismissDialogue(); });
 
   /** 기능: 채팅 메시지를 현재 장면 대사 큐에 추가합니다. */
   function enqueueDialogue(payload) {
