@@ -9147,6 +9147,10 @@ body.chat-open .scene-dashboard {
   let activeSceneRef = null;
   let activeSceneId = null;
   let scenesState = {};
+  /* 재접속 시 저장된 활성 장면이 첫 장면으로 덮어써지던 버그 방지용 플래그 */
+  let scenesLoaded = false;
+  let activeSceneLoaded = false;
+  let dbActiveSceneId = null;
   let roomSettingsRef = null;
   let roomSettings = { playerTokenTools: true, tokenMoveLocked: false, confirmTokenDelete: true };
   let activeMapCb = null;
@@ -9162,6 +9166,10 @@ body.chat-open .scene-dashboard {
   /** 기능: 전투맵/장면/토큰 시스템을 초기화합니다. */
   function initBattlemap(room) {
     if (!db) return;
+    /* 재접속/방 전환 시 플래그 초기화 — 저장된 활성 장면이 잘못 덮어써지지 않게 */
+    scenesLoaded = false;
+    activeSceneLoaded = false;
+    dbActiveSceneId = null;
     scenesRef = db.ref('rooms/' + room + '/scenes');
     activeSceneRef = db.ref('rooms/' + room + '/activeSceneId');
 
@@ -9177,18 +9185,25 @@ body.chat-open .scene-dashboard {
       scenesState = snap.val() || {};
       renderSceneList();
       applySceneMetaToUi();
+      scenesLoaded = true;
       const ids = Object.keys(scenesState);
-      if (ids.length === 0 && isGameMaster) createDefaultSceneFromLegacy(room);
-      else if (ids.length > 0 && !activeSceneId && isGameMaster) activeSceneRef.set(ids[0]);
+      if (ids.length === 0 && isGameMaster) { createDefaultSceneFromLegacy(room); return; }
+      /* ★ 여기서 곧바로 activeSceneRef.set(ids[0]) 하지 않는다.
+         (재접속 직후엔 activeSceneId가 아직 null이라 저장된 장면을 덮어쓰는 버그가 있었음) */
+      maybeInitActiveScene();
     });
 
     activeSceneRef.on('value', snap => {
-      const nextId = snap.val();
+      dbActiveSceneId = snap.val();
+      activeSceneLoaded = true;
+      const nextId = dbActiveSceneId;
       if (!nextId) {
         clearActiveSceneBinding();
+        maybeInitActiveScene();   /* 저장된 활성 장면이 없고 장면은 있으면 GM이 첫 장면으로 기본 설정 */
         return;
       }
       if (scenesState && Object.keys(scenesState).length && !scenesState[nextId]) {
+        /* 저장된 활성 장면이 삭제된 경우에만 첫 장면으로 폴백 */
         if (isGameMaster) {
           const fallback = Object.keys(scenesState)[0];
           if (fallback) activeSceneRef.set(fallback);
@@ -9199,6 +9214,18 @@ body.chat-open .scene-dashboard {
       }
       bindActiveScene(nextId);
     });
+  }
+
+  /** 기능: 장면 목록과 활성 장면 정보가 모두 로드된 뒤, 저장된 활성 장면이 정말 없을 때만 첫 장면을 기본값으로 설정합니다. */
+  function maybeInitActiveScene() {
+    if (!scenesLoaded || !activeSceneLoaded) return;   /* 둘 다 로드될 때까지 대기 */
+    if (!isGameMaster) return;                          /* 기본값 설정은 GM만 */
+    const ids = Object.keys(scenesState || {});
+    if (!ids.length) return;
+    /* DB에 저장된 활성 장면이 없거나(삭제된 장면을 가리키는 경우 포함) 할 때만 첫 장면으로 */
+    if (!dbActiveSceneId || !scenesState[dbActiveSceneId]) {
+      activeSceneRef.set(ids[0]);
+    }
   }
 
   /** 기능: 이전 버전 방 데이터를 새 장면 구조로 변환해 기본 장면을 만듭니다. */
