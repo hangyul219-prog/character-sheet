@@ -3203,6 +3203,93 @@
   .scene-dialogue-layer {
     position: absolute; inset: 0; pointer-events: none; z-index: 5;
   }
+
+  /* ══════════════════════════════════════════════════════
+     [장면 시계 패널] 메인 장면 좌상단에 떠 있는 진행 시계 모음.
+     칸이 적게 차면 차분한 파랑, 절반 즈음 보랏빛/주황을 거쳐,
+     꽉 차면 새빨갛게 변하며 펄스 광원이 강해진다 (긴박감 증대).
+     ══════════════════════════════════════════════════════ */
+  .scene-clocks {
+    position: absolute; top: 12px; left: 12px; z-index: 6;
+    display: flex; flex-direction: column; gap: 8px;
+    max-width: 240px; pointer-events: auto;
+  }
+  .scene-clocks:empty { display: none; }
+  .scene-clock-card {
+    --clk-hue: 210;          /* 비어있을 때 파랑 (210) — JS가 시계 진행도에 따라 갱신 */
+    --clk-sat: 55%;
+    --clk-light: 50%;
+    --clk-fill: 0;           /* 0~1 (filled / size) */
+    padding: 8px 11px 9px;
+    border-radius: 10px;
+    background: linear-gradient(160deg,
+      rgba(10,14,26, 0.86),
+      rgba(8,11,20, 0.92));
+    border: 1px solid hsla(var(--clk-hue), var(--clk-sat), var(--clk-light), 0.55);
+    box-shadow:
+      0 4px 14px rgba(0,0,0,0.55),
+      0 0 calc(6px + var(--clk-fill) * 18px) hsla(var(--clk-hue), var(--clk-sat), var(--clk-light), calc(0.18 + var(--clk-fill) * 0.55));
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    color: #f3eede;
+    transition: border-color .35s ease, box-shadow .35s ease;
+  }
+  .scene-clock-card.full {
+    /* 꽉 찬 시계 — 살짝 펄스해서 긴박감 강조 */
+    animation: clockFullPulse 1.6s ease-in-out infinite;
+  }
+  @keyframes clockFullPulse {
+    0%, 100% { box-shadow: 0 4px 14px rgba(0,0,0,0.55), 0 0 18px hsla(0, 80%, 55%, 0.55); }
+    50%      { box-shadow: 0 4px 18px rgba(0,0,0,0.6),  0 0 28px hsla(0, 85%, 60%, 0.85); }
+  }
+  .scene-clock-card .sc-head {
+    display: flex; align-items: baseline; gap: 8px;
+    margin-bottom: 5px;
+  }
+  .scene-clock-card .sc-name {
+    flex: 1; min-width: 0;
+    font-family: 'Cinzel', serif; font-size: 12px; font-weight: 700;
+    color: hsl(var(--clk-hue), 70%, 80%);
+    letter-spacing: 0.5px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.7);
+  }
+  .scene-clock-card .sc-frac {
+    font-family: 'Cinzel Decorative', serif; font-size: 11px;
+    color: hsl(var(--clk-hue), 60%, 75%);
+    letter-spacing: 1px;
+  }
+  /* ── 시계 칸들 — 둥근 원/막대형 인디케이터 ── */
+  .scene-clock-card .sc-segs {
+    display: flex; gap: 3px;
+  }
+  .scene-clock-card .sc-seg {
+    flex: 1;
+    height: 8px;
+    border-radius: 2px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid hsla(var(--clk-hue), 50%, 50%, 0.35);
+    transition: background .3s ease, box-shadow .3s ease, border-color .3s ease;
+  }
+  .scene-clock-card .sc-seg.filled {
+    background: linear-gradient(180deg,
+      hsl(var(--clk-hue), var(--clk-sat), calc(var(--clk-light) + 15%)),
+      hsl(var(--clk-hue), var(--clk-sat), var(--clk-light)));
+    border-color: hsla(var(--clk-hue), var(--clk-sat), calc(var(--clk-light) + 12%), 0.9);
+    box-shadow:
+      inset 0 1px 0 hsla(var(--clk-hue), 90%, 80%, 0.6),
+      0 0 6px hsla(var(--clk-hue), var(--clk-sat), var(--clk-light), 0.7);
+  }
+
+  /* 모바일 — 좀 더 작게 */
+  @media (max-width: 640px) {
+    .scene-clocks { max-width: 180px; top: 8px; left: 8px; gap: 6px; }
+    .scene-clock-card { padding: 6px 9px 7px; }
+    .scene-clock-card .sc-name { font-size: 11px; }
+    .scene-clock-card .sc-frac { font-size: 10px; }
+    .scene-clock-card .sc-seg { height: 6px; }
+  }
+
   /* [스탠딩 연출] 채팅 대사와 함께 등장하는 캐릭터 이미지/영상 스타일 */
   .scene-standing {
     position: absolute; bottom: 0; width: min(34%, 300px); max-height: 92%;
@@ -4261,6 +4348,8 @@ body.chat-open .scene-dashboard {
     <article class="scene-card">
       <div class="scene-media">
         <div class="sync-save-chip saved" id="syncSaveChip">저장됨</div>
+        <!-- [장면 시계 패널] 현재 진행 중인 시계들을 메인 화면 좌상단에 오버레이로 표시 -->
+        <div class="scene-clocks" id="sceneClocks" aria-label="진행 시계"></div>
         <div class="scene-stage" id="sceneStage">
           <img id="sceneMapImg" alt="현재 전투맵 미리보기">
           <video id="sceneMapVid" autoplay loop muted playsinline preload="metadata"></video>
@@ -9066,20 +9155,38 @@ body.chat-open .scene-dashboard {
   }
 
   /** 기능: 현재 데이터를 JSON 파일로 내보냅니다. */
+  /** 기능: 데이터를 JSON 파일로 내려받습니다. Firefox는 anchor가 DOM에 붙어 있어야 click이 동작합니다. */
   function exportJson(filename, data) {
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type:'application/json' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = filename;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 500);
+    try {
+      const json = JSON.stringify(data, null, 2);
+      const blob = new Blob([json], { type:'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.style.display = 'none';
+      document.body.appendChild(a);     /* Firefox: DOM에 붙어 있어야 다운로드 트리거됨 */
+      a.click();
+      setTimeout(() => { try { a.remove(); URL.revokeObjectURL(url); } catch(_) {} }, 1500);
+    } catch (err) {
+      console.error('[backup] exportJson failed:', err);
+      window.SHEET && window.SHEET.toast && window.SHEET.toast('내보내기에 실패했습니다 — 콘솔 확인');
+    }
   }
 
   /** 기능: 방 전체 데이터를 백업 파일로 내보냅니다. */
   async function exportRoomBackup() {
     if (!configured || !db || !roomCode) { window.SHEET && window.SHEET.toast('온라인 방에서만 방 전체 백업이 가능합니다'); return; }
-    const snap = await db.ref('rooms/' + roomCode).once('value');
-    exportJson(roomCode + '_room_backup.json', { version: APP_DATA_VERSION, type: 'room', room: roomCode, exportedAt: Date.now(), data: snap.val() || {} });
+    try {
+      window.SHEET && window.SHEET.toast && window.SHEET.toast('방 데이터를 가져오는 중…');
+      const snap = await db.ref('rooms/' + roomCode).once('value');
+      const data = snap.val() || {};
+      exportJson(roomCode + '_room_backup.json', { version: APP_DATA_VERSION, type: 'room', room: roomCode, exportedAt: Date.now(), data });
+      window.SHEET && window.SHEET.toast && window.SHEET.toast('방 전체 백업 다운로드 시작');
+    } catch (err) {
+      console.error('[backup] exportRoomBackup failed:', err);
+      window.SHEET && window.SHEET.toast && window.SHEET.toast('백업 실패: ' + (err && err.message || err));
+    }
   }
 
   /** 기능: 현재 캐릭터 한 명의 시트만 파일로 내보냅니다. */
@@ -10954,39 +11061,46 @@ body.chat-open .scene-dashboard {
     const bg = $('dmgModalBg');
     const close = () => { bg.classList.remove('open'); dmgModalTargetId = null; setTokenVitalModalMode('damage'); };
     const submit = () => {
-      if (!dmgModalTargetId || !bmRef) { close(); return; }
-      const amt = parseInt($('dmgAmtInput').value, 10);
-      if (isNaN(amt) || amt <= 0) { window.SHEET.toast('1 이상의 숫자를 입력하세요'); return; }
-      if (dmgModalMode === 'heal') {
-        const applied = applyTokenHealToLinkedSheet(dmgModalTargetId, amt);
-        if (!applied) {
-          /* 연동 시트가 없을 때도 토큰 위엔 +N 회복 표시는 떠야 함 */
-          showHealOnToken(dmgModalTargetId, amt, 'HP', 0);   /* 로컬 즉시 표시 */
-          bmRef.child('vitalEvents').push({
-            tokenId: dmgModalTargetId,
-            hpDelta: amt,
-            mpDelta: 0,
-            by: userName || '익명',
-            ts: Date.now()
-          });
+      try {
+        if (!dmgModalTargetId || !bmRef) { close(); return; }
+        const amt = parseInt($('dmgAmtInput').value, 10);
+        if (isNaN(amt) || amt <= 0) { window.SHEET.toast('1 이상의 숫자를 입력하세요'); return; }
+        if (dmgModalMode === 'heal') {
+          /* 회복은 항상 토큰 위에 +N 표시 — 시트 연동 여부와 무관하게 */
+          showHealOnToken(dmgModalTargetId, amt, 'HP', 0);
+          const applied = applyTokenHealToLinkedSheet(dmgModalTargetId, amt);
+          if (!applied) {
+            /* 시트 연동이 없으면 방 전체에 vital 이벤트로 직접 푸시 */
+            bmRef.child('vitalEvents').push({
+              tokenId: dmgModalTargetId,
+              hpDelta: amt,
+              mpDelta: 0,
+              by: userName || '익명',
+              ts: Date.now(),
+              skipFor: userName || '익명'
+            });
+          }
+          close();
+          return;
         }
+        const crit = $('dmgCritCheck').checked;
+        /* 피격은 항상 토큰 위에 -N 표시 — Firebase 콜백을 기다리지 않고 즉시 */
+        showDamageOnToken(dmgModalTargetId, amt, !!crit);
+        bmRef.child('damageEvents').push({
+          tokenId: dmgModalTargetId,
+          amount: amt,
+          crit: !!crit,
+          by: userName || '익명',
+          ts: Date.now(),
+          skipFor: userName || '익명'
+        });
+        /* 시트 연동이 있으면 추가로 HP도 감소 (없으면 토스트만 뜨고 무시) */
+        applyTokenDamageToLinkedSheet(dmgModalTargetId, amt);
         close();
-        return;
+      } catch (err) {
+        console.error('[damage modal] submit failed:', err);
+        window.SHEET && window.SHEET.toast && window.SHEET.toast('적용 중 오류가 발생했습니다 — 콘솔 확인');
       }
-      const crit = $('dmgCritCheck').checked;
-      /* 로컬 즉시 표시 — Firebase 콜백을 기다리지 않고 본인 화면에 바로 띄움 */
-      showDamageOnToken(dmgModalTargetId, amt, !!crit);
-      bmRef.child('damageEvents').push({
-        tokenId: dmgModalTargetId,
-        amount: amt,
-        crit: !!crit,
-        by: userName || '익명',
-        ts: Date.now(),
-        /* 본인 화면엔 이미 띄웠다는 표시 — 자기 자신의 콜백에서는 한 번 더 안 띄우게 가드 */
-        skipFor: userName || '익명'
-      });
-      applyTokenDamageToLinkedSheet(dmgModalTargetId, amt);
-      close();
     };
     $('dmgCancel').addEventListener('click', close);
     $('dmgConfirm').addEventListener('click', submit);
@@ -11004,8 +11118,12 @@ body.chat-open .scene-dashboard {
 
   /** 기능: 토큰 위에 DAMAGE 또는 CRITICAL과 피해 수치를 띄웁니다. */
   function showDamageOnToken(tokenId, amount, isCrit) {
-    /* 피격음 (방의 모두에게 동시) */
-    if (isCrit) playCritHitSound(amount); else playHitSound(amount);
+    /* 피격음 (방의 모두에게 동시) — 오디오 컨텍스트 오류가 나도 데미지 표시는 계속 진행 */
+    try {
+      if (isCrit) playCritHitSound(amount); else playHitSound(amount);
+    } catch (e) {
+      console.warn('[damage] hit sound failed (continuing):', e);
+    }
 
     /* 크리티컬 시 양쪽 보드에 화면 플래시 한 번 */
     if (isCrit) {
@@ -11465,35 +11583,96 @@ body.chat-open .scene-dashboard {
   /** 기능: 진행 시계 목록과 칸 상태를 렌더링합니다. */
   function renderClocks() {
     const list = $('clockList');
-    list.querySelectorAll('.clock-card').forEach(c => c.remove());
-    const ids = Object.keys(gmState.clocks).sort((a,b) => (gmState.clocks[a].ts||0) - (gmState.clocks[b].ts||0));
-    $('clockEmpty').style.display = ids.length ? 'none' : '';
+    /* GM 패널이 없는 플레이어 화면에서도 메인 장면 오버레이는 갱신되어야 한다. */
+    if (list) {
+      list.querySelectorAll('.clock-card').forEach(c => c.remove());
+      const ids = Object.keys(gmState.clocks).sort((a,b) => (gmState.clocks[a].ts||0) - (gmState.clocks[b].ts||0));
+      const empty = $('clockEmpty'); if (empty) empty.style.display = ids.length ? 'none' : '';
 
+      ids.forEach(id => {
+        const c = gmState.clocks[id];
+        const card = document.createElement('div'); card.className = 'clock-card';
+        const head = document.createElement('div'); head.className = 'clock-card-head';
+        const title = document.createElement('span'); title.className = 'clock-title'; title.textContent = c.name;
+        const frac = document.createElement('span'); frac.className = 'clock-frac'; frac.textContent = (c.filled||0) + ' / ' + c.size;
+        const del = document.createElement('button'); del.className = 'clock-del'; del.textContent = '✕'; del.title = '삭제';
+        del.addEventListener('click', () => { if (gmRef) gmRef.child('clocks').child(id).remove(); });
+        head.appendChild(title); head.appendChild(frac); head.appendChild(del);
+
+        const segs = document.createElement('div'); segs.className = 'clock-segs';
+        for (let i = 0; i < c.size; i++) {
+          const seg = document.createElement('div');
+          seg.className = 'clock-seg' + (i < (c.filled||0) ? ' filled' : '');
+          seg.addEventListener('click', () => {
+            const newFilled = (i + 1 === (c.filled||0)) ? i : i + 1;
+            if (gmRef) gmRef.child('clocks').child(id).update({ filled: newFilled });
+          });
+          segs.appendChild(seg);
+        }
+        card.appendChild(head); card.appendChild(segs);
+        list.appendChild(card);
+      });
+    }
+
+    /* 메인 장면 오버레이도 동시에 갱신 — 같은 데이터를 다른 모양으로 표시 */
+    renderSceneClocks();
+  }
+
+  /** 기능: 메인 장면 좌상단에 떠다니는 시계 오버레이를 다시 그립니다.
+     - 비어있을 때 파랑(210), 절반쯤 보라/주황을 거쳐, 꽉 차면 새빨강(0)으로 보간.
+     - 시계가 없으면 컨테이너는 자동으로 숨겨집니다(:empty CSS). */
+  function renderSceneClocks() {
+    const wrap = document.getElementById('sceneClocks');
+    if (!wrap) return;
+    wrap.innerHTML = '';
+    const clocks = (gmState && gmState.clocks) || {};
+    const ids = Object.keys(clocks).sort((a,b) => (clocks[a].ts||0) - (clocks[b].ts||0));
     ids.forEach(id => {
-      const c = gmState.clocks[id];
-      const card = document.createElement('div'); card.className = 'clock-card';
-      const head = document.createElement('div'); head.className = 'clock-card-head';
-      const title = document.createElement('span'); title.className = 'clock-title'; title.textContent = c.name;
-      const frac = document.createElement('span'); frac.className = 'clock-frac'; frac.textContent = (c.filled||0) + ' / ' + c.size;
-      const del = document.createElement('button'); del.className = 'clock-del'; del.textContent = '✕'; del.title = '삭제';
-      del.addEventListener('click', () => { if (gmRef) gmRef.child('clocks').child(id).remove(); });
-      head.appendChild(title); head.appendChild(frac); head.appendChild(del);
+      const c = clocks[id] || {};
+      const size = Math.max(1, parseInt(c.size, 10) || 4);
+      const filled = Math.max(0, Math.min(size, parseInt(c.filled, 10) || 0));
+      const ratio = filled / size;                  /* 0 ~ 1 */
+      /* 색상 보간:
+         0   → hue 210 (파랑)     · 차분
+         0.5 → hue 30  (호박/주황) · 경계
+         1   → hue 0   (붉음)     · 위급
+         단순 선형 보간으로 충분히 부드럽다. */
+      const hue = Math.round(210 - 210 * ratio);
+      const sat = 55 + Math.round(ratio * 35);      /* 채워질수록 채도 ↑ */
+      const light = 50 + Math.round(ratio * 8);     /* 채워질수록 살짝 밝게 */
 
-      const segs = document.createElement('div'); segs.className = 'clock-segs';
-      for (let i = 0; i < c.size; i++) {
+      const card = document.createElement('div');
+      card.className = 'scene-clock-card' + (filled >= size ? ' full' : '');
+      card.style.setProperty('--clk-hue', hue);
+      card.style.setProperty('--clk-sat', sat + '%');
+      card.style.setProperty('--clk-light', light + '%');
+      card.style.setProperty('--clk-fill', ratio.toFixed(3));
+
+      const head = document.createElement('div'); head.className = 'sc-head';
+      const name = document.createElement('span'); name.className = 'sc-name'; name.textContent = c.name || '이름 없는 시계';
+      const frac = document.createElement('span'); frac.className = 'sc-frac'; frac.textContent = filled + '/' + size;
+      head.appendChild(name); head.appendChild(frac);
+
+      const segs = document.createElement('div'); segs.className = 'sc-segs';
+      for (let i = 0; i < size; i++) {
         const seg = document.createElement('div');
-        seg.className = 'clock-seg' + (i < (c.filled||0) ? ' filled' : '');
-        seg.addEventListener('click', () => {
-          /* 클릭한 칸까지 채움 / 이미 그 지점이면 한 칸 비움 */
-          const newFilled = (i + 1 === (c.filled||0)) ? i : i + 1;
-          if (gmRef) gmRef.child('clocks').child(id).update({ filled: newFilled });
-        });
+        seg.className = 'sc-seg' + (i < filled ? ' filled' : '');
+        /* GM은 메인 화면에서 직접 칸을 토글할 수 있게 — 플레이어에겐 표시만 */
+        if (isGameMaster) {
+          seg.style.cursor = 'pointer';
+          seg.addEventListener('click', () => {
+            const newFilled = (i + 1 === filled) ? i : i + 1;
+            if (gmRef) gmRef.child('clocks').child(id).update({ filled: newFilled });
+          });
+        }
         segs.appendChild(seg);
       }
-      card.appendChild(head); card.appendChild(segs);
-      list.appendChild(card);
+      card.appendChild(head);
+      card.appendChild(segs);
+      wrap.appendChild(card);
     });
   }
+  window.RENDER_SCENE_CLOCKS = renderSceneClocks;
 
   /** 기능: 악당 카드 목록을 렌더링합니다. (구버전 — 악당 페인이 NPC로 흡수되어 더 이상 UI에 표시 안 함) */
   function renderVillains() {
@@ -11777,7 +11956,7 @@ body.chat-open .scene-dashboard {
     if (turnedVillain && window.SHOW_TEXT_FX) {
       /* 악당 등장 연출 — 로컬(GM 본인)에게만, 빨간 글씨로 */
       window.SHOW_TEXT_FX({
-        text: '악당이 탄생했습니다\n그들은 영웅들의 대적자입니다',
+        text: '악당이 생성됐습니다\n그들은 영웅들의 대적자입니다',
         size: 'medium',
         color: '#D14B3A',   /* 진홍 — --crimson-light */
         glow: 75
