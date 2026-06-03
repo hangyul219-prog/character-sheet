@@ -10787,10 +10787,11 @@ body.chat-open .scene-dashboard {
     const linked = getLinkedCharData(t);
     let vitals = linked ? calcLinkedVitals(linked.data) : null;
 
-    /* 2) 캐릭터가 없으면 몬스터 연동 확인 — 몬스터 HP/MP 바는 GM에게만 표시 */
+    /* 2) 캐릭터가 없으면 몬스터 연동 확인 — HP/MP 바는 모두에게 표시(전투 파악용).
+       몬스터 시트 상세(능력치·친화도·스킬)는 GM 사이드바에만 있어 플레이어는 못 본다. */
     if (!vitals) {
       const mid = getTokenLinkedMonsterId(t);
-      if (mid && monsterState && monsterState[mid] && isGameMaster) {
+      if (mid && monsterState && monsterState[mid]) {
         const m = monsterState[mid];
         const hpMax = Math.max(1, parseInt(m.hpMax, 10) || 0) || 1;
         const mpMax = Math.max(1, parseInt(m.mpMax, 10) || 0) || 1;
