@@ -838,11 +838,12 @@
     background: linear-gradient(145deg, rgba(212,175,82,0.35), rgba(212,175,82,0.15));
     border: 1.5px solid var(--gold);
     color: var(--gold-bright); font-size: 26px;
-    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    cursor: grab; display: flex; align-items: center; justify-content: center;
     box-shadow: 0 4px 20px rgba(0,0,0,0.5), 0 0 24px rgba(212,175,82,0.3);
     transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
     -webkit-tap-highlight-color: transparent;
     animation: fabFloat 3s ease-in-out infinite;
+    touch-action: none;
   }
   .dice-fab:hover {
     transform: scale(1.12) translateY(-3px);
@@ -3179,11 +3180,12 @@
     display: flex;
     z-index: 1200;
     pointer-events: auto;
-    left: 22px;
-    bottom: 28px;
+    left: var(--dice-fab-left, 22px);
+    top: var(--dice-fab-top, auto);
+    bottom: var(--dice-fab-bottom, 96px);
   }
   @media (max-width: 520px) {
-    #rollShortcutBtn.dice-fab { left: 16px; bottom: 18px; width: 58px; height: 58px; font-size: 24px; }
+    #rollShortcutBtn.dice-fab { width: 58px; height: 58px; font-size: 24px; }
   }
 
   /* ═══════ CHARACTER SHEET AS MODAL PATCH ═══════ */
@@ -3746,8 +3748,11 @@
 
 /* ═════ Major polish patch: undo / NPC / backup / linking / mobile ═════ */
 .sync-save-chip {
+  /* 사용자 요청 — 좌상단 '저장됨' 칩이 시계 패널을 가려서 숨김 처리.
+     저장 상태는 내부적으로 계속 갱신되지만 화면에는 표시하지 않음. */
+  display:none !important;
   position:absolute; left:14px; top:14px; z-index:9;
-  display:inline-flex; align-items:center; gap:6px; padding:7px 10px;
+  align-items:center; gap:6px; padding:7px 10px;
   border-radius:999px; border:1px solid rgba(212,175,82,.28);
   background:rgba(8,11,20,.58); color:var(--text-muted);
   font-family:'Cinzel',serif; font-size:10px; letter-spacing:.7px;
@@ -6989,9 +6994,13 @@ body.chat-open .scene-dashboard {
     opacity: 1 !important;
     pointer-events: auto !important;
     position: fixed !important;
-    left: 22px !important;
-    bottom: 28px !important;
+    /* 위치는 CSS 변수로 — 드래그로 옮기면 JS가 이 변수를 갱신한다.
+       기본값은 좌하단이되 배경음 칩과 안 겹치게 살짝 위로 올림. */
+    left: var(--dice-fab-left, 22px) !important;
+    top: var(--dice-fab-top, auto) !important;
+    bottom: var(--dice-fab-bottom, 96px) !important;
     z-index: 2147483000 !important;
+    touch-action: none;   /* 모바일 드래그 시 스크롤 방지 */
   }
   body.room-started .sheet .roll-btn,
   body.room-started .sheet button.roll-btn {
@@ -7003,14 +7012,16 @@ body.chat-open .scene-dashboard {
     z-index: 2147483001 !important;
     pointer-events: auto !important;
   }
+  /* 드래그 중에는 손 모양 + 애니메이션 정지 */
+  #rollShortcutBtn.dice-fab.dragging { cursor: grabbing !important; animation: none !important; }
   @media (max-width: 520px) {
     body.room-started #rollShortcutBtn.dice-fab,
     body.room-started button#rollShortcutBtn.dice-fab {
-      left: 16px !important;
-      bottom: 18px !important;
       width: 58px !important;
       height: 58px !important;
       font-size: 24px !important;
+      bottom: var(--dice-fab-bottom, 84px) !important;
+      left: var(--dice-fab-left, 16px) !important;
     }
   }
 </style>
@@ -7094,12 +7105,106 @@ body.chat-open .scene-dashboard {
     const fab = $('rollShortcutBtn');
     if (!fab || fab.dataset.diceRescueBound === '1') return;
     fab.dataset.diceRescueBound = '1';
-    ['pointerdown','touchstart','click'].forEach(type => {
-      fab.addEventListener(type, e => {
+
+    /* ── 저장된 위치 복원 ── */
+    const POS_KEY = 'diceFab.pos';
+    function applyPos(p){
+      if (!p) return;
+      const root = document.documentElement.style;
+      if (typeof p.left === 'number')  root.setProperty('--dice-fab-left', p.left + 'px');
+      if (typeof p.top === 'number')   { root.setProperty('--dice-fab-top', p.top + 'px'); root.setProperty('--dice-fab-bottom', 'auto'); }
+    }
+    try {
+      const saved = JSON.parse(localStorage.getItem(POS_KEY) || 'null');
+      if (saved) applyPos(saved);
+    } catch(_) {}
+
+    /* ── 드래그 상태 ── */
+    let dragging = false;     /* 실제로 움직였는지 */
+    let pointerDown = false;
+    let startX = 0, startY = 0;
+    let originLeft = 0, originTop = 0;
+    const DRAG_THRESHOLD = 6;   /* 이 픽셀 이상 움직이면 드래그로 판정 (그 이하는 클릭) */
+
+    function clamp(v, min, max){ return Math.max(min, Math.min(max, v)); }
+
+    function onDown(e){
+      /* 마우스는 좌클릭만 */
+      if (e.type === 'pointerdown' && e.button !== undefined && e.button !== 0) return;
+      pointerDown = true;
+      dragging = false;
+      const pt = (e.touches && e.touches[0]) ? e.touches[0] : e;
+      startX = pt.clientX; startY = pt.clientY;
+      const r = fab.getBoundingClientRect();
+      originLeft = r.left; originTop = r.top;
+      try { fab.setPointerCapture && e.pointerId != null && fab.setPointerCapture(e.pointerId); } catch(_) {}
+    }
+    function onMove(e){
+      if (!pointerDown) return;
+      const pt = (e.touches && e.touches[0]) ? e.touches[0] : e;
+      const dx = pt.clientX - startX;
+      const dy = pt.clientY - startY;
+      if (!dragging && Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+      dragging = true;
+      fab.classList.add('dragging');
+      e.preventDefault();
+      const w = fab.offsetWidth, h = fab.offsetHeight;
+      const nl = clamp(originLeft + dx, 4, window.innerWidth  - w - 4);
+      const nt = clamp(originTop  + dy, 4, window.innerHeight - h - 4);
+      const root = document.documentElement.style;
+      root.setProperty('--dice-fab-left', nl + 'px');
+      root.setProperty('--dice-fab-top',  nt + 'px');
+      root.setProperty('--dice-fab-bottom', 'auto');
+    }
+    function onUp(e){
+      if (!pointerDown) return;
+      pointerDown = false;
+      if (dragging) {
+        /* 위치 저장 */
+        const r = fab.getBoundingClientRect();
+        try { localStorage.setItem(POS_KEY, JSON.stringify({ left: Math.round(r.left), top: Math.round(r.top) })); } catch(_) {}
+        setTimeout(() => fab.classList.remove('dragging'), 0);
+        /* 드래그였으면 클릭(모달 열기) 취소 */
         e.preventDefault();
         e.stopPropagation();
-        safeOpenDiceModal();
-      }, { capture: true, passive: false });
+        return;
+      }
+      /* 드래그가 아니면 = 클릭 → 판정 모달 열기 */
+      fab.classList.remove('dragging');
+      e.preventDefault();
+      e.stopPropagation();
+      safeOpenDiceModal();
+    }
+
+    fab.addEventListener('pointerdown', onDown, { passive: false });
+    window.addEventListener('pointermove', onMove, { passive: false });
+    window.addEventListener('pointerup', onUp, { passive: false });
+    /* 터치 폴백 (pointer 미지원 환경) */
+    fab.addEventListener('touchstart', onDown, { passive: false });
+    window.addEventListener('touchmove', onMove, { passive: false });
+    window.addEventListener('touchend', onUp, { passive: false });
+
+    /* 기존 click 이벤트는 드래그 로직과 충돌하므로, 순수 클릭은 위 onUp에서 처리.
+       혹시 click이 별도로 발생하면(키보드 Enter 등) 모달을 연다. */
+    fab.addEventListener('click', e => {
+      if (dragging) { e.preventDefault(); e.stopPropagation(); return; }
+      /* pointerup에서 이미 열었다면 중복 방지 위해 아무것도 안 함.
+         단 키보드 접근(마우스 좌표 0,0)일 때만 연다. */
+      if (e.detail === 0) { e.preventDefault(); safeOpenDiceModal(); }
+    }, { capture: true });
+
+    /* 창 크기가 줄어 FAB가 화면 밖으로 나가면 안으로 끌어들임 */
+    window.addEventListener('resize', () => {
+      const r = fab.getBoundingClientRect();
+      if (r.left + r.width > window.innerWidth || r.top + r.height > window.innerHeight) {
+        const nl = clamp(r.left, 4, window.innerWidth - r.width - 4);
+        const nt = clamp(r.top, 4, window.innerHeight - r.height - 4);
+        const root = document.documentElement.style;
+        root.setProperty('--dice-fab-left', nl + 'px');
+        root.setProperty('--dice-fab-top', nt + 'px');
+        root.setProperty('--dice-fab-bottom', 'auto');
+        try { localStorage.setItem(POS_KEY, JSON.stringify({ left: Math.round(nl), top: Math.round(nt) })); } catch(_) {}
+      }
     });
   }
 
@@ -7532,7 +7637,7 @@ body.chat-open .scene-dashboard {
   </div>
 </div>
 
-<button class="dice-fab" id="rollShortcutBtn" title="판정 굴림" style="display:none;">⚄</button>
+<button class="dice-fab" id="rollShortcutBtn" title="판정 굴림 (드래그해서 위치 이동)" style="display:none;">⚄</button>
 
 <!-- ═══════ 세계 시트 (전체화면 모달) — 모두 편집·방 공유 ═══════ -->
 <div class="world-modal-bg" id="worldModalBg" style="display:none;">
