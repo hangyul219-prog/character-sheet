@@ -3364,7 +3364,7 @@
      꽉 차면 새빨갛게 변하며 펄스 광원이 강해진다 (긴박감 증대).
      ══════════════════════════════════════════════════════ */
   .scene-clocks {
-    position: absolute; top: 12px; left: 12px; z-index: 6;
+    position: absolute; top: 58px; left: 12px; z-index: 6;
     display: flex; flex-direction: column; gap: 8px;
     max-width: 240px; pointer-events: auto;
   }
@@ -3437,7 +3437,7 @@
 
   /* 모바일 — 좀 더 작게 */
   @media (max-width: 640px) {
-    .scene-clocks { max-width: 180px; top: 8px; left: 8px; gap: 6px; }
+    .scene-clocks { max-width: 180px; top: 46px; left: 8px; gap: 6px; }
     .scene-clock-card { padding: 6px 9px 7px; }
     .scene-clock-card .sc-name { font-size: 11px; }
     .scene-clock-card .sc-frac { font-size: 10px; }
@@ -12992,7 +12992,7 @@ body.chat-open .scene-dashboard {
         audio.volume = Math.max(0, Math.min(1, (t.volume != null ? t.volume : 60) / 100 * (window.BGM_GAIN != null ? window.BGM_GAIN : 1)));
         audio.muted = !!window.BGM_LOCAL_MUTED;
         audio.loop = !!t.loop;
-        audio.crossOrigin = 'anonymous';
+        /* crossOrigin='anonymous' 제거 — Cloudinary 등 일부 호스팅에서 CORS 차단 발생 원인. 단순 재생에는 불필요 */
         audio.addEventListener('ended', () => {
           const tr = bgmTracks[id];
           if (tr && tr.loop) { try { audio.currentTime = 0; audio.play(); } catch(_) {} }
@@ -16693,6 +16693,107 @@ body.chat-open .scene-dashboard {
   setTimeout(boot, 200);
   setTimeout(fitSceneHardLeft, 900);
   // setInterval(fitSceneHardLeft, 1500) 제거: window.resize / orientationchange / pointermove / chatPanel MutationObserver / chatBody ResizeObserver가 이미 모든 변경을 감지함
+})();
+</script>
+
+<!-- PATCH: emergencyDiceFab 드래그 이동 기능 -->
+<script id="emergencyDiceFabDragScript">
+(function addEmergencyDiceFabDrag(){
+  const POS_KEY = 'emergencyDiceFab.pos';
+
+  function getSaved(){ try { return JSON.parse(localStorage.getItem(POS_KEY)||'null'); } catch(_){ return null; } }
+  function savePos(l, t){ try { localStorage.setItem(POS_KEY, JSON.stringify({left:Math.round(l), top:Math.round(t)})); } catch(_){} }
+
+  function applyPos(fab, p){
+    if (!p) return;
+    fab.style.setProperty('left',   p.left + 'px', 'important');
+    fab.style.setProperty('top',    p.top  + 'px', 'important');
+    fab.style.setProperty('bottom', 'auto',          'important');
+  }
+
+  function clamp(v, mn, mx){ return Math.max(mn, Math.min(mx, v)); }
+
+  function setupDrag(fab){
+    if (fab.dataset.dragBound === '1') return;
+    fab.dataset.dragBound = '1';
+
+    /* 저장된 위치 복원 */
+    const saved = getSaved();
+    if (saved) applyPos(fab, saved);
+
+    let pDown = false, dragging = false;
+    let sx = 0, sy = 0, ox = 0, oy = 0;
+    const THR = 6;
+
+    function onDown(e){
+      if (e.button !== undefined && e.button !== 0 && e.type !== 'touchstart') return;
+      pDown = true; dragging = false;
+      const pt = e.touches ? e.touches[0] : e;
+      sx = pt.clientX; sy = pt.clientY;
+      const r = fab.getBoundingClientRect();
+      ox = r.left; oy = r.top;
+      try { fab.setPointerCapture && e.pointerId != null && fab.setPointerCapture(e.pointerId); } catch(_) {}
+    }
+    function onMove(e){
+      if (!pDown) return;
+      const pt = e.touches ? e.touches[0] : e;
+      const dx = pt.clientX - sx, dy = pt.clientY - sy;
+      if (!dragging && Math.hypot(dx, dy) < THR) return;
+      dragging = true;
+      fab.classList.add('dragging');
+      e.preventDefault(); e.stopPropagation();
+      const w = fab.offsetWidth, h = fab.offsetHeight;
+      const nl = clamp(ox + dx, 4, window.innerWidth  - w - 4);
+      const nt = clamp(oy + dy, 4, window.innerHeight - h - 4);
+      fab.style.setProperty('left',   nl + 'px', 'important');
+      fab.style.setProperty('top',    nt + 'px', 'important');
+      fab.style.setProperty('bottom', 'auto',     'important');
+    }
+    function onUp(e){
+      if (!pDown) return;
+      pDown = false;
+      if (dragging){
+        const r = fab.getBoundingClientRect();
+        savePos(r.left, r.top);
+        fab.dataset.customPos = '1';
+        setTimeout(() => fab.classList.remove('dragging'), 0);
+        e.preventDefault(); e.stopPropagation();
+      }
+      dragging = false;
+    }
+
+    fab.addEventListener('pointerdown', onDown, {passive:false});
+    window.addEventListener('pointermove', onMove, {passive:false});
+    window.addEventListener('pointerup',   onUp,   {passive:false});
+    fab.addEventListener('touchstart', onDown, {passive:false});
+    window.addEventListener('touchmove', onMove, {passive:false});
+    window.addEventListener('touchend',  onUp,  {passive:false});
+
+    /* cleanDiceFab이 위치를 덮어쓸 때 커스텀 위치 재적용 */
+    new MutationObserver(() => {
+      const p = getSaved();
+      if (!p) return;
+      requestAnimationFrame(() => {
+        fab.style.setProperty('left',   p.left + 'px', 'important');
+        fab.style.setProperty('top',    p.top  + 'px', 'important');
+        fab.style.setProperty('bottom', 'auto',         'important');
+      });
+    }).observe(fab, { attributes: true, attributeFilter: ['style'] });
+  }
+
+  function init(){
+    const fab = document.getElementById('emergencyDiceFab');
+    if (fab) setupDrag(fab);
+    /* FAB가 동적으로 생성될 때를 대비 */
+    new MutationObserver(() => {
+      const f = document.getElementById('emergencyDiceFab');
+      if (f && f.dataset.dragBound !== '1') setupDrag(f);
+    }).observe(document.body, { childList: true, subtree: false });
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+  setTimeout(init, 600);
 })();
 </script>
 
