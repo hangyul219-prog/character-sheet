@@ -10780,8 +10780,30 @@ body.chat-open .scene-dashboard {
   function syncTokenLinkedHud(el, t) {
     if (!el) return;
     const old = el.querySelector('.token-linked-badge');
+
+    /* 1) 캐릭터 연동 우선 */
     const linked = getLinkedCharData(t);
-    const vitals = linked ? calcLinkedVitals(linked.data) : null;
+    let vitals = linked ? calcLinkedVitals(linked.data) : null;
+
+    /* 2) 캐릭터가 없으면 몬스터 연동 확인 — 몬스터 HP/MP 바는 GM에게만 표시 */
+    if (!vitals) {
+      const mid = getTokenLinkedMonsterId(t);
+      if (mid && monsterState && monsterState[mid] && isGameMaster) {
+        const m = monsterState[mid];
+        const hpMax = Math.max(1, parseInt(m.hpMax, 10) || 0) || 1;
+        const mpMax = Math.max(1, parseInt(m.mpMax, 10) || 0) || 1;
+        const hp = Math.max(0, Math.min(hpMax, m.hp == null ? hpMax : parseInt(m.hp, 10) || 0));
+        const mp = Math.max(0, Math.min(mpMax, m.mp == null ? mpMax : parseInt(m.mp, 10) || 0));
+        vitals = {
+          name: (m.name || '몬스터').trim(),
+          hp, hpMax, mp, mpMax,
+          hpPct: Math.round((hp / hpMax) * 100),
+          mpPct: Math.round((mp / mpMax) * 100),
+          statuses: Array.isArray(m.statuses) ? m.statuses : []
+        };
+      }
+    }
+
     if (!vitals) {
       if (old) old.remove();
       el.classList.remove('linked-sheet');
@@ -12660,6 +12682,8 @@ body.chat-open .scene-dashboard {
       monsterState = s.val() || {};
       renderMonsters();
       updateChatSpeakerOptions();
+      /* 몬스터 HP/MP가 바뀌면 그 몬스터에 연동된 토큰의 HP/MP 바도 갱신 */
+      if (typeof renderTokens === 'function' && !window.__TOKEN_DRAGGING) renderTokens();
     });
   }
 
@@ -13202,7 +13226,9 @@ body.chat-open .scene-dashboard {
     /* http 또는 https 로 시작하면 통과 (대소문자/공백 무관) */
     if (!/^https?:\/\//i.test(url)) {
       console.warn('[BGM] 거부된 URL(원본):', JSON.stringify(original), '→ 정리후:', JSON.stringify(url));
-      window.SHEET.toast('http:// 또는 https:// 로 시작하는 URL이어야 합니다');
+      /* 진단: 실제로 읽힌 값을 토스트에 같이 보여줘서 원인 파악 */
+      const shown = url ? ('읽은 값: "' + url.slice(0, 40) + '"') : '입력칸이 비어 있음';
+      window.SHEET.toast('URL 형식 오류 — ' + shown);
       return;
     }
     bgmRef.push({
