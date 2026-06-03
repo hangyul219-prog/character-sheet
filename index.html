@@ -2471,6 +2471,8 @@
   .mc-level-badge { font-family: 'Cinzel', serif; font-size: 10px; padding: 2px 7px; border-radius: 10px; background: rgba(212,175,82,0.12); color: var(--text-secondary); border: 1px solid rgba(212,175,82,0.25); flex-shrink: 0; }
   .mc-rank-badge  { font-family: 'Cinzel', serif; font-size: 9px; padding: 2px 7px; border-radius: 10px; background: rgba(255,255,255,0.07); color: var(--text-muted); border: 1px solid var(--border); flex-shrink: 0; }
   .mc-species-badge { font-family: 'Cinzel', serif; font-size: 9px; padding: 2px 7px; border-radius: 10px; background: rgba(63,166,124,0.1); color: var(--emerald-light); border: 1px solid rgba(63,166,124,0.25); flex-shrink: 0; }
+  .mc-dup { flex-shrink: 0; width: 22px; height: 22px; border-radius: 5px; border: 1px solid rgba(212,175,82,0.35); background: rgba(212,175,82,0.12); color: var(--gold-light); font-size: 12px; cursor: pointer; line-height: 1; }
+  .mc-dup:hover { background: rgba(212,175,82,0.28); }
   .mc-del { flex-shrink: 0; width: 22px; height: 22px; border-radius: 5px; border: 1px solid rgba(168,40,40,0.3); background: rgba(168,40,40,0.12); color: var(--crimson-light); font-size: 12px; cursor: pointer; line-height: 1; }
   .mc-del:hover { background: rgba(168,40,40,0.3); }
   .mc-body { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
@@ -12702,6 +12704,23 @@ body.chat-open .scene-dashboard {
     });
   }
 
+  /** 기능: 기존 몬스터를 그대로 복제해 새 항목으로 추가합니다. */
+  function duplicateMonster(id) {
+    if (!monsterRef) { window.SHEET && window.SHEET.toast('방 입장 후 사용 가능합니다'); return; }
+    const src = monsterState && monsterState[id];
+    if (!src) { window.SHEET && window.SHEET.toast('복사할 몬스터를 찾지 못했습니다'); return; }
+    /* 깊은 복사 후 식별/시간 필드만 새로 부여, 이름에 (복사) 접미사 */
+    const copy = JSON.parse(JSON.stringify(src));
+    copy.name = (src.name || '몬스터') + ' (복사)';
+    copy.ts = Date.now();
+    delete copy.updated;
+    /* HP/MP는 최대치로 리셋 (새 개체로 시작) */
+    if (copy.hpMax != null) copy.hp = copy.hpMax;
+    if (copy.mpMax != null) copy.mp = copy.mpMax;
+    monsterRef.push(copy);
+    window.SHEET && window.SHEET.toast('“' + (src.name || '몬스터') + '” 복사됨');
+  }
+
   /** 기능: 몬스터 한 마리의 카드 DOM을 생성합니다. */
   function buildMonsterCard(id, m) {
     const hp = m.hp != null ? m.hp : m.hpMax;
@@ -12718,10 +12737,12 @@ body.chat-open .scene-dashboard {
     const lvBadge = document.createElement('span'); lvBadge.className = 'mc-level-badge'; lvBadge.textContent = 'Lv ' + (m.level||'?');
     const rankBadge = document.createElement('span'); rankBadge.className = 'mc-rank-badge'; rankBadge.textContent = m.rank || '일반';
     const spBadge = document.createElement('span'); spBadge.className = 'mc-species-badge'; spBadge.textContent = m.species || '몬스터';
+    const dupBtn = document.createElement('button'); dupBtn.className = 'mc-dup'; dupBtn.textContent = '⧉'; dupBtn.title = '복사';
+    dupBtn.addEventListener('click', e => { e.stopPropagation(); duplicateMonster(id); });
     const delBtn = document.createElement('button'); delBtn.className = 'mc-del'; delBtn.textContent = '✕'; delBtn.title = '삭제';
     delBtn.addEventListener('click', e => { e.stopPropagation(); if (monsterRef) monsterRef.child(id).remove(); });
     header.appendChild(arrow); header.appendChild(nm); header.appendChild(lvBadge);
-    header.appendChild(rankBadge); header.appendChild(spBadge); header.appendChild(delBtn);
+    header.appendChild(rankBadge); header.appendChild(spBadge); header.appendChild(dupBtn); header.appendChild(delBtn);
     header.addEventListener('click', () => { card.classList.toggle('collapsed'); arrow.textContent = card.classList.contains('collapsed') ? '▶' : '▼'; });
 
     /* ─ 본문 ─ */
