@@ -3364,7 +3364,7 @@
      꽉 차면 새빨갛게 변하며 펄스 광원이 강해진다 (긴박감 증대).
      ══════════════════════════════════════════════════════ */
   .scene-clocks {
-    position: absolute; top: 58px; left: 12px; z-index: 6;
+    position: absolute; top: 12px; left: 12px; z-index: 6;
     display: flex; flex-direction: column; gap: 8px;
     max-width: 240px; pointer-events: auto;
   }
@@ -3437,7 +3437,7 @@
 
   /* 모바일 — 좀 더 작게 */
   @media (max-width: 640px) {
-    .scene-clocks { max-width: 180px; top: 46px; left: 8px; gap: 6px; }
+    .scene-clocks { max-width: 180px; top: 8px; left: 8px; gap: 6px; }
     .scene-clock-card { padding: 6px 9px 7px; }
     .scene-clock-card .sc-name { font-size: 11px; }
     .scene-clock-card .sc-frac { font-size: 10px; }
@@ -7349,10 +7349,14 @@ body.chat-open .scene-dashboard {
     }
     const fab = document.getElementById('emergencyDiceFab');
     if (fab) {
-      fab.style.setProperty('left', window.matchMedia('(max-width: 620px)').matches ? '16px' : '24px', 'important');
-      fab.style.setProperty('bottom', window.matchMedia('(max-width: 620px)').matches ? '84px' : '92px', 'important');
+      let hasSavedPos = false;
+      try { hasSavedPos = !!JSON.parse(localStorage.getItem('diceFab.pos') || 'null'); } catch(_) {}
+      if (!hasSavedPos) {
+        fab.style.setProperty('left', window.matchMedia('(max-width: 620px)').matches ? '16px' : '24px', 'important');
+        fab.style.setProperty('bottom', window.matchMedia('(max-width: 620px)').matches ? '84px' : '92px', 'important');
+      }
       fab.style.setProperty('z-index', '2147483400', 'important');
-      fab.title = '판정 굴림';
+      fab.title = '판정 굴림 (드래그해서 위치 이동)';
     }
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', cleanDiceFab);
@@ -10137,6 +10141,9 @@ body.chat-open .scene-dashboard {
     };
     activeTokensCb = snap => {
       bmState.tokens = snap.val() || {};
+      /* 드래그 중에는 전체 토큰 DOM을 다시 그리지 않는다.
+         (드래그가 매 프레임 Firebase에 쓰기 → 콜백 → 전체 렌더 → 깜빡임/장면 갱신 루프를 끊음) */
+      if (window.__TOKEN_DRAGGING) return;
       if (isGameMaster) {
         Object.keys(bmState.tokens).forEach(id => {
           const t = bmState.tokens[id];
@@ -10787,16 +10794,43 @@ body.chat-open .scene-dashboard {
     const sel = $('tokenLinkSelect');
     if (!sel) return;
     sel.innerHTML = '';
+
+    /* 플레이어 캐릭터 목록 (플레이어는 본인 것만, GM은 전부) */
+    const charGroup = document.createElement('optgroup');
+    charGroup.label = '👤 플레이어 캐릭터';
     Object.keys(chars || {}).forEach(cid => {
       const isMine = cid === myCharId || (chars[cid] && chars[cid].owner === userName);
       if (!isGameMaster && !isMine) return;
       const o = document.createElement('option');
-      o.value = cid;
+      o.value = 'char:' + cid;
       o.textContent = getCharDisplayName(cid) + (chars[cid] && chars[cid].owner ? ' · ' + chars[cid].owner : '');
-      sel.appendChild(o);
+      charGroup.appendChild(o);
     });
-    if (t.linkedCharId && Array.from(sel.options).some(o => o.value === t.linkedCharId)) sel.value = t.linkedCharId;
-    else if (activeId && Array.from(sel.options).some(o => o.value === activeId)) sel.value = activeId;
+    if (charGroup.children.length) sel.appendChild(charGroup);
+
+    /* 몬스터 목록 — GM만 연동 가능 */
+    if (isGameMaster && monsterState && Object.keys(monsterState).length) {
+      const monGroup = document.createElement('optgroup');
+      monGroup.label = '🐉 몬스터 (GM 전용)';
+      Object.keys(monsterState).forEach(mid => {
+        const m = monsterState[mid] || {};
+        const o = document.createElement('option');
+        o.value = 'monster:' + mid;
+        o.textContent = (m.name || '몬스터') + (m.rank ? ' · ' + m.rank : '');
+        monGroup.appendChild(o);
+      });
+      if (monGroup.children.length) sel.appendChild(monGroup);
+    }
+
+    /* 현재 연동 상태를 미리 선택 */
+    const curMonster = t.linkedMonsterId ? 'monster:' + t.linkedMonsterId : '';
+    const curChar = t.linkedCharId ? 'char:' + t.linkedCharId : '';
+    const want = curMonster || curChar;
+    if (want && Array.from(sel.options).some(o => o.value === want)) {
+      sel.value = want;
+    } else if (activeId && Array.from(sel.options).some(o => o.value === 'char:' + activeId)) {
+      sel.value = 'char:' + activeId;
+    }
     $('tokenLinkModalBg')?.classList.add('open');
   }
 
@@ -10806,23 +10840,47 @@ body.chat-open .scene-dashboard {
   /** 기능: 선택한 캐릭터/몬스터를 토큰에 실제로 연결합니다. */
   function confirmTokenLink() {
     if (!linkingTokenId || !bmRef) return;
-    const cid = $('tokenLinkSelect')?.value;
-    if (!cid || !chars[cid]) { window.SHEET && window.SHEET.toast('연동할 시트를 선택하세요'); return; }
-    const isMine = cid === myCharId || (chars[cid] && chars[cid].owner === userName);
-    if (!isGameMaster && !isMine) { window.SHEET && window.SHEET.toast('플레이어는 본인 시트만 연동할 수 있습니다'); return; }
-    const before = bmState.tokens[linkingTokenId] ? { linkedCharId: bmState.tokens[linkingTokenId].linkedCharId || null } : {};
-    pushHistory({ type:'tokenUpdate', tokenId: linkingTokenId, before });
-    bmRef.child('tokens').child(linkingTokenId).update({ linkedCharId: cid });
-    window.SHEET && window.SHEET.toast('토큰 ↔ ' + getCharDisplayName(cid) + ' 연동');
+    const val = $('tokenLinkSelect')?.value || '';
+    if (!val) { window.SHEET && window.SHEET.toast('연동할 시트를 선택하세요'); return; }
+
+    /* 접두사로 캐릭터/몬스터 구분 */
+    const isMonster = val.startsWith('monster:');
+    const rawId = val.replace(/^(char:|monster:)/, '');
+
+    const before = bmState.tokens[linkingTokenId]
+      ? { linkedCharId: bmState.tokens[linkingTokenId].linkedCharId || null,
+          linkedMonsterId: bmState.tokens[linkingTokenId].linkedMonsterId || null }
+      : {};
+
+    if (isMonster) {
+      /* 몬스터 연동은 GM만 */
+      if (!isGameMaster) { window.SHEET && window.SHEET.toast('몬스터 연동은 GM만 가능합니다'); return; }
+      if (!monsterState || !monsterState[rawId]) { window.SHEET && window.SHEET.toast('몬스터를 찾을 수 없습니다'); return; }
+      pushHistory({ type:'tokenUpdate', tokenId: linkingTokenId, before });
+      /* 캐릭터 연동은 해제하고 몬스터로 설정 */
+      bmRef.child('tokens').child(linkingTokenId).update({ linkedMonsterId: rawId, linkedCharId: null });
+      window.SHEET && window.SHEET.toast('토큰 ↔ ' + (monsterState[rawId].name || '몬스터') + ' 연동');
+    } else {
+      if (!chars[rawId]) { window.SHEET && window.SHEET.toast('연동할 시트를 선택하세요'); return; }
+      const isMine = rawId === myCharId || (chars[rawId] && chars[rawId].owner === userName);
+      if (!isGameMaster && !isMine) { window.SHEET && window.SHEET.toast('플레이어는 본인 시트만 연동할 수 있습니다'); return; }
+      pushHistory({ type:'tokenUpdate', tokenId: linkingTokenId, before });
+      /* 몬스터 연동은 해제하고 캐릭터로 설정 */
+      bmRef.child('tokens').child(linkingTokenId).update({ linkedCharId: rawId, linkedMonsterId: null });
+      window.SHEET && window.SHEET.toast('토큰 ↔ ' + getCharDisplayName(rawId) + ' 연동');
+    }
     closeTokenLinkModal();
   }
 
   /** 기능: 토큰과 시트의 연결을 해제합니다. */
   function unlinkTokenLink() {
     if (!linkingTokenId || !bmRef) return;
-    const before = bmState.tokens[linkingTokenId] ? { linkedCharId: bmState.tokens[linkingTokenId].linkedCharId || null } : {};
+    const before = bmState.tokens[linkingTokenId]
+      ? { linkedCharId: bmState.tokens[linkingTokenId].linkedCharId || null,
+          linkedMonsterId: bmState.tokens[linkingTokenId].linkedMonsterId || null }
+      : {};
     pushHistory({ type:'tokenUpdate', tokenId: linkingTokenId, before });
-    bmRef.child('tokens').child(linkingTokenId).child('linkedCharId').remove();
+    bmRef.child('tokens').child(linkingTokenId).update({ linkedCharId: null, linkedMonsterId: null });
     window.SHEET && window.SHEET.toast('토큰 시트 연동 해제');
     closeTokenLinkModal();
   }
@@ -11629,6 +11687,7 @@ body.chat-open .scene-dashboard {
       el.classList.add('selected');
       bmSelected = id;
       dragging = true;
+      window.__TOKEN_DRAGGING = true;   /* 드래그 중 전체 렌더 억제 플래그 */
       el.classList.add('dragging');
       /* 포인터 캡쳐 — 빠른 이동도 안 놓침 */
       try { el.setPointerCapture && el.setPointerCapture(e.pointerId); } catch(_) {}
@@ -11648,6 +11707,14 @@ body.chat-open .scene-dashboard {
       y = Math.max(0, Math.min(100, y));
       el.style.left = x + '%';
       el.style.top  = y + '%';
+      /* 같은 토큰이 여러 보드(메인 장면/전투맵/모달)에 동시에 렌더돼 있으면 함께 움직여 깜빡임 방지 */
+      try {
+        document.querySelectorAll('.battle-token[data-id="' + id + '"]').forEach(other => {
+          if (other === el) return;
+          other.style.left = x + '%';
+          other.style.top  = y + '%';
+        });
+      } catch(_) {}
       pending = { x, y };
       if (!raf) raf = requestAnimationFrame(flush);
     }
@@ -11665,6 +11732,13 @@ body.chat-open .scene-dashboard {
       document.removeEventListener('pointermove', pointerMove);
       document.removeEventListener('pointerup', pointerUp);
       document.removeEventListener('pointercancel', pointerUp);
+      /* 드래그 종료 — 플래그 해제 후 한 번만 동기화 렌더 (다른 보드 정합성 맞춤) */
+      window.__TOKEN_DRAGGING = false;
+      if (raf) { cancelAnimationFrame(raf); raf = null; }
+      if (typeof renderTokens === 'function') {
+        /* 마지막 위치 저장이 Firebase에 반영될 짧은 시간 뒤 동기화 */
+        setTimeout(() => { if (!window.__TOKEN_DRAGGING) renderTokens(); }, 60);
+      }
     }
     el.addEventListener('pointerdown', pointerDown);
   }
@@ -12992,7 +13066,7 @@ body.chat-open .scene-dashboard {
         audio.volume = Math.max(0, Math.min(1, (t.volume != null ? t.volume : 60) / 100 * (window.BGM_GAIN != null ? window.BGM_GAIN : 1)));
         audio.muted = !!window.BGM_LOCAL_MUTED;
         audio.loop = !!t.loop;
-        /* crossOrigin='anonymous' 제거 — Cloudinary 등 일부 호스팅에서 CORS 차단 발생 원인. 단순 재생에는 불필요 */
+        audio.crossOrigin = 'anonymous';
         audio.addEventListener('ended', () => {
           const tr = bgmTracks[id];
           if (tr && tr.loop) { try { audio.currentTime = 0; audio.play(); } catch(_) {} }
@@ -13081,9 +13155,22 @@ body.chat-open .scene-dashboard {
   /** 기능: BGM 트랙을 재생목록에 추가합니다. */
   function bgmAdd() {
     if (!bgmRef) { window.SHEET.toast('방 입장 후 사용 가능합니다'); return; }
-    const url = ($('bgmUrlInput').value || '').trim();
+    let url = ($('bgmUrlInput').value || '');
+    /* 붙여넣기 시 끼어드는 제로폭/유니코드 공백·따옴표·앞뒤 공백 제거 */
+    url = url
+      .replace(/[\u200B-\u200D\uFEFF\u00A0]/g, '')   /* 제로폭/NBSP 제거 */
+      .replace(/[\u2018\u2019\u201C\u201D]/g, '')     /* 스마트 따옴표 제거 */
+      .trim()
+      .replace(/^["'<]+|["'>]+$/g, '')                /* 감싼 따옴표/꺾쇠 제거 */
+      .trim();
+    /* 프로토콜 없이 www. 로 시작하면 https:// 자동 보정 */
+    if (/^www\./i.test(url)) url = 'https://' + url;
     const title = ($('bgmTitleInput').value || '').trim();
-    if (!url || !/^https?:\/\//i.test(url)) { window.SHEET.toast('http(s):// 로 시작하는 유효한 URL을 입력해 주세요'); return; }
+    if (!url) { window.SHEET.toast('음악 URL을 입력해 주세요'); return; }
+    if (!/^https?:\/\/.+/i.test(url)) {
+      window.SHEET.toast('http:// 또는 https:// 로 시작하는 URL이어야 합니다');
+      return;
+    }
     bgmRef.push({
       url: url,
       title: title || url,
@@ -13093,6 +13180,7 @@ body.chat-open .scene-dashboard {
       ts: Date.now()
     });
     $('bgmUrlInput').value = ''; $('bgmTitleInput').value = '';
+    window.SHEET.toast('재생목록에 추가했습니다');
   }
 
   /* BGM 칩 — 자기 브라우저만 음소거 (모든 트랙에 적용) */
@@ -15893,6 +15981,9 @@ body.chat-open .scene-dashboard {
   /** 기능: 버튼/입력창 등 이벤트 리스너를 연결합니다. */
   function bindButton(btn){
     if (!btn || btn.dataset.emergencyDiceBound === '1') return;
+    /* emergencyDiceFab은 드래그 모듈(makeFabDraggable)이 클릭/드래그를 직접 처리하므로
+       여기서 즉시-열기 핸들러를 붙이지 않는다 (드래그가 막히는 문제 방지). */
+    if (btn.id === 'emergencyDiceFab') { btn.dataset.emergencyDiceBound = '1'; return; }
     btn.dataset.emergencyDiceBound = '1';
     ['pointerdown','touchstart','click'].forEach(type => {
       btn.addEventListener(type, ev => {
@@ -15903,11 +15994,117 @@ body.chat-open .scene-dashboard {
     });
   }
 
+  /** 기능: 주사위 FAB를 드래그로 이동할 수 있게 만듭니다.
+     - 짧게 누르면(거의 안 움직이면) 판정 모달 열기
+     - 끌면 위치 이동 + localStorage 저장
+     - CSS의 !important 위치 규칙을 이기려고 setProperty(…, 'important') 사용 */
+  function makeFabDraggable(fab){
+    if (!fab || fab.dataset.fabDragBound === '1') return;
+    fab.dataset.fabDragBound = '1';
+    fab.style.setProperty('cursor', 'grab', 'important');
+    fab.style.setProperty('touch-action', 'none', 'important');
+
+    const POS_KEY = 'diceFab.pos';
+    function applySaved(){
+      try {
+        const p = JSON.parse(localStorage.getItem(POS_KEY) || 'null');
+        if (p && typeof p.left === 'number' && typeof p.top === 'number') {
+          fab.style.setProperty('left', p.left + 'px', 'important');
+          fab.style.setProperty('top', p.top + 'px', 'important');
+          fab.style.setProperty('bottom', 'auto', 'important');
+        }
+      } catch(_) {}
+    }
+    applySaved();
+    /* CSS 패치들이 주기적으로 위치를 되돌리므로, 저장된 위치가 있으면 계속 다시 적용 */
+    setInterval(() => {
+      try {
+        const p = JSON.parse(localStorage.getItem(POS_KEY) || 'null');
+        if (!p || dragging) return;
+        const cur = fab.getBoundingClientRect();
+        if (Math.abs(cur.left - p.left) > 2 || Math.abs(cur.top - p.top) > 2) applySaved();
+      } catch(_) {}
+    }, 600);
+
+    let dragging = false, down = false;
+    let sx = 0, sy = 0, ol = 0, ot = 0;
+    const TH = 6;
+    const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+
+    function down_(e){
+      if (e.button !== undefined && e.button !== 0 && e.pointerType === 'mouse') return;
+      down = true; dragging = false;
+      const pt = (e.touches && e.touches[0]) ? e.touches[0] : e;
+      sx = pt.clientX; sy = pt.clientY;
+      const r = fab.getBoundingClientRect();
+      ol = r.left; ot = r.top;
+      try { e.pointerId != null && fab.setPointerCapture(e.pointerId); } catch(_) {}
+    }
+    function move_(e){
+      if (!down) return;
+      const pt = (e.touches && e.touches[0]) ? e.touches[0] : e;
+      const dx = pt.clientX - sx, dy = pt.clientY - sy;
+      if (!dragging && Math.hypot(dx, dy) < TH) return;
+      dragging = true;
+      fab.classList.add('dragging');
+      fab.style.setProperty('cursor', 'grabbing', 'important');
+      if (e.cancelable) e.preventDefault();
+      const w = fab.offsetWidth, h = fab.offsetHeight;
+      const nl = clamp(ol + dx, 4, window.innerWidth - w - 4);
+      const nt = clamp(ot + dy, 4, window.innerHeight - h - 4);
+      fab.style.setProperty('left', nl + 'px', 'important');
+      fab.style.setProperty('top', nt + 'px', 'important');
+      fab.style.setProperty('bottom', 'auto', 'important');
+    }
+    function up_(e){
+      if (!down) return;
+      down = false;
+      fab.style.setProperty('cursor', 'grab', 'important');
+      if (dragging){
+        fab.classList.remove('dragging');
+        const r = fab.getBoundingClientRect();
+        try { localStorage.setItem(POS_KEY, JSON.stringify({ left: Math.round(r.left), top: Math.round(r.top) })); } catch(_) {}
+        if (e.cancelable) e.preventDefault();
+        e.stopPropagation();
+        /* 드래그 직후 발생할 click을 한 번 무시 */
+        const swallow = ev => { ev.preventDefault(); ev.stopPropagation(); };
+        fab.addEventListener('click', swallow, { capture: true, once: true });
+        setTimeout(() => { try { fab.removeEventListener('click', swallow, { capture: true }); } catch(_){} }, 350);
+        return;
+      }
+      /* 드래그 아님 = 클릭 → 모달 */
+      if (e.cancelable) e.preventDefault();
+      e.stopPropagation();
+      if (typeof openDiceModalHard === 'function') openDiceModalHard();
+    }
+
+    fab.addEventListener('pointerdown', down_, { capture: true, passive: false });
+    window.addEventListener('pointermove', move_, { passive: false });
+    window.addEventListener('pointerup', up_, { capture: true, passive: false });
+    fab.addEventListener('touchstart', down_, { capture: true, passive: false });
+    window.addEventListener('touchmove', move_, { passive: false });
+    window.addEventListener('touchend', up_, { capture: true, passive: false });
+
+    window.addEventListener('resize', () => {
+      const r = fab.getBoundingClientRect();
+      if (r.left + r.width > window.innerWidth || r.top + r.height > window.innerHeight){
+        const nl = clamp(r.left, 4, window.innerWidth - r.width - 4);
+        const nt = clamp(r.top, 4, window.innerHeight - r.height - 4);
+        fab.style.setProperty('left', nl + 'px', 'important');
+        fab.style.setProperty('top', nt + 'px', 'important');
+        fab.style.setProperty('bottom', 'auto', 'important');
+        try { localStorage.setItem(POS_KEY, JSON.stringify({ left: Math.round(nl), top: Math.round(nt) })); } catch(_) {}
+      }
+    });
+  }
+  window.MAKE_FAB_DRAGGABLE = makeFabDraggable;
+
   /** 기능: 시트 안의 주사위 버튼들을 판정 모달과 연결합니다. */
   function bindDiceButtons(){
     installGlobalOpen();
     const fab = ensureFab();
-    bindButton(fab);
+    makeFabDraggable(fab);     /* 드래그 이동 + 클릭 열기 */
+    bindButton(fab);           /* (emergencyDiceFab은 내부에서 skip) */
     bindButton($('rollShortcutBtn'));
 
     document.querySelectorAll('.sheet .roll-btn, .roll-btn, [data-open-dice], [data-roll]').forEach(btn => {
@@ -15924,7 +16121,8 @@ body.chat-open .scene-dashboard {
     if (document.documentElement.dataset.emergencyDiceDelegation === '1') return;
     document.documentElement.dataset.emergencyDiceDelegation = '1';
     document.addEventListener('click', ev => {
-      const btn = ev.target && ev.target.closest ? ev.target.closest('#rollShortcutBtn, #emergencyDiceFab, .sheet .roll-btn, .roll-btn, [data-open-dice], [data-roll]') : null;
+      /* emergencyDiceFab은 드래그 모듈이 직접 처리하므로 위임에서 제외 (드래그 후 click 무시 위함) */
+      const btn = ev.target && ev.target.closest ? ev.target.closest('#rollShortcutBtn, .sheet .roll-btn, .roll-btn, [data-open-dice], [data-roll]') : null;
       if (!btn || btn.closest('#diceModalBg')) return;
       ev.preventDefault();
       ev.stopPropagation();
@@ -16033,10 +16231,14 @@ body.chat-open .scene-dashboard {
     }
     const fab = document.getElementById('emergencyDiceFab');
     if (fab) {
-      fab.style.setProperty('left', window.matchMedia('(max-width: 620px)').matches ? '16px' : '24px', 'important');
-      fab.style.setProperty('bottom', window.matchMedia('(max-width: 620px)').matches ? '84px' : '92px', 'important');
+      let hasSavedPos = false;
+      try { hasSavedPos = !!JSON.parse(localStorage.getItem('diceFab.pos') || 'null'); } catch(_) {}
+      if (!hasSavedPos) {
+        fab.style.setProperty('left', window.matchMedia('(max-width: 620px)').matches ? '16px' : '24px', 'important');
+        fab.style.setProperty('bottom', window.matchMedia('(max-width: 620px)').matches ? '84px' : '92px', 'important');
+      }
       fab.style.setProperty('z-index', '2147483400', 'important');
-      fab.title = '판정 굴림';
+      fab.title = '판정 굴림 (드래그해서 위치 이동)';
     }
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', cleanDiceFab);
@@ -16693,107 +16895,6 @@ body.chat-open .scene-dashboard {
   setTimeout(boot, 200);
   setTimeout(fitSceneHardLeft, 900);
   // setInterval(fitSceneHardLeft, 1500) 제거: window.resize / orientationchange / pointermove / chatPanel MutationObserver / chatBody ResizeObserver가 이미 모든 변경을 감지함
-})();
-</script>
-
-<!-- PATCH: emergencyDiceFab 드래그 이동 기능 -->
-<script id="emergencyDiceFabDragScript">
-(function addEmergencyDiceFabDrag(){
-  const POS_KEY = 'emergencyDiceFab.pos';
-
-  function getSaved(){ try { return JSON.parse(localStorage.getItem(POS_KEY)||'null'); } catch(_){ return null; } }
-  function savePos(l, t){ try { localStorage.setItem(POS_KEY, JSON.stringify({left:Math.round(l), top:Math.round(t)})); } catch(_){} }
-
-  function applyPos(fab, p){
-    if (!p) return;
-    fab.style.setProperty('left',   p.left + 'px', 'important');
-    fab.style.setProperty('top',    p.top  + 'px', 'important');
-    fab.style.setProperty('bottom', 'auto',          'important');
-  }
-
-  function clamp(v, mn, mx){ return Math.max(mn, Math.min(mx, v)); }
-
-  function setupDrag(fab){
-    if (fab.dataset.dragBound === '1') return;
-    fab.dataset.dragBound = '1';
-
-    /* 저장된 위치 복원 */
-    const saved = getSaved();
-    if (saved) applyPos(fab, saved);
-
-    let pDown = false, dragging = false;
-    let sx = 0, sy = 0, ox = 0, oy = 0;
-    const THR = 6;
-
-    function onDown(e){
-      if (e.button !== undefined && e.button !== 0 && e.type !== 'touchstart') return;
-      pDown = true; dragging = false;
-      const pt = e.touches ? e.touches[0] : e;
-      sx = pt.clientX; sy = pt.clientY;
-      const r = fab.getBoundingClientRect();
-      ox = r.left; oy = r.top;
-      try { fab.setPointerCapture && e.pointerId != null && fab.setPointerCapture(e.pointerId); } catch(_) {}
-    }
-    function onMove(e){
-      if (!pDown) return;
-      const pt = e.touches ? e.touches[0] : e;
-      const dx = pt.clientX - sx, dy = pt.clientY - sy;
-      if (!dragging && Math.hypot(dx, dy) < THR) return;
-      dragging = true;
-      fab.classList.add('dragging');
-      e.preventDefault(); e.stopPropagation();
-      const w = fab.offsetWidth, h = fab.offsetHeight;
-      const nl = clamp(ox + dx, 4, window.innerWidth  - w - 4);
-      const nt = clamp(oy + dy, 4, window.innerHeight - h - 4);
-      fab.style.setProperty('left',   nl + 'px', 'important');
-      fab.style.setProperty('top',    nt + 'px', 'important');
-      fab.style.setProperty('bottom', 'auto',     'important');
-    }
-    function onUp(e){
-      if (!pDown) return;
-      pDown = false;
-      if (dragging){
-        const r = fab.getBoundingClientRect();
-        savePos(r.left, r.top);
-        fab.dataset.customPos = '1';
-        setTimeout(() => fab.classList.remove('dragging'), 0);
-        e.preventDefault(); e.stopPropagation();
-      }
-      dragging = false;
-    }
-
-    fab.addEventListener('pointerdown', onDown, {passive:false});
-    window.addEventListener('pointermove', onMove, {passive:false});
-    window.addEventListener('pointerup',   onUp,   {passive:false});
-    fab.addEventListener('touchstart', onDown, {passive:false});
-    window.addEventListener('touchmove', onMove, {passive:false});
-    window.addEventListener('touchend',  onUp,  {passive:false});
-
-    /* cleanDiceFab이 위치를 덮어쓸 때 커스텀 위치 재적용 */
-    new MutationObserver(() => {
-      const p = getSaved();
-      if (!p) return;
-      requestAnimationFrame(() => {
-        fab.style.setProperty('left',   p.left + 'px', 'important');
-        fab.style.setProperty('top',    p.top  + 'px', 'important');
-        fab.style.setProperty('bottom', 'auto',         'important');
-      });
-    }).observe(fab, { attributes: true, attributeFilter: ['style'] });
-  }
-
-  function init(){
-    const fab = document.getElementById('emergencyDiceFab');
-    if (fab) setupDrag(fab);
-    /* FAB가 동적으로 생성될 때를 대비 */
-    new MutationObserver(() => {
-      const f = document.getElementById('emergencyDiceFab');
-      if (f && f.dataset.dragBound !== '1') setupDrag(f);
-    }).observe(document.body, { childList: true, subtree: false });
-  }
-
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
-  else init();
-  setTimeout(init, 600);
 })();
 </script>
 
