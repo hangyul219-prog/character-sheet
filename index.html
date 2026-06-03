@@ -10039,11 +10039,28 @@ body.chat-open .scene-dashboard {
 
     scenesRef.on('value', snap => {
       scenesState = snap.val() || {};
-      renderSceneList();
-      applySceneMetaToUi();
+      /* 토큰 이동은 scenes/<id>/battlemap/tokens 하위 변경이라 이 value 콜백도 깨운다.
+         장면 메타(이름/설명/필터/전환/순서)만 해시로 비교해서, 메타가 그대로면
+         장면 목록·메타 UI를 다시 그리지 않는다 (토큰 드래그 시 장면 갱신 깜빡임 방지). */
+      let metaSig = '';
+      try {
+        metaSig = Object.keys(scenesState).sort().map(id => {
+          const s = scenesState[id] || {};
+          return id + ':' + (s.name||'') + '|' + (s.desc||'') + '|' + (s.filter||'') + '|' + (s.transition||'') + '|' + (s.order||'') + '|' + (s.bgmUrl||'');
+        }).join('¶');
+      } catch(_) { metaSig = String(Date.now()); }
+
+      const metaChanged = (metaSig !== window.__SCENES_META_SIG);
+      window.__SCENES_META_SIG = metaSig;
+
       scenesLoaded = true;
       const ids = Object.keys(scenesState);
       if (ids.length === 0 && isGameMaster) { createDefaultSceneFromLegacy(room); return; }
+
+      if (metaChanged) {
+        renderSceneList();
+        applySceneMetaToUi();   /* sceneChanged 안 넘김 → 같은 장면이면 타이틀 카드 연출 없음 */
+      }
       /* ★ 여기서 곧바로 activeSceneRef.set(ids[0]) 하지 않는다.
          (재접속 직후엔 activeSceneId가 아직 null이라 저장된 장면을 덮어쓰는 버그가 있었음) */
       maybeInitActiveScene();
@@ -10164,13 +10181,14 @@ body.chat-open .scene-dashboard {
     subscribeDamageEvents();
     subscribeVitalEvents();
     renderSceneList();
-    applySceneMetaToUi();
+    applySceneMetaToUi({ sceneChanged: true });   /* 진짜 장면 전환 — 타이틀 카드 연출 재생 */
     renderBattleMap();
     renderTokens();
   }
 
   /** 기능: 장면 이름, 설명, 배경 미디어 정보를 UI에 적용합니다. */
-  function applySceneMetaToUi() {
+  function applySceneMetaToUi(opts) {
+    opts = opts || {};
     const sc = (activeSceneId && scenesState && scenesState[activeSceneId]) ? scenesState[activeSceneId] : {};
     if ($('sceneDescInput')) $('sceneDescInput').value = sc.desc || '';
     if ($('sceneBgmUrlInput')) $('sceneBgmUrlInput').value = sc.bgmUrl || '';
@@ -10181,18 +10199,26 @@ body.chat-open .scene-dashboard {
       media.classList.remove('filter-sepia','filter-night','filter-dream','filter-crimson');
       if (sc.filter && sc.filter !== 'none') media.classList.add('filter-' + sc.filter);
     }
-    const card = document.querySelector('.scene-card');
-    if (card) {
-      card.classList.remove('transition-fade','transition-flash');
-      if (sc.transition && sc.transition !== 'none') {
-        card.classList.add('transition-' + sc.transition);
-        setTimeout(() => card.classList.remove('transition-' + sc.transition), 900);
+
+    /* 장면 전환 연출(필터 플래시 + 타이틀 카드)은 "활성 장면이 실제로 바뀌었을 때"만 재생.
+       토큰 이동 등으로 scenes 노드 value 콜백이 와도 같은 장면이면 연출을 다시 틀지 않는다. */
+    const sceneActuallyChanged = (opts.sceneChanged === true) || (window.__LAST_SHOWN_SCENE !== activeSceneId);
+
+    if (sceneActuallyChanged) {
+      const card = document.querySelector('.scene-card');
+      if (card) {
+        card.classList.remove('transition-fade','transition-flash');
+        if (sc.transition && sc.transition !== 'none') {
+          card.classList.add('transition-' + sc.transition);
+          setTimeout(() => card.classList.remove('transition-' + sc.transition), 900);
+        }
       }
     }
+
     if ($('sceneTitle') && sc.name) $('sceneTitle').textContent = sc.name;
     if ($('sceneSubtitle')) $('sceneSubtitle').textContent = sc.desc || '';
 
-    if ($('sceneTitleCard') && activeSceneId && sc && sc.name) {
+    if (sceneActuallyChanged && $('sceneTitleCard') && activeSceneId && sc && sc.name) {
       $('sceneTitleCardName').textContent = sc.name || '장면';
       $('sceneTitleCardDesc').textContent = sc.desc || '';
       $('sceneTitleCard').classList.remove('show');
@@ -10200,6 +10226,10 @@ body.chat-open .scene-dashboard {
         void $('sceneTitleCard').offsetWidth;
         $('sceneTitleCard').classList.add('show');
       }
+      window.__LAST_SHOWN_SCENE = activeSceneId;
+    } else if (activeSceneId) {
+      /* 연출 없이 이름만 최신화 */
+      window.__LAST_SHOWN_SCENE = activeSceneId;
     }
 
     if (sc.bgmUrl && bgmRef && isGameMaster && sc.bgmUrl !== lastAppliedSceneBgm) {
@@ -13157,17 +13187,21 @@ body.chat-open .scene-dashboard {
     if (!bgmRef) { window.SHEET.toast('방 입장 후 사용 가능합니다'); return; }
     let url = ($('bgmUrlInput').value || '');
     /* 붙여넣기 시 끼어드는 제로폭/유니코드 공백·따옴표·앞뒤 공백 제거 */
+    const original = url;
     url = url
+      .replace(/[\u0000-\u001F\u007F]/g, '')          /* 제어문자 제거 */
       .replace(/[\u200B-\u200D\uFEFF\u00A0]/g, '')   /* 제로폭/NBSP 제거 */
       .replace(/[\u2018\u2019\u201C\u201D]/g, '')     /* 스마트 따옴표 제거 */
       .trim()
-      .replace(/^["'<]+|["'>]+$/g, '')                /* 감싼 따옴표/꺾쇠 제거 */
+      .replace(/^["'<\s]+|["'>\s]+$/g, '')            /* 감싼 따옴표/꺾쇠/공백 제거 */
       .trim();
     /* 프로토콜 없이 www. 로 시작하면 https:// 자동 보정 */
     if (/^www\./i.test(url)) url = 'https://' + url;
     const title = ($('bgmTitleInput').value || '').trim();
     if (!url) { window.SHEET.toast('음악 URL을 입력해 주세요'); return; }
-    if (!/^https?:\/\/.+/i.test(url)) {
+    /* http 또는 https 로 시작하면 통과 (대소문자/공백 무관) */
+    if (!/^https?:\/\//i.test(url)) {
+      console.warn('[BGM] 거부된 URL(원본):', JSON.stringify(original), '→ 정리후:', JSON.stringify(url));
       window.SHEET.toast('http:// 또는 https:// 로 시작하는 URL이어야 합니다');
       return;
     }
