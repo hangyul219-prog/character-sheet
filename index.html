@@ -3907,6 +3907,18 @@
 /* ── 세계 시트 가독성 끝 ── */
 .npc-form-actions { display:flex; gap:8px; align-items:center; }
 .npc-form-actions .gm-btn { flex:0 0 auto; }
+/* ── 추가/수정 폼 접기 토글 ── */
+.npc-form-toggle {
+  width:100%; display:flex; align-items:center; justify-content:space-between; gap:8px;
+  padding:9px 12px; margin:0 0 10px; cursor:pointer;
+  background:rgba(212,175,82,0.06); border:1px solid var(--border); border-radius:8px;
+  color:var(--gold-light); font-family:'Cinzel',serif; font-size:13px; letter-spacing:0.3px;
+  transition:border-color 0.15s, background 0.15s;
+}
+.npc-form-toggle:hover { border-color:var(--gold); background:rgba(212,175,82,0.1); }
+.npc-form-toggle-arrow { font-size:11px; transition:transform 0.18s; flex-shrink:0; }
+.npc-form-toggle.collapsed .npc-form-toggle-arrow { transform:rotate(-90deg); }
+.npc-form-body.collapsed { display:none; }
 .gm-btn.ghost { background:rgba(0,0,0,.22); color:var(--text-muted); border-color:var(--border); }
 .gm-btn.ghost:hover { color:var(--text-secondary); border-color:var(--border-strong); }
 .npc-card.editing { border-color:var(--gold); box-shadow:0 0 0 1px var(--gold) inset, 0 0 14px rgba(212,175,82,.18); }
@@ -7734,6 +7746,10 @@ body.chat-open .scene-dashboard {
       <button class="world-tab active" data-wtab="steps">✦ 세계 창조</button>
       <button class="world-tab" data-wtab="npc">🎭 NPC</button>
       <button class="world-tab" data-wtab="region">🏞 지역</button>
+      <button class="world-tab" data-wtab="magic">🔮 마법과 기술</button>
+      <button class="world-tab" data-wtab="history">📜 역사적 사건</button>
+      <button class="world-tab" data-wtab="mystery">❓ 수수께끼와 신비</button>
+      <button class="world-tab" data-wtab="threat">⚔ 위협</button>
     </div>
 
     <!-- 세계 창조 7단계 -->
@@ -7745,6 +7761,8 @@ body.chat-open .scene-dashboard {
     <!-- NPC (세계 시트로 이동 — 방의 모두가 함께 봄) -->
     <div class="world-pane" id="worldPaneNpc" style="display:none;">
       <p class="world-intro">세계에 등장하는 NPC와 악당을 등록합니다. 등록한 NPC는 채팅 발화자로 선택할 수 있고, 변경은 같은 방의 모두에게 실시간으로 공유됩니다.</p>
+      <button type="button" class="npc-form-toggle" id="npcFormToggle"><span>＋ NPC 추가 / 수정 폼</span><span class="npc-form-toggle-arrow">▼</span></button>
+      <div class="npc-form-body" id="npcFormBody">
       <div class="npc-form-grid">
         <!-- 포트레이트(좌) + 이름(우) 상단 배치 -->
         <div class="npc-top-row full">
@@ -7820,6 +7838,7 @@ body.chat-open .scene-dashboard {
         <button class="gm-btn" id="npcAddBtn">＋ NPC 추가</button>
         <button class="gm-btn ghost" id="npcCancelEditBtn" style="display:none;">수정 취소</button>
       </div>
+      </div><!-- /npcFormBody -->
       <div class="npc-list" id="npcList"><div class="gm-empty-note" id="npcEmpty">NPC를 등록하면 채팅 발화자로 선택할 수 있습니다.</div></div>
       <p class="world-hint">악당 체크박스를 켜면 HP/MP 추적과 등급(일반/엘리트/챔피언/솔로)이 함께 관리됩니다. 새로 악당으로 체크하면 방의 <b>모든 플레이어</b>에게 진홍색 등장 연출이 표시됩니다.</p>
     </div>
@@ -7827,6 +7846,8 @@ body.chat-open .scene-dashboard {
     <!-- 지역 (세계 시트로 이동 — 방의 모두가 함께 봄) -->
     <div class="world-pane" id="worldPaneRegion" style="display:none;">
       <p class="world-intro">세계를 구성하는 지역을 등록합니다. 지역의 문명·인종·특산물·역사를 기록하고, 변경은 같은 방의 모두에게 실시간으로 공유됩니다.</p>
+      <button type="button" class="npc-form-toggle" id="regionFormToggle"><span>＋ 지역 추가 / 수정 폼</span><span class="npc-form-toggle-arrow">▼</span></button>
+      <div class="npc-form-body" id="regionFormBody">
       <div class="npc-form-grid">
         <!-- 포트레이트(좌) + 이름(우) 상단 배치 -->
         <div class="npc-top-row full">
@@ -7866,8 +7887,149 @@ body.chat-open .scene-dashboard {
         <button class="gm-btn" id="regionAddBtn">＋ 지역 추가</button>
         <button class="gm-btn ghost" id="regionCancelEditBtn" style="display:none;">수정 취소</button>
       </div>
+      </div><!-- /regionFormBody -->
       <div class="npc-list" id="regionList"><div class="gm-empty-note" id="regionEmpty">지역을 등록하면 세계의 무대를 모두가 함께 관리할 수 있습니다.</div></div>
       <p class="world-hint">지역 카드는 NPC와 동일하게 접기/펼치기가 가능하며, 접은 상태는 새로고침·재접속 후에도 유지됩니다.</p>
+    </div>
+
+    <!-- 마법과 기술 -->
+    <div class="world-pane" id="worldPaneMagic" style="display:none;">
+      <p class="world-intro">세계에 존재하는 마법과 기술을 등록합니다. 원리·계통·사용자·한계 등을 자유롭게 기록하고, 변경은 같은 방의 모두에게 실시간으로 공유됩니다.</p>
+      <button type="button" class="npc-form-toggle" id="magicFormToggle"><span>＋ 마법과 기술 추가 / 수정 폼</span><span class="npc-form-toggle-arrow">▼</span></button>
+      <div class="npc-form-body" id="magicFormBody">
+        <div class="npc-form-grid">
+          <div class="npc-top-row full">
+            <div class="npc-portrait-preview" id="magicPortraitPreview" title="이미지 (참고용 · 로컬 이미지)">
+              <span class="npc-portrait-empty">이미지<br>없음</span>
+              <img id="magicPortraitImg" alt="이미지 미리보기" style="display:none;">
+            </div>
+            <div class="npc-top-fields">
+              <input type="text" id="magicNameInput" class="gm-input" placeholder="마법/기술 이름 (예: 비전 결정 공학, 룬 마법)">
+              <div class="npc-portrait-controls">
+                <input type="file" id="magicPortraitFile" accept="image/*" class="npc-portrait-file">
+                <button type="button" class="gm-btn ghost" id="magicPortraitClear">이미지 제거</button>
+              </div>
+            </div>
+          </div>
+          <div class="npc-trait-fields full">
+            <div class="npc-trait-field npc-profile-field">
+              <span class="npc-trait-label">📖 설명</span>
+              <textarea id="magicDescInput" class="gm-input" placeholder="어떤 원리로 작동하는지, 누가 다루는지, 세계에 어떤 영향을 주는지, 한계나 대가는 무엇인지 적어보세요." rows="6"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="npc-form-actions">
+          <button class="gm-btn" id="magicAddBtn">＋ 추가</button>
+          <button class="gm-btn ghost" id="magicCancelEditBtn" style="display:none;">수정 취소</button>
+        </div>
+      </div>
+      <div class="npc-list" id="magicList"><div class="gm-empty-note" id="magicEmpty">세계를 떠받치는 마법과 기술을 등록해 보세요.</div></div>
+      <p class="world-hint">카드는 접기/펼치기가 가능하며, 접은 상태는 새로고침·재접속 후에도 유지됩니다.</p>
+    </div>
+
+    <!-- 역사적 사건 -->
+    <div class="world-pane" id="worldPaneHistory" style="display:none;">
+      <p class="world-intro">세계를 형성한 역사적 사건을 등록합니다. 언제·무슨 일이·어떤 결과를 남겼는지 기록하고, 변경은 같은 방의 모두에게 실시간으로 공유됩니다.</p>
+      <button type="button" class="npc-form-toggle" id="historyFormToggle"><span>＋ 역사적 사건 추가 / 수정 폼</span><span class="npc-form-toggle-arrow">▼</span></button>
+      <div class="npc-form-body" id="historyFormBody">
+        <div class="npc-form-grid">
+          <div class="npc-top-row full">
+            <div class="npc-portrait-preview" id="historyPortraitPreview" title="이미지 (참고용 · 로컬 이미지)">
+              <span class="npc-portrait-empty">이미지<br>없음</span>
+              <img id="historyPortraitImg" alt="이미지 미리보기" style="display:none;">
+            </div>
+            <div class="npc-top-fields">
+              <input type="text" id="historyNameInput" class="gm-input" placeholder="사건 이름 (예: 대붕괴, 천년 전쟁)">
+              <div class="npc-portrait-controls">
+                <input type="file" id="historyPortraitFile" accept="image/*" class="npc-portrait-file">
+                <button type="button" class="gm-btn ghost" id="historyPortraitClear">이미지 제거</button>
+              </div>
+            </div>
+          </div>
+          <div class="npc-trait-fields full">
+            <div class="npc-trait-field npc-profile-field">
+              <span class="npc-trait-label">📖 설명</span>
+              <textarea id="historyDescInput" class="gm-input" placeholder="언제 일어났고, 무슨 일이 있었으며, 세계와 사람들에게 어떤 결과를 남겼는지 적어보세요." rows="6"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="npc-form-actions">
+          <button class="gm-btn" id="historyAddBtn">＋ 추가</button>
+          <button class="gm-btn ghost" id="historyCancelEditBtn" style="display:none;">수정 취소</button>
+        </div>
+      </div>
+      <div class="npc-list" id="historyList"><div class="gm-empty-note" id="historyEmpty">세계의 흐름을 바꾼 사건들을 기록해 보세요.</div></div>
+      <p class="world-hint">카드는 접기/펼치기가 가능하며, 접은 상태는 새로고침·재접속 후에도 유지됩니다.</p>
+    </div>
+
+    <!-- 수수께끼와 신비 -->
+    <div class="world-pane" id="worldPaneMystery" style="display:none;">
+      <p class="world-intro">세계에 풀리지 않은 수수께끼와 신비를 등록합니다. 단서·소문·가설을 기록하고, 변경은 같은 방의 모두에게 실시간으로 공유됩니다.</p>
+      <button type="button" class="npc-form-toggle" id="mysteryFormToggle"><span>＋ 수수께끼와 신비 추가 / 수정 폼</span><span class="npc-form-toggle-arrow">▼</span></button>
+      <div class="npc-form-body" id="mysteryFormBody">
+        <div class="npc-form-grid">
+          <div class="npc-top-row full">
+            <div class="npc-portrait-preview" id="mysteryPortraitPreview" title="이미지 (참고용 · 로컬 이미지)">
+              <span class="npc-portrait-empty">이미지<br>없음</span>
+              <img id="mysteryPortraitImg" alt="이미지 미리보기" style="display:none;">
+            </div>
+            <div class="npc-top-fields">
+              <input type="text" id="mysteryNameInput" class="gm-input" placeholder="수수께끼 이름 (예: 사라진 일곱 번째 달)">
+              <div class="npc-portrait-controls">
+                <input type="file" id="mysteryPortraitFile" accept="image/*" class="npc-portrait-file">
+                <button type="button" class="gm-btn ghost" id="mysteryPortraitClear">이미지 제거</button>
+              </div>
+            </div>
+          </div>
+          <div class="npc-trait-fields full">
+            <div class="npc-trait-field npc-profile-field">
+              <span class="npc-trait-label">📖 설명</span>
+              <textarea id="mysteryDescInput" class="gm-input" placeholder="무엇이 수수께끼인지, 알려진 단서와 소문, 떠도는 가설은 무엇인지 적어보세요." rows="6"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="npc-form-actions">
+          <button class="gm-btn" id="mysteryAddBtn">＋ 추가</button>
+          <button class="gm-btn ghost" id="mysteryCancelEditBtn" style="display:none;">수정 취소</button>
+        </div>
+      </div>
+      <div class="npc-list" id="mysteryList"><div class="gm-empty-note" id="mysteryEmpty">아직 밝혀지지 않은 신비를 기록해 보세요.</div></div>
+      <p class="world-hint">카드는 접기/펼치기가 가능하며, 접은 상태는 새로고침·재접속 후에도 유지됩니다.</p>
+    </div>
+
+    <!-- 위협 -->
+    <div class="world-pane" id="worldPaneThreat" style="display:none;">
+      <p class="world-intro">세계를 위협하는 존재와 세력을 등록합니다. 위험의 정체·규모·노리는 대상을 기록하고, 변경은 같은 방의 모두에게 실시간으로 공유됩니다.</p>
+      <button type="button" class="npc-form-toggle" id="threatFormToggle"><span>＋ 위협 추가 / 수정 폼</span><span class="npc-form-toggle-arrow">▼</span></button>
+      <div class="npc-form-body" id="threatFormBody">
+        <div class="npc-form-grid">
+          <div class="npc-top-row full">
+            <div class="npc-portrait-preview" id="threatPortraitPreview" title="이미지 (참고용 · 로컬 이미지)">
+              <span class="npc-portrait-empty">이미지<br>없음</span>
+              <img id="threatPortraitImg" alt="이미지 미리보기" style="display:none;">
+            </div>
+            <div class="npc-top-fields">
+              <input type="text" id="threatNameInput" class="gm-input" placeholder="위협 이름 (예: 심연의 군세, 역병의 마녀)">
+              <div class="npc-portrait-controls">
+                <input type="file" id="threatPortraitFile" accept="image/*" class="npc-portrait-file">
+                <button type="button" class="gm-btn ghost" id="threatPortraitClear">이미지 제거</button>
+              </div>
+            </div>
+          </div>
+          <div class="npc-trait-fields full">
+            <div class="npc-trait-field npc-profile-field">
+              <span class="npc-trait-label">📖 설명</span>
+              <textarea id="threatDescInput" class="gm-input" placeholder="이 위협의 정체와 규모, 무엇을·누구를 노리는지, 어떤 위험을 불러오는지 적어보세요." rows="6"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="npc-form-actions">
+          <button class="gm-btn" id="threatAddBtn">＋ 추가</button>
+          <button class="gm-btn ghost" id="threatCancelEditBtn" style="display:none;">수정 취소</button>
+        </div>
+      </div>
+      <div class="npc-list" id="threatList"><div class="gm-empty-note" id="threatEmpty">세계에 드리운 위협을 기록해 보세요.</div></div>
+      <p class="world-hint">카드는 접기/펼치기가 가능하며, 접은 상태는 새로고침·재접속 후에도 유지됩니다.</p>
     </div>
   </div>
 </div>
@@ -10175,6 +10337,8 @@ body.chat-open .scene-dashboard {
     initNpcs(roomCode);
     /* ── 지역 시트 초기화 ── */
     initRegions(roomCode);
+    /* ── 세계 요소 시트(마법과 기술·역사·수수께끼·위협) 초기화 ── */
+    initWorldElementSheets(roomCode);
     /* ── 몬스터 시트 초기화 ── */
     initMonsters(roomCode);
     /* ── BGM (다음 단계에서 구현 예정) ── */
@@ -12740,8 +12904,9 @@ body.chat-open .scene-dashboard {
     const btn = $('npcAddBtn'); if (btn) btn.textContent = '✔ 수정 저장';
     const cancel = $('npcCancelEditBtn'); if (cancel) cancel.style.display = '';
     renderNpcs();
-    /* 폼이 보이도록 위로 스크롤 */
-    const form = document.querySelector('.npc-form-grid');
+    /* 폼이 접혀 있으면 펼치고 위로 스크롤 */
+    if (typeof applyFormCollapsed === 'function') applyFormCollapsed('npc', false);
+    const form = $('npcNameInput') || document.querySelector('#npcFormBody .npc-form-grid');
     if (form && form.scrollIntoView) form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
@@ -12938,6 +13103,7 @@ body.chat-open .scene-dashboard {
     const btn = $('regionAddBtn'); if (btn) btn.textContent = '✔ 수정 저장';
     const cancel = $('regionCancelEditBtn'); if (cancel) cancel.style.display = '';
     renderRegions();
+    if (typeof applyFormCollapsed === 'function') applyFormCollapsed('region', false);
     const form = $('regionNameInput');
     if (form && form.scrollIntoView) form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
@@ -12964,6 +13130,190 @@ body.chat-open .scene-dashboard {
     if ($('regionPortraitFile')) $('regionPortraitFile').value = '';
     regionRenderPortrait();
   });
+
+  /* ── 추가/수정 폼 접기 토글 (NPC·지역 공통, 상태 보존) ── */
+  /** 기능: 추가/수정 폼의 접힘 상태를 적용하고 localStorage에 저장합니다. */
+  function applyFormCollapsed(kind, collapsed) {
+    const toggle = $(kind + 'FormToggle');
+    const body = $(kind + 'FormBody');
+    if (!toggle || !body) return;
+    toggle.classList.toggle('collapsed', collapsed);
+    body.classList.toggle('collapsed', collapsed);
+    try { localStorage.setItem('pf_form_' + kind, collapsed ? '1' : '0'); } catch (_) {}
+  }
+  /** 기능: 폼 토글 버튼을 연결하고 저장된 접힘 상태를 복원합니다. */
+  function initFormToggle(kind) {
+    const toggle = $(kind + 'FormToggle');
+    if (!toggle || toggle.dataset.bound === '1') return;
+    toggle.dataset.bound = '1';
+    let collapsed = false;
+    try { collapsed = localStorage.getItem('pf_form_' + kind) === '1'; } catch (_) {}
+    applyFormCollapsed(kind, collapsed);
+    toggle.addEventListener('click', () => {
+      const body = $(kind + 'FormBody');
+      applyFormCollapsed(kind, !(body && body.classList.contains('collapsed')));
+    });
+  }
+  initFormToggle('npc');
+  initFormToggle('region');
+
+  /* ════════════════════════════════════════════════
+     🌐 범용 세계 요소 시트 (마법과 기술 · 역사적 사건 · 수수께끼와 신비 · 위협)
+     - NPC/지역과 동일 패턴: 이름 + 설명 + 포트레이트 + 1열 카드 + 접기(보존) + 접이식 폼
+     - 데이터: rooms/<room>/<kind>/{id} = { name, desc, portrait, ts, by, updated }
+     - kind: 'magic' | 'history' | 'mystery' | 'threat'
+     ════════════════════════════════════════════════ */
+  /** 기능: 단순 세계 요소 시트(이름+설명+이미지) 하나를 생성·바인딩합니다. */
+  function createWorldSheet(kind, opts) {
+    opts = opts || {};
+    const cap = suffix => kind + suffix;
+    let ref = null, state = {}, editingId = null, portraitData = '', collapsed = {};
+
+    function renderPortrait() {
+      const preview = $(cap('PortraitPreview'));
+      const img = $(cap('PortraitImg'));
+      const empty = preview ? preview.querySelector('.npc-portrait-empty, .region-portrait-empty') : null;
+      if (portraitData) {
+        if (img) { img.src = portraitData; img.style.display = ''; }
+        if (empty) empty.style.display = 'none';
+      } else {
+        if (img) { img.removeAttribute('src'); img.style.display = 'none'; }
+        if (empty) empty.style.display = '';
+      }
+    }
+
+    function render() {
+      const list = $(cap('List'));
+      if (!list) return;
+      list.innerHTML = '';
+      const ids = Object.keys(state || {}).sort((a, b) => (state[a].ts || 0) - (state[b].ts || 0));
+      if (!ids.length) {
+        const e = document.createElement('div'); e.className = 'gm-empty-note';
+        e.textContent = opts.emptyText || '아직 등록된 항목이 없습니다.';
+        list.appendChild(e); return;
+      }
+      ids.forEach(id => {
+        const r = state[id] || {};
+        const card = document.createElement('div'); card.className = 'npc-card';
+        if (id === editingId) card.classList.add('editing');
+        const head = document.createElement('div'); head.className = 'npc-card-head';
+        const name = document.createElement('div'); name.className = 'npc-card-name';
+        name.textContent = r.name || '(이름 없음)';
+        const actions = document.createElement('div'); actions.className = 'npc-card-actions';
+        const collapseBtn = document.createElement('button'); collapseBtn.className = 'npc-card-collapse';
+        const isC = !!collapsed[id];
+        collapseBtn.textContent = isC ? '▶' : '▼'; collapseBtn.title = isC ? '펼치기' : '접기';
+        collapseBtn.addEventListener('click', () => {
+          collapsed[id] = !collapsed[id];
+          saveCollapse(kind, collapsed);
+          const b = card.querySelector('.npc-card-body');
+          if (collapsed[id]) { card.classList.add('collapsed'); if (b) b.style.display = 'none'; collapseBtn.textContent = '▶'; collapseBtn.title = '펼치기'; }
+          else { card.classList.remove('collapsed'); if (b) b.style.display = ''; collapseBtn.textContent = '▼'; collapseBtn.title = '접기'; }
+        });
+        const edit = document.createElement('button'); edit.className = 'scene-mini-btn';
+        edit.textContent = (id === editingId ? '편집 중' : '수정');
+        edit.addEventListener('click', () => startEdit(id));
+        const del = document.createElement('button'); del.className = 'scene-mini-btn danger'; del.textContent = '삭제';
+        del.addEventListener('click', () => { if (confirm('삭제할까요?')) { if (id === editingId) cancelEdit(); ref && ref.child(id).remove(); } });
+        actions.appendChild(collapseBtn); actions.appendChild(edit); actions.appendChild(del);
+        head.appendChild(name); head.appendChild(actions);
+        const note = document.createElement('div'); note.className = 'npc-card-note'; note.textContent = r.desc || '';
+        const bodyWrap = document.createElement('div'); bodyWrap.className = 'npc-card-body';
+        if (isC) { bodyWrap.style.display = 'none'; card.classList.add('collapsed'); }
+        if (r.portrait) {
+          const body = document.createElement('div'); body.className = 'npc-card-body-row';
+          const t = document.createElement('img'); t.className = 'npc-card-portrait'; t.src = r.portrait; t.alt = '이미지';
+          body.appendChild(t); body.appendChild(note); bodyWrap.appendChild(body);
+        } else { bodyWrap.appendChild(note); }
+        card.appendChild(head); card.appendChild(bodyWrap); list.appendChild(card);
+      });
+    }
+
+    function clearForm() {
+      if ($(cap('NameInput'))) $(cap('NameInput')).value = '';
+      if ($(cap('DescInput'))) $(cap('DescInput')).value = '';
+      portraitData = '';
+      if ($(cap('PortraitFile'))) $(cap('PortraitFile')).value = '';
+      renderPortrait();
+    }
+    function cancelEdit() {
+      editingId = null; clearForm();
+      const b = $(cap('AddBtn')); if (b) b.textContent = '＋ 추가';
+      const c = $(cap('CancelEditBtn')); if (c) c.style.display = 'none';
+      render();
+    }
+    function add() {
+      if (!ref) { window.SHEET && window.SHEET.toast && window.SHEET.toast('방 입장 후 추가할 수 있습니다'); return; }
+      const nm = ($(cap('NameInput'))?.value || '').trim();
+      if (!nm) { window.SHEET && window.SHEET.toast && window.SHEET.toast('이름을 입력하세요'); return; }
+      const data = { name: nm, desc: ($(cap('DescInput'))?.value || '').trim(), portrait: portraitData || '' };
+      if (editingId) {
+        data.updated = Date.now();
+        ref.child(editingId).update(data); cancelEdit();
+        window.SHEET && window.SHEET.toast && window.SHEET.toast('수정했습니다');
+      } else {
+        data.ts = Date.now(); data.by = userName || '익명';
+        ref.push(data); clearForm();
+      }
+    }
+    function startEdit(id) {
+      const r = state[id] || {};
+      if (editingId === id) { cancelEdit(); return; }
+      editingId = id;
+      if ($(cap('NameInput'))) $(cap('NameInput')).value = r.name || '';
+      if ($(cap('DescInput'))) $(cap('DescInput')).value = r.desc || '';
+      portraitData = r.portrait || '';
+      if ($(cap('PortraitFile'))) $(cap('PortraitFile')).value = '';
+      renderPortrait();
+      const b = $(cap('AddBtn')); if (b) b.textContent = '✔ 수정 저장';
+      const c = $(cap('CancelEditBtn')); if (c) c.style.display = '';
+      render();
+      if (typeof applyFormCollapsed === 'function') applyFormCollapsed(kind, false);
+      const f = $(cap('NameInput')); if (f && f.scrollIntoView) f.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    /* 버튼·입력 바인딩 (요소는 정적 HTML로 이미 존재) */
+    $(cap('AddBtn'))?.addEventListener('click', add);
+    $(cap('CancelEditBtn'))?.addEventListener('click', cancelEdit);
+    $(cap('PortraitFile'))?.addEventListener('change', e => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      if (!file.type.startsWith('image/')) { window.SHEET && window.SHEET.toast && window.SHEET.toast('이미지 파일만 선택할 수 있습니다'); e.target.value = ''; return; }
+      if (file.size > 2 * 1024 * 1024) { window.SHEET && window.SHEET.toast && window.SHEET.toast('2MB 이하 이미지를 권장합니다'); }
+      const reader = new FileReader();
+      reader.onload = ev => { portraitData = ev.target.result; renderPortrait(); };
+      reader.onerror = () => { window.SHEET && window.SHEET.toast && window.SHEET.toast('파일을 읽지 못했습니다'); };
+      reader.readAsDataURL(file);
+    });
+    $(cap('PortraitClear'))?.addEventListener('click', () => {
+      portraitData = '';
+      if ($(cap('PortraitFile'))) $(cap('PortraitFile')).value = '';
+      renderPortrait();
+    });
+    initFormToggle(kind);
+
+    return {
+      init(room) {
+        if (!db) return;
+        collapsed = loadCollapse(kind);
+        ref = db.ref('rooms/' + room + '/' + kind);
+        ref.on('value', snap => { state = snap.val() || {}; render(); });
+      }
+    };
+  }
+
+  const magicSheet   = createWorldSheet('magic',   { emptyText: '세계를 떠받치는 마법과 기술을 등록해 보세요.' });
+  const historySheet = createWorldSheet('history', { emptyText: '세계의 흐름을 바꾼 사건들을 기록해 보세요.' });
+  const mysterySheet = createWorldSheet('mystery', { emptyText: '아직 밝혀지지 않은 신비를 기록해 보세요.' });
+  const threatSheet  = createWorldSheet('threat',  { emptyText: '세계에 드리운 위협을 기록해 보세요.' });
+
+  /** 기능: 4개 세계 요소 시트를 방에 연결합니다(입장 시 호출). */
+  function initWorldElementSheets(room) {
+    magicSheet.init(room);
+    historySheet.init(room);
+    mysterySheet.init(room);
+    threatSheet.init(room);
+  }
 
   /* BGM — 다음 단계에서 구현 (지금은 안전한 빈 함수) */
 
@@ -15223,17 +15573,15 @@ body.chat-open .scene-dashboard {
     $('worldModalBg').addEventListener('click', e => { if (e.target === $('worldModalBg')) $('worldModalBg').style.display = 'none'; });
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('worldModalBg').style.display === 'flex') $('worldModalBg').style.display = 'none'; });
 
-    /* 세계 탭 전환 */
+    /* 세계 탭 전환 — 모든 .world-pane 을 ID 규칙(worldPane<Tab>)으로 전환 */
     document.querySelectorAll('.world-tab').forEach(btn => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('.world-tab').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        const tab = btn.dataset.wtab;
-        $('worldPaneSteps').style.display = tab === 'steps' ? '' : 'none';
-        const npcPane = $('worldPaneNpc');
-        if (npcPane) npcPane.style.display = tab === 'npc' ? '' : 'none';
-        const regionPane = $('worldPaneRegion');
-        if (regionPane) regionPane.style.display = tab === 'region' ? '' : 'none';
+        document.querySelectorAll('.world-tab').forEach(b => b.classList.toggle('active', b === btn));
+        const tab = btn.dataset.wtab || '';
+        const activeId = 'worldPane' + tab.charAt(0).toUpperCase() + tab.slice(1);
+        document.querySelectorAll('.world-pane').forEach(p => {
+          p.style.display = (p.id === activeId) ? '' : 'none';
+        });
       });
     });
 
