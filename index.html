@@ -3864,15 +3864,25 @@
 }
 .npc-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; }
 .npc-form-grid .full { grid-column:1/-1; }
-.npc-list { display:flex; flex-direction:column; gap:8px; }
+.npc-list { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+@media (max-width:640px){ .npc-list { grid-template-columns:1fr; } }
 .npc-card {
   border:1px solid var(--border); border-radius:10px; padding:10px;
   background:rgba(0,0,0,.18); display:grid; gap:8px;
 }
 .npc-card-head { display:flex; align-items:center; justify-content:space-between; gap:8px; }
-.npc-card-name { font-family:'Cinzel',serif; color:var(--gold-light); font-size:13px; }
+.npc-card-name { font-family:'Cinzel',serif; color:var(--gold-light); font-size:13px; flex:1; min-width:0; }
 .npc-card-note { color:var(--text-muted); font-size:12px; line-height:1.35; white-space:pre-wrap; }
-.npc-card-actions { display:flex; gap:6px; }
+.npc-card-actions { display:flex; gap:6px; flex-shrink:0; }
+.npc-card-collapse {
+  width:24px; height:24px; border-radius:6px; border:1px solid var(--border);
+  background:rgba(0,0,0,.22); color:var(--text-muted); cursor:pointer;
+  font-size:9px; line-height:1; flex-shrink:0; transition:color 0.15s, border-color 0.15s;
+  display:flex; align-items:center; justify-content:center;
+}
+.npc-card-collapse:hover { border-color:var(--gold); color:var(--gold-light); }
+.npc-card-body { display:contents; }
+.npc-card.collapsed .npc-card-body { display:none; }
 .npc-form-actions { display:flex; gap:8px; align-items:center; }
 .npc-form-actions .gm-btn { flex:0 0 auto; }
 .gm-btn.ghost { background:rgba(0,0,0,.22); color:var(--text-muted); border-color:var(--border); }
@@ -12367,11 +12377,29 @@ body.chat-open .scene-dashboard {
         name.appendChild(badge);
       }
       const actions = document.createElement('div'); actions.className = 'npc-card-actions';
+      /* ── 접기/펼치기 버튼 ── */
+      const collapseBtn = document.createElement('button'); collapseBtn.className = 'npc-card-collapse';
+      const isCollapsed = !!npcCollapsed[id];
+      collapseBtn.textContent = isCollapsed ? '▶' : '▼';
+      collapseBtn.title = isCollapsed ? '펼치기' : '접기';
+      collapseBtn.addEventListener('click', () => {
+        npcCollapsed[id] = !npcCollapsed[id];
+        const bodyEl = card.querySelector('.npc-card-body');
+        if (npcCollapsed[id]) {
+          card.classList.add('collapsed');
+          if (bodyEl) bodyEl.style.display = 'none';
+          collapseBtn.textContent = '▶'; collapseBtn.title = '펼치기';
+        } else {
+          card.classList.remove('collapsed');
+          if (bodyEl) bodyEl.style.display = '';
+          collapseBtn.textContent = '▼'; collapseBtn.title = '접기';
+        }
+      });
       const edit = document.createElement('button'); edit.className = 'scene-mini-btn'; edit.textContent = (id === npcEditingId ? '편집 중' : '수정');
       edit.addEventListener('click', () => editNpc(id));
       const del = document.createElement('button'); del.className = 'scene-mini-btn danger'; del.textContent = '삭제';
       del.addEventListener('click', () => { if (confirm('NPC를 삭제할까요?')) { if (id === npcEditingId) npcCancelEdit(); npcRef && npcRef.child(id).remove(); } });
-      actions.appendChild(edit); actions.appendChild(del);
+      actions.appendChild(collapseBtn); actions.appendChild(edit); actions.appendChild(del);
       head.appendChild(name); head.appendChild(actions);
       const note = document.createElement('div'); note.className = 'npc-card-note';
       const lines = [];
@@ -12384,23 +12412,27 @@ body.chat-open .scene-dashboard {
       const stds = getNpcStandings(n);
       if (stds.length) lines.push('스탠딩(' + (n.mediaType === 'video' ? '영상' : '이미지') + ') ' + stds.length + '개');
       note.textContent = lines.join('\n');
+      /* 바디 래퍼 — 접기 대상 */
+      const bodyWrap = document.createElement('div'); bodyWrap.className = 'npc-card-body';
+      if (isCollapsed) { bodyWrap.style.display = 'none'; card.classList.add('collapsed'); }
       /* 포트레이트가 있으면 썸네일 + 메모를 가로로 배치 */
       if (n.npcPortrait) {
         const body = document.createElement('div'); body.className = 'npc-card-body-row';
         const thumb = document.createElement('img'); thumb.className = 'npc-card-portrait';
         thumb.src = n.npcPortrait; thumb.alt = '포트레이트';
         body.appendChild(thumb); body.appendChild(note);
-        card.appendChild(head); card.appendChild(body);
+        bodyWrap.appendChild(body);
       } else {
-        card.appendChild(head); card.appendChild(note);
+        bodyWrap.appendChild(note);
       }
       /* 악당이면 HP/MP 컨트롤 표시 (전 악당 카드와 같은 스타일 재사용) */
       if (n.isVillain) {
         const stats = document.createElement('div'); stats.className = 'npc-card-vil-stats';
         stats.appendChild(makeNpcVilStat(id, 'hp', 'HP', n.hp, n.hpMax));
         stats.appendChild(makeNpcVilStat(id, 'mp', 'MP', n.mp, n.mpMax));
-        card.appendChild(stats);
+        bodyWrap.appendChild(stats);
       }
+      card.appendChild(head); card.appendChild(bodyWrap);
       list.appendChild(card);
     });
   }
@@ -12424,6 +12456,7 @@ body.chat-open .scene-dashboard {
 
   let npcEditingId = null;   /* 현재 수정 중인 NPC id (null이면 신규 추가 모드) */
   let npcPortraitData = '';  /* 현재 폼의 포트레이트 base64 (인물 참고용 · 스탠딩/채팅과 무관) */
+  let npcCollapsed = {};     /* NPC 카드 접힘 상태 { [id]: boolean } — 로컬 UI 전용 */
 
   /** 기능: 포트레이트 미리보기를 갱신합니다. */
   function npcRenderPortrait() {
