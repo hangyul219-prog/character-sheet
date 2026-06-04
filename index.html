@@ -1806,6 +1806,52 @@
     font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 1px; color: var(--text-muted);
   }
 
+  /* ── NPC 성격·말투·외모 필드 ── */
+  .npc-trait-fields { display: flex; flex-direction: column; gap: 10px; }
+  .npc-trait-field { display: flex; flex-direction: column; gap: 4px; }
+  .npc-trait-label {
+    font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 0.5px; color: var(--gold);
+  }
+  .npc-trait-field textarea { resize: vertical; min-height: 38px; }
+  /* ── 인물 설정: 더 크고 도드라지게 ── */
+  .npc-profile-field {
+    margin-top: 6px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: rgba(212,175,82,0.05);
+  }
+  .npc-profile-field .npc-trait-label { font-size: 12px; color: var(--gold-light); }
+  .npc-profile-field textarea {
+    min-height: 120px;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  /* ── 포트레이트 (로컬 이미지) — 이름 옆 상단 배치 ── */
+  .npc-top-row { display: flex; gap: 12px; align-items: stretch; margin-bottom: 4px; }
+  .npc-top-fields { flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .npc-top-fields .gm-input { width: 100%; }
+  .npc-portrait-hint { font-size: 10px; color: var(--text-muted); font-family: inherit; letter-spacing: 0; }
+  .npc-portrait-preview {
+    width: 96px; height: 96px; flex-shrink: 0;
+    border: 1px solid var(--border); border-radius: 8px;
+    background: rgba(0,0,0,0.25);
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden; text-align: center;
+  }
+  .npc-portrait-preview img { width: 100%; height: 100%; object-fit: cover; }
+  .npc-portrait-empty { font-size: 11px; color: var(--text-muted); line-height: 1.3; }
+  .npc-portrait-controls { display: flex; flex-direction: column; gap: 6px; }
+  .npc-portrait-file { font-size: 12px; color: var(--text-secondary); cursor: pointer; }
+  /* NPC 카드 안 포트레이트 썸네일 */
+  .npc-card-body-row { display: flex; gap: 10px; align-items: flex-start; }
+  .npc-card-portrait {
+    width: 56px; height: 56px; flex-shrink: 0;
+    border-radius: 6px; object-fit: cover;
+    border: 1px solid var(--border);
+  }
+  .npc-card-body-row .npc-card-note { flex: 1; }
+
   /* ── NPC 카드 — 악당 표시 / HP·MP 컨트롤 ── */
   .npc-card.is-villain {
     border-left: 3px solid var(--crimson);
@@ -5011,7 +5057,7 @@ body.chat-open .scene-dashboard {
     <div class="resize-handle-r" id="gmResizeR" title="드래그하여 폭 조절"></div>
     <div class="gm-header">
       <div class="gm-subtabs">
-        <button class="gm-subtab active" data-pane="npc">🎭 NPC</button>
+        <button class="gm-subtab active" data-pane="npc">✦ 울티마</button>
         <button class="gm-subtab" data-pane="clock">◴ 시계</button>
         <button class="gm-subtab" data-pane="monster">🐉 몬스터</button>
         <button class="gm-subtab" data-pane="map">🎬 장면</button>
@@ -5022,9 +5068,9 @@ body.chat-open .scene-dashboard {
       <button class="gm-close" id="gmClose" title="닫기">✕</button>
     </div>
 
-    <!-- NPC 시트 (울티마 포인트 + 악당 체크 통합) -->
+    <!-- 울티마 포인트 (GM 전용) — NPC 시트는 세계 시트로 이동됨 -->
     <div class="gm-pane" id="gmPaneNpc">
-      <!-- 울티마 포인트 미니 패널 — NPC 페인 상단에 통합 -->
+      <!-- 울티마 포인트 미니 패널 -->
       <div class="up-mini">
         <div class="up-mini-left">
           <div class="up-mini-count" id="upCount">0</div>
@@ -5037,53 +5083,7 @@ body.chat-open .scene-dashboard {
         </div>
       </div>
       <p class="gm-hint" style="margin-top:-4px;">악당은 파티원 수만큼 울티마 포인트로 시작합니다. HP가 0이 되면 1점을 소비해 씬에서 탈출할 수 있습니다.</p>
-
-      <div class="npc-form-grid">
-        <input type="text" id="npcNameInput" class="gm-input full" placeholder="NPC 이름">
-        <!-- 악당 토글 + 등급 (체크하면 아래 HP/MP 추적 컨트롤이 펼쳐짐) -->
-        <label class="npc-villain-toggle full" id="npcVillainToggleLabel" title="이 NPC를 악당으로 표시 — 영웅들의 대적자">
-          <input type="checkbox" id="npcVillainToggle">
-          <span class="npc-villain-toggle-text">☠ 악당 (영웅들의 대적자)</span>
-          <select id="npcVillainRank" class="gm-input npc-villain-rank" disabled>
-            <option value="일반">일반 (Soldier)</option>
-            <option value="엘리트">엘리트 (Elite)</option>
-            <option value="챔피언">챔피언 (Champion)</option>
-            <option value="솔로">솔로 (Solo)</option>
-          </select>
-        </label>
-        <!-- 악당일 때만 보이는 HP/MP 필드 -->
-        <div class="npc-villain-stats full" id="npcVillainStatsRow" style="display:none;">
-          <div class="npc-villain-stat-field">
-            <span class="npc-villain-stat-label">HP</span>
-            <input type="number" id="npcVilHpMax" class="gm-input" placeholder="최대" min="1" value="50">
-          </div>
-          <div class="npc-villain-stat-field">
-            <span class="npc-villain-stat-label">MP</span>
-            <input type="number" id="npcVilMpMax" class="gm-input" placeholder="최대" min="0" value="30">
-          </div>
-        </div>
-
-        <div class="npc-standings-field full">
-          <div class="npc-standings-head">
-            <span class="npc-standings-title">스탠딩 (대사 연출용)</span>
-            <button type="button" class="standing-ghost-btn" id="npcStandingAddRow">＋ 스탠딩 추가</button>
-          </div>
-          <div id="npcStandingRows" class="npc-standing-rows"></div>
-        </div>
-        <select id="npcStandingType" class="gm-input">
-          <option value="image">이미지/GIF</option>
-          <option value="video">비디오 WEBM/MP4</option>
-        </select>
-        <input type="color" id="npcColorInput" class="gm-input" value="#D4AF52" title="말풍선 색">
-        <input type="text" id="npcChatPortraitInput" class="gm-input full" placeholder="채팅 프로필 이미지 URL (선택 — 비우면 첫 스탠딩 이미지 사용)">
-        <textarea id="npcNoteInput" class="gm-input full" placeholder="메모 / 성격 / 목소리" rows="3"></textarea>
-      </div>
-      <div class="npc-form-actions">
-        <button class="gm-btn" id="npcAddBtn">＋ NPC 추가</button>
-        <button class="gm-btn ghost" id="npcCancelEditBtn" style="display:none;">수정 취소</button>
-      </div>
-      <div class="npc-list" id="npcList"><div class="gm-empty-note" id="npcEmpty">NPC를 등록하면 채팅 발화자로 선택할 수 있습니다.</div></div>
-      <p class="gm-hint">악당 체크박스를 켜면 HP/MP 추적과 등급(일반/엘리트/챔피언/솔로)이 함께 관리됩니다. 스탠딩마다 URL과 표정/상황 라벨을 함께 넣으면 채팅에서 라벨로 골라 띄울 수 있습니다.</p>
+      <p class="gm-hint" style="margin-top:10px;">🎭 <b>NPC 시트는 「🌍 세계 시트 → NPC」 탭으로 이동</b>했습니다. 거기서 NPC·악당을 등록하면 방의 모두와 공유됩니다.</p>
     </div>
 
     <!-- 시계 (Clock) -->
@@ -7700,6 +7700,7 @@ body.chat-open .scene-dashboard {
 
     <div class="world-tabs">
       <button class="world-tab active" data-wtab="steps">✦ 세계 창조</button>
+      <button class="world-tab" data-wtab="npc">🎭 NPC</button>
       <button class="world-tab" data-wtab="map">🗺 지도</button>
     </div>
 
@@ -7707,6 +7708,88 @@ body.chat-open .scene-dashboard {
     <div class="world-pane" id="worldPaneSteps">
       <p class="world-intro">캐릭터들의 모험이 펼쳐질 세계를 함께 만듭니다. GM과 플레이어 모두 자유롭게 항목을 추가·수정·삭제할 수 있고, 변경은 같은 방의 모두에게 실시간으로 공유됩니다.</p>
       <div id="worldStepsList"><!-- JS가 7단계 생성 --></div>
+    </div>
+
+    <!-- NPC (세계 시트로 이동 — 방의 모두가 함께 봄) -->
+    <div class="world-pane" id="worldPaneNpc" style="display:none;">
+      <p class="world-intro">세계에 등장하는 NPC와 악당을 등록합니다. 등록한 NPC는 채팅 발화자로 선택할 수 있고, 변경은 같은 방의 모두에게 실시간으로 공유됩니다.</p>
+      <div class="npc-form-grid">
+        <!-- 포트레이트(좌) + 이름(우) 상단 배치 -->
+        <div class="npc-top-row full">
+          <div class="npc-portrait-preview" id="npcPortraitPreview" title="포트레이트 (인물 참고용 · 로컬 이미지)">
+            <span class="npc-portrait-empty">이미지<br>없음</span>
+            <img id="npcPortraitImg" alt="포트레이트 미리보기" style="display:none;">
+          </div>
+          <div class="npc-top-fields">
+            <input type="text" id="npcNameInput" class="gm-input" placeholder="NPC 이름">
+            <div class="npc-portrait-controls">
+              <input type="file" id="npcPortraitFile" accept="image/*" class="npc-portrait-file">
+              <button type="button" class="gm-btn ghost" id="npcPortraitClear">포트레이트 제거</button>
+            </div>
+          </div>
+        </div>
+        <!-- 악당 토글 + 등급 (체크하면 아래 HP/MP 추적 컨트롤이 펼쳐짐) -->
+        <label class="npc-villain-toggle full" id="npcVillainToggleLabel" title="이 NPC를 악당으로 표시 — 영웅들의 대적자">
+          <input type="checkbox" id="npcVillainToggle">
+          <span class="npc-villain-toggle-text">☠ 악당 (영웅들의 대적자)</span>
+          <select id="npcVillainRank" class="gm-input npc-villain-rank" disabled>
+            <option value="일반">일반 (Soldier)</option>
+            <option value="엘리트">엘리트 (Elite)</option>
+            <option value="챔피언">챔피언 (Champion)</option>
+            <option value="솔로">솔로 (Solo)</option>
+          </select>
+        </label>
+        <!-- 악당일 때만 보이는 HP/MP 필드 -->
+        <div class="npc-villain-stats full" id="npcVillainStatsRow" style="display:none;">
+          <div class="npc-villain-stat-field">
+            <span class="npc-villain-stat-label">HP</span>
+            <input type="number" id="npcVilHpMax" class="gm-input" placeholder="최대" min="1" value="50">
+          </div>
+          <div class="npc-villain-stat-field">
+            <span class="npc-villain-stat-label">MP</span>
+            <input type="number" id="npcVilMpMax" class="gm-input" placeholder="최대" min="0" value="30">
+          </div>
+        </div>
+
+        <div class="npc-standings-field full">
+          <div class="npc-standings-head">
+            <span class="npc-standings-title">스탠딩 (대사 연출용)</span>
+            <button type="button" class="standing-ghost-btn" id="npcStandingAddRow">＋ 스탠딩 추가</button>
+          </div>
+          <div id="npcStandingRows" class="npc-standing-rows"></div>
+        </div>
+        <select id="npcStandingType" class="gm-input">
+          <option value="image">이미지/GIF</option>
+          <option value="video">비디오 WEBM/MP4</option>
+        </select>
+        <input type="color" id="npcColorInput" class="gm-input" value="#D4AF52" title="말풍선 색">
+        <input type="text" id="npcChatPortraitInput" class="gm-input full" placeholder="채팅 프로필 이미지 URL (선택 — 비우면 첫 스탠딩 이미지 사용)">
+        <!-- 성격 · 말투 · 외모 (메모 칸 분리) -->
+        <div class="npc-trait-fields full">
+          <div class="npc-trait-field">
+            <span class="npc-trait-label">🎭 성격</span>
+            <textarea id="npcPersonalityInput" class="gm-input" placeholder="예: 오만하고 야심차다" rows="2"></textarea>
+          </div>
+          <div class="npc-trait-field">
+            <span class="npc-trait-label">💬 말투</span>
+            <textarea id="npcSpeechInput" class="gm-input" placeholder="예: 격식 있고 비꼬는 말투" rows="2"></textarea>
+          </div>
+          <div class="npc-trait-field">
+            <span class="npc-trait-label">👁 외모</span>
+            <textarea id="npcAppearanceInput" class="gm-input" placeholder="예: 붉은 로브, 불타는 눈동자" rows="2"></textarea>
+          </div>
+          <div class="npc-trait-field npc-profile-field">
+            <span class="npc-trait-label">📜 인물 설정</span>
+            <textarea id="npcProfileInput" class="gm-input" placeholder="배경, 목표, 비밀, 관계 등 인물에 대한 자유로운 설정을 적어보세요." rows="6"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="npc-form-actions">
+        <button class="gm-btn" id="npcAddBtn">＋ NPC 추가</button>
+        <button class="gm-btn ghost" id="npcCancelEditBtn" style="display:none;">수정 취소</button>
+      </div>
+      <div class="npc-list" id="npcList"><div class="gm-empty-note" id="npcEmpty">NPC를 등록하면 채팅 발화자로 선택할 수 있습니다.</div></div>
+      <p class="world-hint">악당 체크박스를 켜면 HP/MP 추적과 등급(일반/엘리트/챔피언/솔로)이 함께 관리됩니다. 새로 악당으로 체크하면 방의 <b>모든 플레이어</b>에게 진홍색 등장 연출이 표시됩니다.</p>
     </div>
 
     <!-- 지도 -->
@@ -12292,12 +12375,25 @@ body.chat-open .scene-dashboard {
       head.appendChild(name); head.appendChild(actions);
       const note = document.createElement('div'); note.className = 'npc-card-note';
       const lines = [];
-      if (n.notes) lines.push(n.notes);
+      if (n.personality) lines.push('🎭 ' + n.personality);
+      if (n.speech) lines.push('💬 ' + n.speech);
+      if (n.appearance) lines.push('👁 ' + n.appearance);
+      if (n.profile) lines.push('📜 ' + n.profile);
+      if (!n.personality && !n.speech && !n.appearance && !n.profile && n.notes) lines.push(n.notes); /* 구버전 메모 폴백 */
       if (n.chatPortrait) lines.push('채팅 프로필: ' + n.chatPortrait);
       const stds = getNpcStandings(n);
       if (stds.length) lines.push('스탠딩(' + (n.mediaType === 'video' ? '영상' : '이미지') + ') ' + stds.length + '개');
       note.textContent = lines.join('\n');
-      card.appendChild(head); card.appendChild(note);
+      /* 포트레이트가 있으면 썸네일 + 메모를 가로로 배치 */
+      if (n.npcPortrait) {
+        const body = document.createElement('div'); body.className = 'npc-card-body-row';
+        const thumb = document.createElement('img'); thumb.className = 'npc-card-portrait';
+        thumb.src = n.npcPortrait; thumb.alt = '포트레이트';
+        body.appendChild(thumb); body.appendChild(note);
+        card.appendChild(head); card.appendChild(body);
+      } else {
+        card.appendChild(head); card.appendChild(note);
+      }
       /* 악당이면 HP/MP 컨트롤 표시 (전 악당 카드와 같은 스타일 재사용) */
       if (n.isVillain) {
         const stats = document.createElement('div'); stats.className = 'npc-card-vil-stats';
@@ -12327,6 +12423,20 @@ body.chat-open .scene-dashboard {
   }
 
   let npcEditingId = null;   /* 현재 수정 중인 NPC id (null이면 신규 추가 모드) */
+  let npcPortraitData = '';  /* 현재 폼의 포트레이트 base64 (인물 참고용 · 스탠딩/채팅과 무관) */
+
+  /** 기능: 포트레이트 미리보기를 갱신합니다. */
+  function npcRenderPortrait() {
+    const img = $('npcPortraitImg');
+    const empty = document.querySelector('.npc-portrait-empty');
+    if (npcPortraitData) {
+      if (img) { img.src = npcPortraitData; img.style.display = ''; }
+      if (empty) empty.style.display = 'none';
+    } else {
+      if (img) { img.removeAttribute('src'); img.style.display = 'none'; }
+      if (empty) empty.style.display = '';
+    }
+  }
 
   /** 기능: NPC 데이터에서 스탠딩 항목 목록을 얻습니다 [{url,label}].
      - 신버전: standings = [{url,label}]
@@ -12408,7 +12518,7 @@ body.chat-open .scene-dashboard {
 
   /** 기능: NPC 입력 폼을 비웁니다(신규 추가 상태로). */
   function npcClearForm() {
-    ['npcNameInput','npcChatPortraitInput','npcNoteInput'].forEach(id => { if ($(id)) $(id).value = ''; });
+    ['npcNameInput','npcChatPortraitInput','npcPersonalityInput','npcSpeechInput','npcAppearanceInput','npcProfileInput'].forEach(id => { if ($(id)) $(id).value = ''; });
     if ($('npcStandingType')) $('npcStandingType').value = 'image';
     if ($('npcColorInput')) $('npcColorInput').value = '#D4AF52';
     if ($('npcVillainToggle')) $('npcVillainToggle').checked = false;
@@ -12417,6 +12527,9 @@ body.chat-open .scene-dashboard {
     if ($('npcVilMpMax')) $('npcVilMpMax').value = 30;
     applyNpcVillainUi();
     npcSetStandingRows([]);
+    npcPortraitData = '';
+    if ($('npcPortraitFile')) $('npcPortraitFile').value = '';
+    npcRenderPortrait();
   }
 
   /** 기능: 수정 모드를 끝내고 신규 추가 상태로 되돌립니다. */
@@ -12443,7 +12556,11 @@ body.chat-open .scene-dashboard {
       chatPortrait: ($('npcChatPortraitInput')?.value || '').trim(),
       mediaType: $('npcStandingType')?.value || 'image',
       color: $('npcColorInput')?.value || '#D4AF52',
-      notes: ($('npcNoteInput')?.value || '').trim(),
+      personality: ($('npcPersonalityInput')?.value || '').trim(),
+      speech: ($('npcSpeechInput')?.value || '').trim(),
+      appearance: ($('npcAppearanceInput')?.value || '').trim(),
+      profile: ($('npcProfileInput')?.value || '').trim(),
+      npcPortrait: npcPortraitData || '',
       isVillain
     };
     if (isVillain) {
@@ -12475,14 +12592,16 @@ body.chat-open .scene-dashboard {
       npcRef.push(data);
       npcClearForm();
     }
-    if (turnedVillain && window.SHOW_TEXT_FX) {
-      /* 악당 등장 연출 — 로컬(GM 본인)에게만, 빨간 글씨로 */
-      window.SHOW_TEXT_FX({
-        text: '악당이 생성됐습니다\n그들은 영웅들의 대적자입니다',
+    if (turnedVillain) {
+      /* 악당 등장 연출 — 방의 모든 플레이어에게 진홍색으로 표시 */
+      const fx = {
+        text: '악당이 등장했다!\n그들은 영웅들의 대적자다',
         size: 'medium',
         color: '#D14B3A',   /* 진홍 — --crimson-light */
         glow: 75
-      });
+      };
+      if (window.BROADCAST_TEXT_FX) window.BROADCAST_TEXT_FX(fx);
+      else if (window.SHOW_TEXT_FX) window.SHOW_TEXT_FX(fx);   /* 폴백: 본인만 */
     }
   }
 
@@ -12496,7 +12615,13 @@ body.chat-open .scene-dashboard {
     if ($('npcChatPortraitInput')) $('npcChatPortraitInput').value = n.chatPortrait || '';
     if ($('npcStandingType')) $('npcStandingType').value = n.mediaType || 'image';
     if ($('npcColorInput')) $('npcColorInput').value = n.color || '#D4AF52';
-    if ($('npcNoteInput')) $('npcNoteInput').value = n.notes || '';
+    if ($('npcPersonalityInput')) $('npcPersonalityInput').value = n.personality || n.notes || '';
+    if ($('npcSpeechInput')) $('npcSpeechInput').value = n.speech || '';
+    if ($('npcAppearanceInput')) $('npcAppearanceInput').value = n.appearance || '';
+    if ($('npcProfileInput')) $('npcProfileInput').value = n.profile || '';
+    npcPortraitData = n.npcPortrait || '';
+    if ($('npcPortraitFile')) $('npcPortraitFile').value = '';
+    npcRenderPortrait();
     /* 악당 필드 로드 */
     if ($('npcVillainToggle')) {
       $('npcVillainToggle').checked = !!n.isVillain;
@@ -12518,6 +12643,27 @@ body.chat-open .scene-dashboard {
   $('npcStandingAddRow')?.addEventListener('click', () => npcAddStandingRow('', ''));
   /* 악당 토글 — 체크하면 등급 select 활성화 + HP/MP 행 표시 */
   $('npcVillainToggle')?.addEventListener('change', applyNpcVillainUi);
+  /* 포트레이트 (로컬 이미지 · 인물 참고용) */
+  $('npcPortraitFile')?.addEventListener('change', e => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      window.SHEET && window.SHEET.toast && window.SHEET.toast('이미지 파일만 선택할 수 있습니다');
+      e.target.value = ''; return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      window.SHEET && window.SHEET.toast && window.SHEET.toast('2MB 이하 이미지를 권장합니다 (큰 파일은 저장이 안 될 수 있어요)');
+    }
+    const reader = new FileReader();
+    reader.onload = ev => { npcPortraitData = ev.target.result; npcRenderPortrait(); };
+    reader.onerror = () => { window.SHEET && window.SHEET.toast && window.SHEET.toast('파일을 읽지 못했습니다'); };
+    reader.readAsDataURL(file);
+  });
+  $('npcPortraitClear')?.addEventListener('click', () => {
+    npcPortraitData = '';
+    if ($('npcPortraitFile')) $('npcPortraitFile').value = '';
+    npcRenderPortrait();
+  });
   applyNpcVillainUi();
   /* 최초 1줄 표시 */
   npcSetStandingRows([]);
@@ -14681,6 +14827,8 @@ body.chat-open .scene-dashboard {
         const tab = btn.dataset.wtab;
         $('worldPaneSteps').style.display = tab === 'steps' ? '' : 'none';
         $('worldPaneMap').style.display   = tab === 'map'   ? '' : 'none';
+        const npcPane = $('worldPaneNpc');
+        if (npcPane) npcPane.style.display = tab === 'npc' ? '' : 'none';
       });
     });
 
@@ -17065,6 +17213,8 @@ body.chat-open .scene-dashboard {
       }
     } catch(e) { console.warn('[textfx] chat log failed', e); }
   }
+  /* 다른 스코프(예: NPC 악당 등장 연출)에서도 모두에게 전파할 수 있게 노출 */
+  window.BROADCAST_TEXT_FX = broadcastTextFx;
 
   /* ── GM 패널 컨트롤 바인딩 ── */
   function bindPanel(){
