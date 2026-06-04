@@ -4919,7 +4919,7 @@ body.chat-open .scene-dashboard {
           <button class="attr-btn" data-attr="dex">민첩 DEX</button>
           <button class="attr-btn" data-attr="ins">통찰 INS</button>
           <button class="attr-btn" data-attr="mig">근력 MIG</button>
-          <button class="attr-btn" data-attr="wlp">의지 WLP</button>
+          <button class="attr-btn" data-attr="wlp">의지력 WLP</button>
         </div>
       </div>
 
@@ -4930,7 +4930,7 @@ body.chat-open .scene-dashboard {
           <button class="attr-btn" data-attr="dex">민첩 DEX</button>
           <button class="attr-btn" data-attr="ins">통찰 INS</button>
           <button class="attr-btn" data-attr="mig">근력 MIG</button>
-          <button class="attr-btn" data-attr="wlp">의지 WLP</button>
+          <button class="attr-btn" data-attr="wlp">의지력 WLP</button>
         </div>
       </div>
 
@@ -6649,7 +6649,7 @@ body.chat-open .scene-dashboard {
 
   <!-- ════════ 5. 피해 유형과 친화성 ════════ -->
   <h2 class="sec-title">피해 유형과 친화성</h2>
-  <p class="lead-note">피해에는 종류가 있습니다 — <strong>물리 · 화염 · 빙결 · 번개 · 대지 · 바람 · 빛 · 어둠 · 독</strong>. 대상이 특정 유형에 어떤 &lsquo;친화성&rsquo;을 가지느냐에 따라 실제 피해가 달라집니다.</p>
+  <p class="lead-note">피해에는 종류가 있습니다 — <strong>물리 · 기류 · 볼트 · 어둠 · 대지 · 화염 · 빙결 · 빛 · 독소</strong>. 대상이 특정 유형에 어떤 &lsquo;친화성&rsquo;을 가지느냐에 따라 실제 피해가 달라집니다.</p>
   <div class="affinity">
     <div class="aff vuln"><div class="aff-name">취약 ▲</div><div class="aff-desc">받는 HP 피해 <b>2배</b> (예: 언데드는 빛에 취약)</div></div>
     <div class="aff resist"><div class="aff-name">저항 ▽</div><div class="aff-desc">받는 HP 피해 <b>절반</b></div></div>
@@ -9356,11 +9356,13 @@ body.chat-open .scene-dashboard {
 
 
   /* ── 상태이상 에디터 ── */
+  /* 룰북 공식 상태 이상 6종(멍함·동요·느림·약화·격분·중독) + 게임 진행용 상태 */
   const STATUS_DEFS = [
-    { key:'poison', icon:'☠', name:'독' }, { key:'stun', icon:'💫', name:'기절' },
-    { key:'guard', icon:'🛡', name:'방어' }, { key:'rage', icon:'🔥', name:'분노' },
-    { key:'hidden', icon:'👁', name:'은신' }, { key:'bless', icon:'✨', name:'축복' },
-    { key:'curse', icon:'☾', name:'저주' }, { key:'slow', icon:'⛓', name:'속박' }
+    { key:'dazed', icon:'💫', name:'멍함' }, { key:'shaken', icon:'😨', name:'동요' },
+    { key:'slow', icon:'🐌', name:'느림' }, { key:'weak', icon:'💢', name:'약화' },
+    { key:'enraged', icon:'🔥', name:'격분' }, { key:'poison', icon:'☠', name:'중독' },
+    { key:'guard', icon:'🛡', name:'방어' }, { key:'hidden', icon:'👁', name:'은신' },
+    { key:'bless', icon:'✨', name:'축복' }, { key:'curse', icon:'☾', name:'저주' }
   ];
   let activeStatuses = [];
   /** 기능: 상태이상 칩 UI를 렌더링하고 토큰 표시와 연동합니다. */
@@ -10867,7 +10869,14 @@ body.chat-open .scene-dashboard {
     badge.querySelector('.token-linked-name').textContent = vitals.name;
     badge.querySelector('.token-bar.hp .token-bar-fill').style.width = vitals.hpPct + '%';
     badge.querySelector('.token-bar.mp .token-bar-fill').style.width = vitals.mpPct + '%';
-    const statusMap = { poison:['☠','독'], stun:['💫','기절'], guard:['🛡','방어'], rage:['🔥','분노'], hidden:['👁','은신'], bless:['✨','축복'], curse:['☾','저주'], slow:['⛓','속박'] };
+    const statusMap = {
+      /* 룰북 공식 상태 이상 */
+      dazed:['💫','멍함'], shaken:['😨','동요'], slow:['🐌','느림'], weak:['💢','약화'], enraged:['🔥','격분'], poison:['☠','중독'],
+      /* 게임 진행용 상태 */
+      guard:['🛡','방어'], hidden:['👁','은신'], bless:['✨','축복'], curse:['☾','저주'],
+      /* 구버전 키 호환 (옛 저장 데이터) */
+      stun:['💫','멍함'], rage:['🔥','격분']
+    };
     const row = badge.querySelector('.token-status-row');
     if (row) {
       row.innerHTML = '';
@@ -12522,10 +12531,19 @@ body.chat-open .scene-dashboard {
              attacks:[{type,name,check,damage,fx}], skills:[{name,fx}], statusEffects:{}, notes, ts }
      ════════════════════════════════════════════════ */
   const DIE_VAL = { d6:6, d8:8, d10:10, d12:12 };
-  const DMG_TYPES = ['물리','공기','번개','어둠','대지','화염','얼음','빛','독'];
-  const DMG_ICONS = { '물리':'⚔','공기':'🌬','번개':'⚡','어둠':'🌑','대지':'⛰','화염':'🔥','얼음':'❄','빛':'☀','독':'☠' };
+  const DMG_TYPES = ['물리','기류','볼트','어둠','대지','화염','빙결','빛','독소'];
+  const DMG_ICONS = { '물리':'⚔','기류':'🌬','볼트':'⚡','어둠':'🌑','대지':'🌍','화염':'🔴','빙결':'❄','빛':'💡','독소':'🌿' };
+  /* 구버전(플레이툴 초기) 속성 키 → 룰북 통일 키 매핑 (저장 데이터 호환용) */
+  const DMG_TYPE_ALIAS = { '공기':'기류','번개':'볼트','얼음':'빙결','독':'독소' };
+  /* 기능: 저장된 친화도 객체의 옛 키를 룰북 키로 변환합니다. */
+  function migrateAff(affObj) {
+    if (!affObj) return affObj;
+    const out = {};
+    Object.keys(affObj).forEach(k => { out[DMG_TYPE_ALIAS[k] || k] = affObj[k]; });
+    return out;
+  }
   const AFF_CYCLE = ['','VU','RS','IM','AB'];
-  const STATUS_LIST = ['중독','혼란','느림','약화','석화','분노'];
+  const STATUS_LIST = ['멍함','동요','느림','약화','격분','중독'];
 
   let monsterRef = null;
   let monsterState = {};
@@ -12571,6 +12589,7 @@ body.chat-open .scene-dashboard {
   /** 기능: 몬스터 속성 친화/약점/저항/면역 편집 UI를 생성합니다. */
   function buildAffEditor(container, affObj, onChange) {
     container.innerHTML = '';
+    affObj = migrateAff(affObj || {});
     DMG_TYPES.forEach(type => {
       const wrap = document.createElement('div'); wrap.className = 'aff-type-row';
       const lbl = document.createElement('div'); lbl.className = 'aff-type-label'; lbl.textContent = DMG_ICONS[type];
@@ -12605,7 +12624,7 @@ body.chat-open .scene-dashboard {
   /* ────────── 몬스터 주사위 결과를 모달에 표시 ────────── */
   /** 기능: 몬스터 공격/기술 굴림 결과를 모달에 표시합니다. */
   function showMonsterRollInModal({ a1, a2, sides1, sides2, r1, r2, hr, totalMod, finalSum, isCrit, isFumble, checkedItems, rolledBy }) {
-    const ATTR_KO_LOCAL = { dex:'민첩 DEX', ins:'통찰 INS', mig:'근력 MIG', wlp:'의지 WLP' };
+    const ATTR_KO_LOCAL = { dex:'민첩 DEX', ins:'통찰 INS', mig:'근력 MIG', wlp:'의지력 WLP' };
 
     /* 능력치 버튼 하이라이트 */
     document.querySelectorAll('#attr1Btns .attr-btn').forEach(b => b.classList.toggle('sel', b.dataset.attr === a1));
@@ -12779,6 +12798,8 @@ body.chat-open .scene-dashboard {
     copy.name = (src.name || '몬스터') + ' (복사)';
     copy.ts = Date.now();
     delete copy.updated;
+    /* 친화도 옛 키 → 룰북 키로 정규화 */
+    if (copy.affinities) copy.affinities = migrateAff(copy.affinities);
     /* HP/MP는 최대치로 리셋 (새 개체로 시작) */
     if (copy.hpMax != null) copy.hp = copy.hpMax;
     if (copy.mpMax != null) copy.mp = copy.mpMax;
@@ -12845,7 +12866,7 @@ body.chat-open .scene-dashboard {
     body.appendChild(vitalsDiv);
 
     /* 친화도 */
-    const aff = m.affinities || {};
+    const aff = migrateAff(m.affinities || {});
     const hasAff = Object.values(aff).some(v => v);
     if (hasAff) {
       const affDiv = document.createElement('div'); affDiv.className = 'mc-affinities';
@@ -12857,7 +12878,9 @@ body.chat-open .scene-dashboard {
         if (!aff[type]) return;
         const chip = document.createElement('span');
         chip.className = 'mc-aff-chip ' + (classMap[aff[type]]||'');
-        chip.textContent = DMG_ICONS[type] + ' ' + labelMap[aff[type]];
+        /* 룰북과 동일하게 물리는 아이콘 없이 '물리'로 표기, 그 외엔 아이콘 사용 */
+        const head = (type === '물리') ? '물리' : DMG_ICONS[type];
+        chip.textContent = head + ' ' + labelMap[aff[type]];
         chip.title = type;
         affDiv.appendChild(chip);
       });
