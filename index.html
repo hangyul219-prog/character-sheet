@@ -14553,12 +14553,16 @@ body.chat-open .scene-dashboard {
     /* 현재 채널 메시지 다시 로드 */
     const box = $('chatMessages');
     if (box) box.innerHTML = '';
+    /* ★ 재렌더 위해 중복방지 캐시·날짜 라벨 초기화 (안 그러면 채널 복귀 시 채팅이 안 그려짐) */
+    renderedKeys.clear();
+    lastDateLabel = '';
     const ref = chatRef;
     if (ref) {
       ref.limitToLast(100).once('value').then(snap => {
         snap.forEach(child => {
           appendChatMsg(child.val(), child.key, { suppressStanding: true });
         });
+        scrollChatBottom();
       });
     }
     if (channel === 'ooc') { oocUnread = 0; updateOocUnread(); }
