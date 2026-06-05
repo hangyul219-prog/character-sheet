@@ -11088,6 +11088,12 @@ body.chat-open .scene-dashboard {
     window.addEventListener('resize', requestFogRender);
   }
 
+  /* 다른 패치 스크립트에서 안전하게 호출할 수 있도록 노출 + 안개 캔버스 이벤트 실제 연결 */
+  window.toggleSceneFog = toggleSceneFog;
+  window.requestSceneFogRender = requestFogRender;
+  window.renderSceneFogCanvas = renderFogCanvas;
+  wireFogPainting();
+
   function applySceneMetaToUi(opts) {
     opts = opts || {};
     const sc = (activeSceneId && scenesState && scenesState[activeSceneId]) ? scenesState[activeSceneId] : {};
@@ -11099,6 +11105,10 @@ body.chat-open .scene-dashboard {
     if (media) media.classList.remove('filter-sepia','filter-night','filter-dream','filter-crimson');
     const card = document.querySelector('.scene-card');
     if (card) card.classList.remove('transition-fade','transition-flash');
+
+    /* 메인 대시보드 패치가 다른 스크립트 스코프에 있어도 현재 장면명을 읽을 수 있게 보관 */
+    window.__CURRENT_SCENE_NAME = sc.name || '';
+    window.__CURRENT_SCENE_DESC = sc.desc || '';
 
     if ($('sceneTitle') && sc.name) $('sceneTitle').textContent = sc.name;
     if ($('sceneSubtitle')) $('sceneSubtitle').textContent = sc.desc || '';
@@ -16700,8 +16710,8 @@ body.chat-open .scene-dashboard {
 
   /** 기능: 장면 배경 미디어를 현재 Firebase 상태와 동기화합니다. */
   function syncSceneMedia() {
-    const srcImg = $('mvMapImg') || $('battleMapImg');
-    const srcVid = $('mvMapVid') || $('battleMapVid');
+    const mvImgEl = $('mvMapImg'), battleImgEl = $('battleMapImg');
+    const mvVidEl = $('mvMapVid'), battleVidEl = $('battleMapVid');
     const dstImg = $('sceneMapImg');
     const dstVid = $('sceneMapVid');
     const stage = $('sceneStage');
@@ -16710,6 +16720,10 @@ body.chat-open .scene-dashboard {
 
     if (!dstImg || !dstVid) return;
 
+    /* 기존 코드는 mvMapImg 요소가 존재하기만 하면 battleMapImg를 보지 않아,
+       mvMapImg가 아직 비어있는 타이밍에 메인 장면이 빈 화면으로 남을 수 있었다. */
+    const srcVid = isShown(mvVidEl) ? mvVidEl : battleVidEl;
+    const srcImg = isShown(mvImgEl) ? mvImgEl : battleImgEl;
     const vidVisible = isShown(srcVid);
     const imgVisible = isShown(srcImg);
 
@@ -16722,10 +16736,11 @@ body.chat-open .scene-dashboard {
       dstImg.removeAttribute('src');
       dstVid.play && dstVid.play().catch(() => {});
       syncSceneTokens(true);
+      if (window.requestSceneFogRender) window.requestSceneFogRender();
       if (empty) empty.style.display = 'none';
       if (status) status.textContent = '영상 장면 + 토큰 동기화';
-      setText('sceneTitle', '현재 장면');
-      setText('sceneSubtitle', '장면과 토큰을 메인 화면에서도 바로 확인할 수 있습니다.');
+      setText('sceneTitle', window.__CURRENT_SCENE_NAME || '현재 장면');
+      setText('sceneSubtitle', window.__CURRENT_SCENE_DESC || '장면과 토큰을 메인 화면에서도 바로 확인할 수 있습니다.');
       return;
     }
 
@@ -16742,10 +16757,11 @@ body.chat-open .scene-dashboard {
       dstVid.pause && dstVid.pause();
       dstVid.removeAttribute('src');
       syncSceneTokens(true);
+      if (window.requestSceneFogRender) window.requestSceneFogRender();
       if (empty) empty.style.display = 'none';
       if (status) status.textContent = '장면 + 토큰 동기화';
-      setText('sceneTitle', '현재 장면');
-      setText('sceneSubtitle', '플레이어가 가장 먼저 봐야 할 화면을 메인에 배치했습니다.');
+      setText('sceneTitle', window.__CURRENT_SCENE_NAME || '현재 장면');
+      setText('sceneSubtitle', window.__CURRENT_SCENE_DESC || '플레이어가 가장 먼저 봐야 할 화면을 메인에 배치했습니다.');
       return;
     }
 
@@ -16869,7 +16885,10 @@ body.chat-open .scene-dashboard {
   /** 기능: 메인 화면 주요 버튼 이벤트를 연결합니다. */
   function bindButtons() {
     $('sceneOpenMap')?.addEventListener('click', openMap);
-    $('sceneFogToggle')?.addEventListener('click', toggleSceneFog);
+    $('sceneFogToggle')?.addEventListener('click', () => {
+      if (window.toggleSceneFog) window.toggleSceneFog();
+      else window.SHEET && window.SHEET.toast('안개 기능이 아직 초기화되지 않았습니다. 새로고침해 주세요.');
+    });
     $('sceneOpenWorld')?.addEventListener('click', () => $('worldOpenBtn')?.click());
     $('sceneJumpSheet')?.addEventListener('click', () => {
       if (window.openCharacterSheetModal) { window.openCharacterSheetModal(); return; }
