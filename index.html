@@ -3398,11 +3398,25 @@
     padding: 7px 10px; border: 1px solid rgba(212,175,82,0.2); border-radius: 9px;
     background: rgba(212,175,82,0.08); color: var(--gold-light);
     font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: .6px;
+    cursor: pointer; user-select: none;
   }
+  .scene-folder-head:hover { border-color: rgba(212,175,82,0.42); background: rgba(212,175,82,0.12); }
   .scene-folder-head.drag-over {
     border-color: var(--gold); background: rgba(212,175,82,0.16);
   }
+  .scene-folder-main {
+    min-width: 0; display: flex; align-items: center; gap: 7px;
+  }
+  .scene-folder-toggle {
+    width: 24px; height: 24px; flex: 0 0 auto; border-radius: 7px;
+    border: 1px solid rgba(212,175,82,0.32); background: rgba(0,0,0,0.22);
+    color: var(--gold-light); cursor: pointer; line-height: 1; font-size: 11px;
+  }
+  .scene-folder-name {
+    min-width: 0; overflow-wrap: anywhere; word-break: keep-all;
+  }
   .scene-folder-count { color: var(--text-muted); font-size: 11px; }
+  .scene-folder-group.collapsed { gap: 0; }
   .scene-drag-handle {
     width: 24px; color: var(--text-muted); cursor: grab; user-select: none;
     text-align: center; font-size: 14px; line-height: 1;
@@ -10785,6 +10799,8 @@ body.chat-open .scene-dashboard {
   let editingSceneId = null;   /* 편집 대상 장면 — 활성(전환된) 장면과 별개. 체크 없이도 편집 가능하게 함 */
   let scenesState = {};
   let sceneDragId = null;
+  let sceneDragPointerY = null;
+  let sceneDragScrollRaf = 0;
   let sceneExtraSaveTimer = null;
   /* 재접속 시 저장된 활성 장면이 첫 장면으로 덮어써지던 버그 방지용 플래그 */
   let scenesLoaded = false;
@@ -11466,6 +11482,52 @@ body.chat-open .scene-dashboard {
     sel.value = Array.from(sel.options).some(o => o.value === prev) ? prev : '';
   }
 
+  function sceneFolderCollapseStorage() {
+    try {
+      const s = window.sessionStorage;
+      const k = '__pf_scene_folder_test__';
+      s.setItem(k, '1');
+      s.removeItem(k);
+      return s;
+    } catch (_) {
+      try { return window.localStorage; } catch (__) { return null; }
+    }
+  }
+
+  function sceneFolderCollapseKey() {
+    const viewer = String(myCharId || userName || 'viewer')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9가-힣_-]+/g, '_')
+      .slice(0, 80) || 'viewer';
+    return 'pf_scene_folder_collapse_' + (roomCode || 'offline') + '_' + viewer;
+  }
+
+  function loadSceneFolderCollapse() {
+    const storage = sceneFolderCollapseStorage();
+    if (!storage) return {};
+    try { return JSON.parse(storage.getItem(sceneFolderCollapseKey()) || '{}') || {}; }
+    catch (_) { return {}; }
+  }
+
+  function saveSceneFolderCollapse(state) {
+    const storage = sceneFolderCollapseStorage();
+    if (!storage) return;
+    try {
+      const clean = {};
+      Object.keys(state || {}).forEach(k => { if (state[k]) clean[k] = true; });
+      storage.setItem(sceneFolderCollapseKey(), JSON.stringify(clean));
+    } catch (_) {}
+  }
+
+  function toggleSceneFolderCollapse(folder) {
+    const key = cleanSceneFolder(folder);
+    const state = loadSceneFolderCollapse();
+    state[key] = !state[key];
+    saveSceneFolderCollapse(state);
+    renderSceneList();
+  }
+
   function getSceneDragId(e) {
     try { return sceneDragId || (e.dataTransfer && e.dataTransfer.getData('text/plain')) || ''; }
     catch (_) { return sceneDragId || ''; }
@@ -11477,12 +11539,67 @@ body.chat-open .scene-dashboard {
     });
   }
 
+  function stopSceneDragAutoScroll() {
+    sceneDragPointerY = null;
+    if (sceneDragScrollRaf) {
+      cancelAnimationFrame(sceneDragScrollRaf);
+      sceneDragScrollRaf = 0;
+    }
+  }
+
+  function sceneDragAutoScrollTick() {
+    sceneDragScrollRaf = 0;
+    if (!sceneDragId) return;
+    const list = $('sceneList');
+    if (!list || typeof sceneDragPointerY !== 'number') return;
+    const rect = list.getBoundingClientRect();
+    const y = sceneDragPointerY;
+    const zone = Math.max(36, Math.min(76, rect.height * 0.22));
+    let speed = 0;
+    if (y >= rect.top && y < rect.top + zone) speed = -Math.ceil(((rect.top + zone - y) / zone) * 24);
+    else if (y <= rect.bottom && y > rect.bottom - zone) speed = Math.ceil(((y - (rect.bottom - zone)) / zone) * 24);
+    if (speed) list.scrollTop += speed;
+    sceneDragScrollRaf = requestAnimationFrame(sceneDragAutoScrollTick);
+  }
+
+  function noteSceneDragPointer(e) {
+    if (!sceneDragId || !e) return;
+    sceneDragPointerY = e.clientY;
+    if (!sceneDragScrollRaf) sceneDragScrollRaf = requestAnimationFrame(sceneDragAutoScrollTick);
+  }
+
+  function bindSceneListDragScroll(list) {
+    if (!list || list.dataset.sceneDragScrollBound === '1') return;
+    list.dataset.sceneDragScrollBound = '1';
+    list.addEventListener('dragover', e => {
+      if (!sceneDragId) return;
+      e.preventDefault();
+      noteSceneDragPointer(e);
+    });
+    const wheelHandler = e => {
+      if (!sceneDragId) return;
+      const target = e.target;
+      const rect = list.getBoundingClientRect();
+      const x = typeof e.clientX === 'number' ? e.clientX : rect.left + 1;
+      const y = typeof e.clientY === 'number' ? e.clientY : (sceneDragPointerY || rect.top + 1);
+      const overList = (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) ||
+        (target && list.contains(target));
+      if (!overList) return;
+      e.preventDefault();
+      e.stopPropagation();
+      list.scrollTop += e.deltaY;
+    };
+    list.addEventListener('wheel', wheelHandler, { passive: false });
+    document.addEventListener('wheel', wheelHandler, { passive: false, capture: true });
+  }
+
   function wireSceneDropTarget(el, targetId, folder) {
     if (!el) return;
     el.addEventListener('dragover', e => {
       const src = getSceneDragId(e);
       if (!src || src === targetId) return;
       e.preventDefault();
+      noteSceneDragPointer(e);
       if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
       el.classList.add('drag-over');
     });
@@ -11510,6 +11627,7 @@ body.chat-open .scene-dashboard {
     });
     handle.addEventListener('dragend', () => {
       sceneDragId = null;
+      stopSceneDragAutoScroll();
       clearSceneDragMarks();
     });
   }
@@ -11549,6 +11667,7 @@ body.chat-open .scene-dashboard {
   function renderSceneList() {
     const list = $('sceneList');
     if (!list) return;
+    bindSceneListDragScroll(list);
     const ids = sortedSceneIds();
     refreshSceneFolderControls(ids);
     list.innerHTML = '';
@@ -11558,23 +11677,47 @@ body.chat-open .scene-dashboard {
     }
     const filterFolder = ($('sceneFolderFilter')?.value || '').trim();
     const folders = filterFolder ? [filterFolder] : sceneFolderNames(ids);
+    const collapsedFolders = loadSceneFolderCollapse();
     let rendered = 0;
     folders.forEach(folder => {
       const folderIds = ids.filter(id => cleanSceneFolder((scenesState[id] || {}).folder) === folder);
       if (!folderIds.length) return;
       rendered += folderIds.length;
+      const isFolderCollapsed = !!collapsedFolders[folder];
       const group = document.createElement('div');
-      group.className = 'scene-folder-group';
+      group.className = 'scene-folder-group' + (isFolderCollapsed ? ' collapsed' : '');
       const head = document.createElement('div');
-      head.className = 'scene-folder-head';
+      head.className = 'scene-folder-head' + (isFolderCollapsed ? ' collapsed' : '');
+      const mainHead = document.createElement('div');
+      mainHead.className = 'scene-folder-main';
+      const foldBtn = document.createElement('button');
+      foldBtn.type = 'button';
+      foldBtn.className = 'scene-folder-toggle';
+      foldBtn.textContent = isFolderCollapsed ? '▶' : '▼';
+      foldBtn.title = isFolderCollapsed ? '폴더 펼치기' : '폴더 접기';
       const label = document.createElement('span');
+      label.className = 'scene-folder-name';
       label.textContent = folder;
       const count = document.createElement('span');
       count.className = 'scene-folder-count';
       count.textContent = folderIds.length + '개';
-      head.append(label, count);
+      foldBtn.addEventListener('click', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleSceneFolderCollapse(folder);
+      });
+      head.addEventListener('click', e => {
+        if (sceneDragId || (e.target && e.target.closest && e.target.closest('button,input,select,textarea,a'))) return;
+        toggleSceneFolderCollapse(folder);
+      });
+      mainHead.append(foldBtn, label);
+      head.append(mainHead, count);
       wireSceneDropTarget(head, null, folder);
       group.appendChild(head);
+      if (isFolderCollapsed) {
+        list.appendChild(group);
+        return;
+      }
       folderIds.forEach(id => {
         const sc = scenesState[id] || {};
         const item = document.createElement('div');
@@ -13550,6 +13693,7 @@ body.chat-open .scene-dashboard {
   function initNpcs(room) {
     if (!db) return;
     npcCollapsed = loadCollapse('npc');   /* 새로고침/재접속 후에도 접힘 상태 복원 */
+    initFormToggle('npc');
     npcRef = db.ref('rooms/' + room + '/npcs');
     npcFolderRef = db.ref('rooms/' + room + '/npcFolders');
     npcRef.on('value', snap => {
@@ -13851,19 +13995,40 @@ body.chat-open .scene-dashboard {
   let npcCollapsed = {};     /* NPC 카드 접힘 상태 { [id]: boolean } — localStorage에 방별로 보존 */
   let npcSearchQuery = '';
   $('npcSearch')?.addEventListener('input', e => { npcSearchQuery = e.target.value || ''; renderNpcs(); });
-  /** 기능: 접힘 상태 localStorage 키를 만듭니다(방별로 분리). */
-  function collapseKey(kind) { return 'pf_collapse_' + kind + '_' + (roomCode || 'offline'); }
+  function collapseStorage() {
+    try {
+      const s = window.sessionStorage;
+      const testKey = '__pf_collapse_test__';
+      s.setItem(testKey, '1');
+      s.removeItem(testKey);
+      return s;
+    } catch (_) {
+      try { return window.localStorage; } catch (__) { return null; }
+    }
+  }
+  function collapseViewerKey() {
+    const raw = String(myCharId || userName || 'viewer').trim().toLowerCase();
+    return (raw.replace(/[^a-z0-9가-힣_-]+/g, '_').slice(0, 80) || 'viewer');
+  }
+  /** 기능: 접힘 상태 저장 키를 만듭니다(방/참가자/탭별로 분리). */
+  function collapseKey(kind) {
+    return 'pf_collapse_' + kind + '_' + (roomCode || 'offline') + '_' + collapseViewerKey();
+  }
   /** 기능: 저장된 접힘 상태를 불러옵니다. */
   function loadCollapse(kind) {
-    try { return JSON.parse(localStorage.getItem(collapseKey(kind)) || '{}') || {}; }
+    const storage = collapseStorage();
+    if (!storage) return {};
+    try { return JSON.parse(storage.getItem(collapseKey(kind)) || '{}') || {}; }
     catch (_) { return {}; }
   }
   /** 기능: 접힘 상태를 저장합니다(true인 항목만 보관). */
   function saveCollapse(kind, obj) {
+    const storage = collapseStorage();
+    if (!storage) return;
     try {
       const trimmed = {};
       Object.keys(obj || {}).forEach(k => { if (obj[k]) trimmed[k] = true; });
-      localStorage.setItem(collapseKey(kind), JSON.stringify(trimmed));
+      storage.setItem(collapseKey(kind), JSON.stringify(trimmed));
     } catch (_) {}
   }
 
@@ -14365,6 +14530,7 @@ body.chat-open .scene-dashboard {
   function initRegions(room) {
     if (!db) return;
     regionCollapsed = loadCollapse('region');   /* 접힘 상태 복원 */
+    initFormToggle('region');
     regionRef = db.ref('rooms/' + room + '/regions');
     regionRef.on('value', snap => {
       regionState = snap.val() || {};
@@ -14558,22 +14724,30 @@ body.chat-open .scene-dashboard {
 
   /* ── 추가/수정 폼 접기 토글 (NPC·지역 공통, 상태 보존) ── */
   /** 기능: 추가/수정 폼의 접힘 상태를 적용하고 localStorage에 저장합니다. */
+  function formCollapseKey(kind) {
+    return 'pf_form_' + kind + '_' + (roomCode || 'offline') + '_' + collapseViewerKey();
+  }
   function applyFormCollapsed(kind, collapsed) {
     const toggle = $(kind + 'FormToggle');
     const body = $(kind + 'FormBody');
     if (!toggle || !body) return;
     toggle.classList.toggle('collapsed', collapsed);
     body.classList.toggle('collapsed', collapsed);
-    try { localStorage.setItem('pf_form_' + kind, collapsed ? '1' : '0'); } catch (_) {}
+    const storage = collapseStorage();
+    try { storage && storage.setItem(formCollapseKey(kind), collapsed ? '1' : '0'); } catch (_) {}
   }
   /** 기능: 폼 토글 버튼을 연결하고 저장된 접힘 상태를 복원합니다. */
   function initFormToggle(kind) {
     const toggle = $(kind + 'FormToggle');
-    if (!toggle || toggle.dataset.bound === '1') return;
-    toggle.dataset.bound = '1';
+    if (!toggle) return;
     let collapsed = false;
-    try { collapsed = localStorage.getItem('pf_form_' + kind) === '1'; } catch (_) {}
+    try {
+      const storage = collapseStorage();
+      collapsed = !!(storage && storage.getItem(formCollapseKey(kind)) === '1');
+    } catch (_) {}
     applyFormCollapsed(kind, collapsed);
+    if (toggle.dataset.bound === '1') return;
+    toggle.dataset.bound = '1';
     toggle.addEventListener('click', () => {
       const body = $(kind + 'FormBody');
       applyFormCollapsed(kind, !(body && body.classList.contains('collapsed')));
@@ -14737,6 +14911,7 @@ body.chat-open .scene-dashboard {
       init(room) {
         if (!db) return;
         collapsed = loadCollapse(kind);
+        initFormToggle(kind);
         ref = db.ref('rooms/' + room + '/' + kind);
         ref.on('value', snap => { state = snap.val() || {}; render(); });
       }
