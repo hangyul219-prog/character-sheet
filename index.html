@@ -20554,7 +20554,7 @@ body.chat-open .scene-dashboard {
   padding: 34px 24px 40px;
   text-align: center;
   transform: translateY(18px) scale(.96);
-  animation: questStartCardIn 4.2s cubic-bezier(.16, 1, .3, 1) both;
+  animation: questStartCardIn .72s cubic-bezier(.16, 1, .3, 1) both;
 }
 .quest-start-fx-card::before,
 .quest-start-fx-card::after {
@@ -20588,7 +20588,7 @@ body.chat-open .scene-dashboard {
     0 0 48px rgba(255, 176, 18, .74),
     0 3px 0 rgba(92, 54, 0, .42);
   filter: drop-shadow(0 0 14px rgba(255, 223, 92, .85));
-  animation: questGoldShine 1.35s linear infinite, questMainPulse 4.2s ease both;
+  animation: questGoldShine 1.35s linear infinite, questMainPulse 3.8s ease infinite;
 }
 .quest-start-fx-name {
   display: block;
@@ -20604,7 +20604,6 @@ body.chat-open .scene-dashboard {
     0 0 8px rgba(255, 255, 255, .48),
     0 0 20px rgba(179, 194, 219, .62),
     0 2px 0 rgba(12, 14, 20, .82);
-  animation: questNameRise 4.2s ease both;
 }
 .quest-start-fx-detail {
   display: block;
@@ -20626,7 +20625,13 @@ body.chat-open .scene-dashboard {
   text-shadow:
     0 0 10px rgba(255, 255, 255, .32),
     0 2px 0 rgba(12, 14, 20, .84);
-  animation: questNameRise 4.2s ease both;
+}
+.quest-start-fx-char {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(.42em) scale(.94);
+  animation: questCharReveal .36s ease forwards;
+  animation-delay: var(--quest-char-delay, 0ms);
 }
 .quest-start-fx-spark {
   position: absolute;
@@ -20637,13 +20642,11 @@ body.chat-open .scene-dashboard {
     radial-gradient(circle at 24% 73%, rgba(255,227,119,.9) 0 1px, transparent 2px),
     radial-gradient(circle at 76% 72%, rgba(255,255,255,.88) 0 1px, transparent 2px);
   opacity: 0;
-  animation: questSparkle 4.2s ease both;
+  animation: questSparkle 2.8s ease-in-out infinite;
 }
 @keyframes questStartCardIn {
   0% { transform: translateY(28px) scale(.92); opacity: 0; filter: blur(8px); }
-  12% { transform: translateY(0) scale(1); opacity: 1; filter: blur(0); }
-  78% { transform: translateY(0) scale(1); opacity: 1; filter: blur(0); }
-  100% { transform: translateY(-16px) scale(1.03); opacity: 0; filter: blur(5px); }
+  100% { transform: translateY(0) scale(1); opacity: 1; filter: blur(0); }
 }
 @keyframes questGoldShine {
   0% { background-position: 0% 50%; }
@@ -20657,6 +20660,11 @@ body.chat-open .scene-dashboard {
   0%, 14% { transform: translateY(10px); opacity: 0; }
   26%, 78% { transform: translateY(0); opacity: 1; }
   100% { transform: translateY(-8px); opacity: 0; }
+}
+@keyframes questCharReveal {
+  0% { opacity: 0; transform: translateY(.42em) scale(.94); filter: blur(5px); }
+  72% { opacity: 1; transform: translateY(-.04em) scale(1.02); filter: blur(0); }
+  100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
 }
 @keyframes questSparkle {
   0%, 8% { opacity: 0; transform: scale(.92) rotate(0deg); }
@@ -21291,6 +21299,34 @@ body.chat-open .scene-dashboard {
     layer.style.height = '';
   }
 
+  function splitQuestFxText(text) {
+    const value = String(text || '');
+    try {
+      if (window.Intl && Intl.Segmenter) {
+        return Array.from(new Intl.Segmenter('ko', { granularity: 'grapheme' }).segment(value), part => part.segment);
+      }
+    } catch (_) {}
+    return Array.from(value);
+  }
+
+  function appendQuestFxTypedText(el, text, startDelay, stepMs) {
+    let typed = 0;
+    splitQuestFxText(text).forEach(ch => {
+      if (ch === '\n') {
+        el.appendChild(document.createElement('br'));
+        return;
+      }
+      const span = document.createElement('span');
+      span.className = 'quest-start-fx-char';
+      span.style.setProperty('--quest-char-delay', (startDelay + typed * stepMs) + 'ms');
+      span.textContent = ch === ' ' ? '\u00a0' : ch;
+      el.appendChild(span);
+      typed++;
+    });
+    if (!typed) return startDelay;
+    return startDelay + Math.max(0, typed - 1) * stepMs + 360;
+  }
+
   function showQuestStartOverlay(title, body) {
     const layer = ensureQuestStartFxLayer();
     layer.replaceChildren();
@@ -21301,17 +21337,17 @@ body.chat-open .scene-dashboard {
     spark.setAttribute('aria-hidden', 'true');
     const main = document.createElement('span');
     main.className = 'quest-start-fx-main';
-    main.textContent = '퀘스트가 시작되었습니다.';
     const name = document.createElement('span');
     name.className = 'quest-start-fx-name';
     name.id = 'questStartFxName';
-    name.textContent = title || '이름 없는 퀘스트';
     card.append(spark, main, name);
+    let revealEnd = appendQuestFxTypedText(main, '퀘스트가 시작되었습니다.', 140, 42);
+    revealEnd = appendQuestFxTypedText(name, title || '이름 없는 퀘스트', revealEnd + 160, 46);
     const detailText = (body || '').trim();
     if (detailText) {
       const detail = document.createElement('span');
       detail.className = 'quest-start-fx-detail';
-      detail.textContent = detailText;
+      revealEnd = appendQuestFxTypedText(detail, detailText, revealEnd + 180, 24);
       card.appendChild(detail);
     }
     layer.appendChild(card);
@@ -21321,12 +21357,13 @@ body.chat-open .scene-dashboard {
     void layer.offsetWidth;
     layer.classList.add('show');
     requestAnimationFrame(() => positionQuestStartOverlay(layer));
+    const holdAfterReveal = 3000;
     questFxTimer = setTimeout(() => {
       layer.classList.remove('show');
       setTimeout(() => {
         if (!layer.classList.contains('show')) layer.replaceChildren();
       }, 450);
-    }, 4200);
+    }, revealEnd + holdAfterReveal);
   }
 
   function startBoardEdit(type, id) {
