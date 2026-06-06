@@ -2998,6 +2998,12 @@
     -webkit-backdrop-filter: blur(8px);
     white-space: nowrap;
   }
+  .scene-kicker {
+    display: none !important;
+  }
+  .scene-topline {
+    justify-content: flex-end;
+  }
   .scene-status { color: var(--emerald-light); border-color: rgba(63,166,124,0.45); }
   .scene-footer {
     position: absolute;
@@ -4915,7 +4921,6 @@ body.chat-open .scene-dashboard {
           <span>GM이 장면/배경을 넣으면 이곳이 세션 메인 화면처럼 보입니다.</span>
         </div>
         <div class="scene-topline">
-          <span class="scene-kicker">Current Scene</span>
           <span class="scene-status" id="sceneStatus">시트 모드</span>
         </div>
         <!-- [주요 버튼] 시트, 세계, 판정, 백업, 도움말, 스탠딩 토글 -->
