@@ -4130,15 +4130,15 @@ body.world-dragging-active, body.world-dragging-active * { cursor:grabbing !impo
 @keyframes scenePageShade{0%{opacity:0}25%{opacity:1}100%{opacity:1}}
 @keyframes scenePageShadow{0%{opacity:.5;transform:rotateY(0)}100%{opacity:0;transform:rotateY(-90deg)}}
 /* ═══════ GM 안개 스프레이 (전장의 안개) ═══════ */
-.scene-fog-canvas{position:absolute;inset:0;z-index:6;width:100%;height:100%;pointer-events:none;touch-action:none;}
+.scene-fog-canvas{position:absolute;inset:0;z-index:6;width:100%;height:100%;pointer-events:none;touch-action:none;contain:paint;}
 /* 선택 영역만 흐리게 보이도록 같은 배경 미디어를 한 장 더 깔고, 마스크로 칠한 부분만 노출 */
-.scene-blur-layer{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden;display:none;
+.scene-blur-layer{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden;display:none;contain:paint;
   -webkit-mask-image:var(--scene-blur-mask, none);mask-image:var(--scene-blur-mask, none);
   -webkit-mask-size:100% 100%;mask-size:100% 100%;
   -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
   -webkit-mask-position:center;mask-position:center;}
 .scene-blur-layer img,.scene-blur-layer video{width:100%;height:100%;object-fit:contain;object-position:center center;display:none;
-  filter:blur(13px) saturate(1.08) brightness(.94);transform:scale(1.035);transform-origin:center center;background:rgba(0,0,0,.34);}
+  filter:blur(7px) saturate(1.04) brightness(.96);transform:scale(1.02);transform-origin:center center;background:rgba(0,0,0,.34);}
 #sceneStage.fog-painting .scene-fog-canvas{pointer-events:auto;cursor:crosshair;z-index:8;}
 #sceneStage.fog-painting{box-shadow:inset 0 0 0 2px rgba(150,180,230,.6);}
 #sceneStage.fog-painting.blur-effect{box-shadow:inset 0 0 0 2px rgba(183,156,240,.75),0 0 18px rgba(183,156,240,.22);}
@@ -11041,6 +11041,11 @@ body.chat-open .scene-dashboard {
      scenes/<id>/fogMask = '0'/'1' 비트 문자열 (길이 FOG_COLS*FOG_ROWS).
      GM이 원하는 칸에 칠하면 그 칸이 플레이어에게 가려진다. */
   const FOG_COLS = 48, FOG_ROWS = 27;
+  const FOG_CANVAS_MAX_DIM = 960;
+  const FOG_BLUR_MASK_MAX_DIM = 640;
+  const FOG_SOFT_BLUR_MAX = 10;
+  const FOG_SOLID_BLUR_MAX = 5;
+  const FOG_MASK_BLUR_MAX = 10;
   let fogMask = new Uint8Array(FOG_COLS * FOG_ROWS);  /* 현재 장면의 안개 마스크 */
   let blurMask = new Uint8Array(FOG_COLS * FOG_ROWS); /* 현재 장면의 부분 블러 마스크 */
   let fogPaintMode = false;     /* GM 편집 모드 on/off (로컬) */
@@ -11050,6 +11055,17 @@ body.chat-open .scene-dashboard {
   let fogPainting = false;     /* 드래그 중 */
   let fogSaveTimer = null;
   let fogRafPending = false;
+  let fogRafNeedsFog = false;
+  let fogRafNeedsBlur = false;
+
+  function fogRenderSize(cssW, cssH, maxDim) {
+    const largest = Math.max(cssW, cssH, 1);
+    const scale = largest > maxDim ? maxDim / largest : 1;
+    return {
+      w: Math.max(1, Math.round(cssW * scale)),
+      h: Math.max(1, Math.round(cssH * scale))
+    };
+  }
 
   /** 기능: 마스크 문자열을 Uint8Array로 변환 */
   function fogParse(str) {
@@ -11093,9 +11109,11 @@ body.chat-open .scene-dashboard {
     const cv = $('sceneFogCanvas'), stage = $('sceneStage');
     if (!cv || !stage) return;
     const rect = stage.getBoundingClientRect();
-    const w = Math.max(1, Math.round(rect.width)), h = Math.max(1, Math.round(rect.height));
+    const cssW = Math.max(1, Math.round(rect.width)), cssH = Math.max(1, Math.round(rect.height));
+    const size = fogRenderSize(cssW, cssH, FOG_CANVAS_MAX_DIM);
+    const w = size.w, h = size.h;
     if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
-    const ctx = cv.getContext('2d');
+    const ctx = cv.getContext('2d', { alpha: true });
     ctx.clearRect(0, 0, w, h);
     let any = false;
     for (let i = 0; i < fogMask.length; i++) { if (fogMask[i]) { any = true; break; } }
@@ -11103,7 +11121,7 @@ body.chat-open .scene-dashboard {
     const cw = w / FOG_COLS, ch = h / FOG_ROWS;
     const pad = Math.max(cw, ch) * 0.6;   /* 칸을 살짝 키워 겹치게 → 뭉친 안개 느낌 */
     ctx.save();
-    ctx.filter = 'blur(' + Math.max(6, Math.round(Math.max(cw, ch) * 0.9)) + 'px)';
+    ctx.filter = 'blur(' + Math.min(FOG_SOFT_BLUR_MAX, Math.max(3, Math.round(Math.max(cw, ch) * 0.45))) + 'px)';
     /* GM은 반투명(맵이 비쳐 보임), 플레이어는 거의 불투명 */
     ctx.fillStyle = isGameMaster ? 'rgba(120,140,170,0.42)' : 'rgba(12,16,26,0.97)';
     for (let r = 0; r < FOG_ROWS; r++) {
@@ -11116,7 +11134,7 @@ body.chat-open .scene-dashboard {
     /* 플레이어 쪽 한 번 더 덧칠해 확실히 가림 */
     if (!isGameMaster) {
       ctx.save();
-      ctx.filter = 'blur(' + Math.max(4, Math.round(Math.max(cw, ch) * 0.5)) + 'px)';
+      ctx.filter = 'blur(' + Math.min(FOG_SOLID_BLUR_MAX, Math.max(2, Math.round(Math.max(cw, ch) * 0.24))) + 'px)';
       ctx.fillStyle = 'rgba(12,16,26,0.96)';
       for (let r = 0; r < FOG_ROWS; r++) for (let c = 0; c < FOG_COLS; c++) {
         if (!fogMask[r * FOG_COLS + c]) continue;
@@ -11163,15 +11181,17 @@ body.chat-open .scene-dashboard {
       return;
     }
     const rect = stage.getBoundingClientRect();
-    const w = Math.max(1, Math.round(rect.width)), h = Math.max(1, Math.round(rect.height));
+    const cssW = Math.max(1, Math.round(rect.width)), cssH = Math.max(1, Math.round(rect.height));
+    const size = fogRenderSize(cssW, cssH, FOG_BLUR_MASK_MAX_DIM);
+    const w = size.w, h = size.h;
     const maskCv = renderSceneBlurMask._cv || (renderSceneBlurMask._cv = document.createElement('canvas'));
     if (maskCv.width !== w || maskCv.height !== h) { maskCv.width = w; maskCv.height = h; }
-    const ctx = maskCv.getContext('2d');
+    const ctx = maskCv.getContext('2d', { alpha: true });
     ctx.clearRect(0, 0, w, h);
     const cw = w / FOG_COLS, ch = h / FOG_ROWS;
     const pad = Math.max(cw, ch) * 0.85;
     ctx.save();
-    ctx.filter = 'blur(' + Math.max(10, Math.round(Math.max(cw, ch) * 1.25)) + 'px)';
+    ctx.filter = 'blur(' + Math.min(FOG_MASK_BLUR_MAX, Math.max(3, Math.round(Math.max(cw, ch) * 0.7))) + 'px)';
     ctx.fillStyle = 'rgba(255,255,255,1)';
     for (let r = 0; r < FOG_ROWS; r++) {
       for (let c = 0; c < FOG_COLS; c++) {
@@ -11187,13 +11207,24 @@ body.chat-open .scene-dashboard {
     layer.style.display = 'block';
   }
 
-  function requestFogRender() {
+  function requestFogRender(opts) {
+    if (!opts) {
+      fogRafNeedsFog = true;
+      fogRafNeedsBlur = true;
+    } else {
+      if (opts.fog !== false) fogRafNeedsFog = true;
+      if (opts.blur) fogRafNeedsBlur = true;
+    }
     if (fogRafPending) return;
     fogRafPending = true;
     requestAnimationFrame(() => {
+      const needsFog = fogRafNeedsFog;
+      const needsBlur = fogRafNeedsBlur;
       fogRafPending = false;
-      renderFogCanvas();
-      renderSceneBlurMask();
+      fogRafNeedsFog = false;
+      fogRafNeedsBlur = false;
+      if (needsFog) renderFogCanvas();
+      if (needsBlur) renderSceneBlurMask();
     });
   }
 
@@ -11242,11 +11273,17 @@ body.chat-open .scene-dashboard {
         if (targetMask[idx] !== v) { targetMask[idx] = v; changed = true; }
       }
     }
-    if (changed) { requestFogRender(); scheduleFogSave(); }
+    if (changed) {
+      requestFogRender(fogPaintEffect === 'blur' ? { fog: false, blur: true } : { fog: true, blur: false });
+      scheduleFogSave();
+    }
   }
   function scheduleFogSave() {
     clearTimeout(fogSaveTimer);
-    fogSaveTimer = setTimeout(flushFogSave, 450);
+    fogSaveTimer = setTimeout(() => {
+      if (fogPainting) { scheduleFogSave(); return; }
+      flushFogSave();
+    }, 900);
   }
   function flushFogSave() {
     clearTimeout(fogSaveTimer);
@@ -11321,8 +11358,18 @@ body.chat-open .scene-dashboard {
     $('fogModeErase')?.addEventListener('click', () => setAction(fogPaintEffect, true));
     $('fogBrushDown')?.addEventListener('click', () => { fogBrush = Math.max(1, fogBrush - 1); $('fogBrushSize').textContent = fogBrush; });
     $('fogBrushUp')?.addEventListener('click', () => { fogBrush = Math.min(12, fogBrush + 1); $('fogBrushSize').textContent = fogBrush; });
-    $('fogFillAll')?.addEventListener('click', () => { if (!isGameMaster) return; activeMask().fill(1); requestFogRender(); flushFogSave(); });
-    $('fogClearAll')?.addEventListener('click', () => { if (!isGameMaster) return; activeMask().fill(0); requestFogRender(); flushFogSave(); });
+    $('fogFillAll')?.addEventListener('click', () => {
+      if (!isGameMaster) return;
+      activeMask().fill(1);
+      requestFogRender(fogPaintEffect === 'blur' ? { fog: false, blur: true } : { fog: true, blur: false });
+      flushFogSave();
+    });
+    $('fogClearAll')?.addEventListener('click', () => {
+      if (!isGameMaster) return;
+      activeMask().fill(0);
+      requestFogRender(fogPaintEffect === 'blur' ? { fog: false, blur: true } : { fog: true, blur: false });
+      flushFogSave();
+    });
     $('fogDone')?.addEventListener('click', exitFogPaintMode);
     updateFogToolbarState();
     /* 창 크기 변동 시 캔버스 재계산 */
