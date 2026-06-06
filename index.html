@@ -11484,13 +11484,13 @@ body.chat-open .scene-dashboard {
 
   function sceneFolderCollapseStorage() {
     try {
-      const s = window.sessionStorage;
+      const s = window.localStorage;
       const k = '__pf_scene_folder_test__';
       s.setItem(k, '1');
       s.removeItem(k);
       return s;
     } catch (_) {
-      try { return window.localStorage; } catch (__) { return null; }
+      try { return window.sessionStorage; } catch (__) { return null; }
     }
   }
 
@@ -11504,9 +11504,18 @@ body.chat-open .scene-dashboard {
   }
 
   function loadSceneFolderCollapse() {
+    const key = sceneFolderCollapseKey();
     const storage = sceneFolderCollapseStorage();
-    if (!storage) return {};
-    try { return JSON.parse(storage.getItem(sceneFolderCollapseKey()) || '{}') || {}; }
+    let raw = '';
+    try { raw = storage ? (storage.getItem(key) || '') : ''; } catch (_) {}
+    if (!raw) {
+      try {
+        raw = window.sessionStorage.getItem(key) || '';
+        if (raw && storage && storage !== window.sessionStorage) storage.setItem(key, raw);
+      } catch (_) {}
+    }
+    if (!raw) return {};
+    try { return JSON.parse(raw) || {}; }
     catch (_) { return {}; }
   }
 
@@ -13997,13 +14006,13 @@ body.chat-open .scene-dashboard {
   $('npcSearch')?.addEventListener('input', e => { npcSearchQuery = e.target.value || ''; renderNpcs(); });
   function collapseStorage() {
     try {
-      const s = window.sessionStorage;
+      const s = window.localStorage;
       const testKey = '__pf_collapse_test__';
       s.setItem(testKey, '1');
       s.removeItem(testKey);
       return s;
     } catch (_) {
-      try { return window.localStorage; } catch (__) { return null; }
+      try { return window.sessionStorage; } catch (__) { return null; }
     }
   }
   function collapseViewerKey() {
@@ -14016,9 +14025,18 @@ body.chat-open .scene-dashboard {
   }
   /** 기능: 저장된 접힘 상태를 불러옵니다. */
   function loadCollapse(kind) {
+    const key = collapseKey(kind);
     const storage = collapseStorage();
-    if (!storage) return {};
-    try { return JSON.parse(storage.getItem(collapseKey(kind)) || '{}') || {}; }
+    let raw = '';
+    try { raw = storage ? (storage.getItem(key) || '') : ''; } catch (_) {}
+    if (!raw) {
+      try {
+        raw = window.sessionStorage.getItem(key) || '';
+        if (raw && storage && storage !== window.sessionStorage) storage.setItem(key, raw);
+      } catch (_) {}
+    }
+    if (!raw) return {};
+    try { return JSON.parse(raw) || {}; }
     catch (_) { return {}; }
   }
   /** 기능: 접힘 상태를 저장합니다(true인 항목만 보관). */
@@ -14956,6 +14974,29 @@ body.chat-open .scene-dashboard {
 
   let monsterRef = null;
   let monsterState = {};
+  let monsterCollapsed = {};
+
+  function monsterCollapseViewerKey() {
+    const raw = String((typeof myCharId !== 'undefined' && myCharId) || (typeof userName !== 'undefined' && userName) || 'viewer').trim().toLowerCase();
+    return raw.replace(/[^a-z0-9가-힣_-]+/g, '_').slice(0, 80) || 'viewer';
+  }
+
+  function monsterCollapseKey() {
+    return 'pf_monster_collapse_' + ((typeof roomCode !== 'undefined' && roomCode) || 'offline') + '_' + monsterCollapseViewerKey();
+  }
+
+  function loadMonsterCollapsed() {
+    try { return JSON.parse(localStorage.getItem(monsterCollapseKey()) || '{}') || {}; }
+    catch (_) { return {}; }
+  }
+
+  function saveMonsterCollapsed() {
+    try {
+      const clean = {};
+      Object.keys(monsterCollapsed || {}).forEach(id => { if (monsterCollapsed[id]) clean[id] = true; });
+      localStorage.setItem(monsterCollapseKey(), JSON.stringify(clean));
+    } catch (_) {}
+  }
 
   /* 자동 계산 */
   /** 기능: 몬스터 레벨/능력치 기반으로 기본 HP/MP/방어 수치를 계산합니다. */
@@ -15172,6 +15213,7 @@ body.chat-open .scene-dashboard {
   /** 기능: 몬스터 생성/목록/상태 관리 기능을 초기화합니다. */
   function initMonsters(room) {
     if (!db) return;
+    monsterCollapsed = loadMonsterCollapsed();
     monsterRef = db.ref('rooms/' + room + '/monsters');
     monsterRef.on('value', s => {
       monsterState = s.val() || {};
@@ -15224,10 +15266,12 @@ body.chat-open .scene-dashboard {
     const card = document.createElement('div');
     card.className = 'monster-card rank-' + (m.rank||'일반') + (inCrisis ? ' in-crisis' : '');
     card.dataset.id = id;
+    const isCollapsed = !!monsterCollapsed[id];
+    if (isCollapsed) card.classList.add('collapsed');
 
     /* ─ 헤더 ─ */
     const header = document.createElement('div'); header.className = 'mc-header';
-    const arrow  = document.createElement('span'); arrow.className = 'mc-collapse-arrow'; arrow.textContent = '▼';
+    const arrow  = document.createElement('span'); arrow.className = 'mc-collapse-arrow'; arrow.textContent = isCollapsed ? '\u25b6' : '\u25bc';
     const nm     = document.createElement('span'); nm.className = 'mc-name'; nm.textContent = m.name || '이름없음';
     const lvBadge = document.createElement('span'); lvBadge.className = 'mc-level-badge'; lvBadge.textContent = 'Lv ' + (m.level||'?');
     const rankBadge = document.createElement('span'); rankBadge.className = 'mc-rank-badge'; rankBadge.textContent = m.rank || '일반';
@@ -15238,7 +15282,12 @@ body.chat-open .scene-dashboard {
     delBtn.addEventListener('click', e => { e.stopPropagation(); if (monsterRef) monsterRef.child(id).remove(); });
     header.appendChild(arrow); header.appendChild(nm); header.appendChild(lvBadge);
     header.appendChild(rankBadge); header.appendChild(spBadge); header.appendChild(dupBtn); header.appendChild(delBtn);
-    header.addEventListener('click', () => { card.classList.toggle('collapsed'); arrow.textContent = card.classList.contains('collapsed') ? '▶' : '▼'; });
+    header.addEventListener('click', () => {
+      card.classList.toggle('collapsed');
+      monsterCollapsed[id] = card.classList.contains('collapsed');
+      saveMonsterCollapsed();
+      arrow.textContent = monsterCollapsed[id] ? '\u25b6' : '\u25bc';
+    });
 
     /* ─ 본문 ─ */
     const body = document.createElement('div'); body.className = 'mc-body';
@@ -17438,6 +17487,7 @@ body.chat-open .scene-dashboard {
     bg.classList.add('open');
     bg.setAttribute('aria-hidden', 'false');
     document.body.classList.add('sheet-modal-open');
+    if (window.restoreSheetAccordionState) window.restoreSheetAccordionState();
     const first = bg.querySelector('input, select, textarea, button');
     setTimeout(() => first && first.focus && first.focus({ preventScroll: true }), 40);
   }
@@ -17987,10 +18037,57 @@ body.chat-open .scene-dashboard {
     return (label || '').replace(/\s+/g, ' ').trim();
   }
 
+  function sheetAccordionViewerKey() {
+    const room = (document.getElementById('roomLabel')?.textContent || '').trim();
+    const user = (document.getElementById('userInput')?.value || '').trim();
+    const raw = ((room && room[0] !== '(' ? room : 'offline') + '_' + (user || 'viewer')).toLowerCase();
+    return raw.replace(/[^a-z0-9가-힣_-]+/g, '_').slice(0, 120) || 'offline_viewer';
+  }
+
+  function sheetAccordionStorageKey() {
+    return 'pf_sheet_accordion_' + sheetAccordionViewerKey();
+  }
+
+  function readSheetAccordionState() {
+    try { return JSON.parse(localStorage.getItem(sheetAccordionStorageKey()) || '{}') || {}; }
+    catch (_) { return {}; }
+  }
+
+  function writeSheetAccordionState(key, open) {
+    try {
+      const state = readSheetAccordionState();
+      state[key] = !!open;
+      localStorage.setItem(sheetAccordionStorageKey(), JSON.stringify(state));
+    } catch (_) {}
+  }
+
+  function applySheetPanelOpen(panel, open) {
+    if (!panel) return;
+    const toggle = panel.querySelector(':scope > .panel-label .sheet-accordion-toggle');
+    panel.classList.toggle('sheet-collapsed', !open);
+    if (toggle) {
+      toggle.textContent = open ? '\u2212' : '+';
+      toggle.title = open ? '접기' : '펼치기';
+    }
+  }
+
+  function restoreSheetAccordionState() {
+    const body = document.getElementById('sheetModalBody');
+    if (!body) return;
+    const state = readSheetAccordionState();
+    Array.from(body.querySelectorAll(':scope > section.panel.sheet-accordion-panel')).forEach(panel => {
+      const key = panel.dataset.sheetAccordionKey;
+      if (key && Object.prototype.hasOwnProperty.call(state, key)) applySheetPanelOpen(panel, !!state[key]);
+    });
+  }
+
+  window.restoreSheetAccordionState = restoreSheetAccordionState;
+
   /** 기능: 시트 섹션 접기/펼치기 기능을 초기화합니다. */
   function setupSheetAccordion() {
     const body = document.getElementById('sheetModalBody');
-    if (!body || body.dataset.optimized === '1') return;
+    if (!body) return;
+    if (body.dataset.optimized === '1') { restoreSheetAccordionState(); return; }
     body.dataset.optimized = '1';
     body.classList.add('optimized-sheet');
 
@@ -18008,11 +18105,14 @@ body.chat-open .scene-dashboard {
 
     const openByDefault = ['정체성', '생명점', '능력치', '장착 장비', '기술'];
 
-    panels.forEach(panel => {
+    const savedState = readSheetAccordionState();
+    panels.forEach((panel, index) => {
       const label = panel.querySelector('.panel-label');
       if (!label) return;
       const title = normalizeLabel(label.textContent || '');
       const shouldOpen = openByDefault.some(k => title.includes(k));
+      const stateKey = panel.id || title.slice(0, 60) || ('panel_' + index);
+      panel.dataset.sheetAccordionKey = stateKey;
       panel.classList.add('sheet-accordion-panel');
       panel.classList.toggle('sheet-primary', shouldOpen);
       panel.classList.toggle('sheet-secondary', !shouldOpen);
@@ -18021,17 +18121,14 @@ body.chat-open .scene-dashboard {
       toggle.className = 'sheet-accordion-toggle';
       label.appendChild(toggle);
 
-      /** 기능: 아코디언/모달의 열림 상태를 설정합니다. */
-      function setOpen(open) {
-        panel.classList.toggle('sheet-collapsed', !open);
-        toggle.textContent = open ? '−' : '+';
-        toggle.title = open ? '접기' : '펼치기';
-      }
-      setOpen(shouldOpen);
+      const hasSaved = Object.prototype.hasOwnProperty.call(savedState, stateKey);
+      applySheetPanelOpen(panel, hasSaved ? !!savedState[stateKey] : shouldOpen);
 
       label.addEventListener('click', e => {
         if (e.target.closest('input,select,textarea,button')) return;
-        setOpen(panel.classList.contains('sheet-collapsed'));
+        const nextOpen = panel.classList.contains('sheet-collapsed');
+        applySheetPanelOpen(panel, nextOpen);
+        writeSheetAccordionState(stateKey, nextOpen);
       });
     });
   }
@@ -20578,6 +20675,35 @@ body.chat-open .scene-dashboard {
     }
   }
 
+  function localUiViewerKey() {
+    const room = currentRoom || getRoomCode() || 'offline';
+    const raw = String(room + '_' + userName()).trim().toLowerCase();
+    return raw.replace(/[^a-z0-9가-힣_-]+/g, '_').slice(0, 120) || 'offline_viewer';
+  }
+
+  function mainTrackerCollapseKey() {
+    return 'pf_main_tracker_collapsed_' + localUiViewerKey();
+  }
+
+  function isMainTrackerCollapsed() {
+    try {
+      const scoped = localStorage.getItem(mainTrackerCollapseKey());
+      if (scoped != null) return scoped === '1';
+      return localStorage.getItem('main_tracker_collapsed') === '1';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function saveMainTrackerCollapsed(collapsed) {
+    try { localStorage.setItem(mainTrackerCollapseKey(), collapsed ? '1' : '0'); } catch (_) {}
+  }
+
+  function applyMainTrackerCollapseState() {
+    const dock = $('mainTrackerDock');
+    if (dock) dock.classList.toggle('collapsed', isMainTrackerCollapsed());
+  }
+
   function offRef(ref) {
     try { if (ref && ref.off) ref.off(); } catch (_) {}
   }
@@ -20635,6 +20761,7 @@ body.chat-open .scene-dashboard {
     offRef(refs.questFx);
     refs.board = refs.queue = refs.trackers = refs.questFx = null;
     currentRoom = room;
+    applyMainTrackerCollapseState();
 
     if (!room || !db) {
       renderCampaignBoard();
@@ -20807,9 +20934,7 @@ body.chat-open .scene-dashboard {
         <div class="main-tracker-list" id="mainEffectList"></div>
       </div>`;
     media.appendChild(dock);
-    try {
-      if (localStorage.getItem('main_tracker_collapsed') === '1') dock.classList.add('collapsed');
-    } catch (_) {}
+    applyMainTrackerCollapseState();
   }
 
   function ensureNpcRelationUi() {
@@ -20921,7 +21046,7 @@ body.chat-open .scene-dashboard {
         const dock = $('mainTrackerDock');
         if (!dock) return;
         dock.classList.toggle('collapsed');
-        try { localStorage.setItem('main_tracker_collapsed', dock.classList.contains('collapsed') ? '1' : '0'); } catch (_) {}
+        saveMainTrackerCollapsed(dock.classList.contains('collapsed'));
       });
     }, 0);
   }
