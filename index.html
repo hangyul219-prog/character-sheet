@@ -589,6 +589,50 @@
   .dm-effect-grid input, .dm-effect-grid select { text-align:center; font-family:'Cinzel',serif; }
   .dm-effect-hint { font-size:12px; color:var(--text-muted); font-style:italic; margin-top:6px; line-height:1.4; }
 
+  .travel-dice-panel {
+    margin-bottom: 16px;
+    padding: 12px;
+    border: 1px solid rgba(212,175,82,0.28);
+    border-radius: 10px;
+    background: rgba(212,175,82,0.07);
+  }
+  .travel-dice-row {
+    display: grid;
+    grid-template-columns: 1fr 96px 96px;
+    gap: 8px;
+    align-items: end;
+  }
+  .travel-dice-hint {
+    margin-top: 4px;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-style: italic;
+    line-height: 1.35;
+  }
+  .travel-dice-select {
+    height: 36px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: rgba(0,0,0,0.35);
+    color: var(--gold-bright);
+    font-family: 'Cinzel', serif;
+    font-size: 13px;
+    text-align: center;
+    padding: 0 8px;
+  }
+  .travel-dice-btn {
+    height: 36px;
+    border-radius: 8px;
+    border: 1px solid var(--gold);
+    background: rgba(212,175,82,0.14);
+    color: var(--gold-bright);
+    font-family: 'Cinzel', serif;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .travel-dice-btn:hover { background: rgba(212,175,82,0.24); }
+  @media (max-width:520px) { .travel-dice-row { grid-template-columns:1fr; } }
+
   /* ── 목표치 섹션 (장식형 라벨 + 골드 강조 input) ── */
   .dm-target-section { margin-top: 6px; }
   .dm-target-label {
@@ -3251,17 +3295,6 @@
     color: var(--gold-bright);
     background: rgba(212,175,82,0.12);
   }
-  .main-action-btn.fog-action {
-    border-color: rgba(183,156,240,0.48);
-    color: var(--arcane-light);
-    background: rgba(123,92,196,0.12);
-  }
-  .main-action-btn.fog-action.primary {
-    border-color: rgba(242,216,138,0.72);
-    color: var(--gold-bright);
-    background: rgba(212,175,82,0.18);
-    box-shadow: 0 0 16px rgba(212,175,82,0.22);
-  }
   .main-action-btn.standing-action.on {
     border-color: rgba(111,214,168,0.7);
     color: var(--emerald-light);
@@ -4130,35 +4163,8 @@ body.world-dragging-active, body.world-dragging-active * { cursor:grabbing !impo
 @keyframes scenePageShade{0%{opacity:0}25%{opacity:1}100%{opacity:1}}
 @keyframes scenePageShadow{0%{opacity:.5;transform:rotateY(0)}100%{opacity:0;transform:rotateY(-90deg)}}
 /* ═══════ GM 안개 스프레이 (전장의 안개) ═══════ */
-.scene-fog-canvas{position:absolute;inset:0;z-index:6;width:100%;height:100%;pointer-events:none;touch-action:none;contain:paint;}
 /* 선택 영역만 흐리게 보이도록 같은 배경 미디어를 한 장 더 깔고, 마스크로 칠한 부분만 노출 */
-.scene-blur-layer{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden;display:none;contain:paint;
-  -webkit-mask-image:var(--scene-blur-mask, none);mask-image:var(--scene-blur-mask, none);
-  -webkit-mask-size:100% 100%;mask-size:100% 100%;
-  -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
-  -webkit-mask-position:center;mask-position:center;}
-.scene-blur-layer img,.scene-blur-layer video{width:100%;height:100%;object-fit:contain;object-position:center center;display:none;
-  filter:blur(7px) saturate(1.04) brightness(.96);transform:scale(1.02);transform-origin:center center;background:rgba(0,0,0,.34);}
-#sceneStage.fog-painting .scene-fog-canvas{pointer-events:auto;cursor:crosshair;z-index:8;}
-#sceneStage.fog-painting{box-shadow:inset 0 0 0 2px rgba(150,180,230,.6);}
-#sceneStage.fog-painting.blur-effect{box-shadow:inset 0 0 0 2px rgba(183,156,240,.75),0 0 18px rgba(183,156,240,.22);}
 /* 안개 편집 툴바 */
-.fog-toolbar{position:absolute;left:50%;bottom:12px;top:auto;transform:translateX(-50%);z-index:12;display:none;align-items:center;gap:8px;
-  padding:7px 10px;border-radius:12px;background:rgba(10,14,24,.92);border:1px solid rgba(150,180,220,.4);
-  box-shadow:0 8px 28px rgba(0,0,0,.5);backdrop-filter:blur(4px);font-size:12px;color:#cfe0f5;flex-wrap:wrap;justify-content:center;max-width:94%;}
-#sceneStage.fog-painting .fog-toolbar{display:flex;}
-.fog-toolbar .fog-tb-group{display:flex;align-items:center;gap:4px;}
-.fog-toolbar .fog-tb-label{opacity:.8;}
-.fog-toolbar button{background:rgba(255,255,255,.06);border:1px solid rgba(150,180,220,.35);border-radius:8px;color:#dce8f8;
-  font-size:12px;padding:5px 9px;cursor:pointer;transition:all .15s;white-space:nowrap;line-height:1;}
-.fog-toolbar button:hover{border-color:#7fa8ff;background:rgba(120,160,255,.18);}
-.fog-toolbar button.on{background:rgba(120,160,255,.28);border-color:#7fa8ff;color:#fff;}
-.fog-toolbar .fog-tb-sep{width:1px;height:18px;background:rgba(150,180,220,.3);}
-.fog-toolbar .fog-tb-size{min-width:20px;text-align:center;font-variant-numeric:tabular-nums;}
-.fog-toolbar .fog-tb-done{background:rgba(212,175,82,.18);border-color:rgba(212,175,82,.5);color:var(--gold-bright);}
-.fog-toolbar .fog-tb-done:hover{background:rgba(212,175,82,.3);border-color:var(--gold);}
-.fog-toolbar #fogActionCoverErase.on,.fog-toolbar #fogActionBlurErase.on{background:rgba(168,40,40,.24);border-color:rgba(255,130,130,.55);color:#ffe1e1;}
-@media (max-width:720px){.fog-toolbar{bottom:10px;gap:5px;padding:6px 8px;font-size:11px}.fog-toolbar button{font-size:11px;padding:5px 7px}.fog-toolbar .fog-tb-sep{display:none}}
 @keyframes sceneFadeIn { from{opacity:.15} to{opacity:1} }
 @keyframes sceneFlashIn { 0%{filter:brightness(2.2)} 100%{filter:none} }
 @media (max-width: 720px) {
@@ -4873,34 +4879,7 @@ body.chat-open .scene-dashboard {
         <div class="scene-stage" id="sceneStage">
           <img id="sceneMapImg" alt="현재 전투맵 미리보기">
           <video id="sceneMapVid" autoplay loop muted playsinline preload="metadata"></video>
-          <div class="scene-blur-layer" id="sceneBlurLayer" aria-hidden="true">
-            <img id="sceneBlurImg" alt="">
-            <video id="sceneBlurVid" autoplay loop muted playsinline preload="metadata"></video>
-          </div>
           <div class="scene-token-layer" id="sceneTokenLayer" aria-hidden="true"></div>
-          <canvas class="scene-fog-canvas" id="sceneFogCanvas" aria-hidden="true"></canvas>
-          <div class="fog-toolbar" id="fogToolbar">
-            <span class="fog-tb-label">🌫 시야효과</span>
-            <div class="fog-tb-sep"></div>
-            <div class="fog-tb-group">
-              <button type="button" id="fogActionCoverPaint" class="on" title="선택 영역을 안개로 가립니다">가리기</button>
-              <button type="button" id="fogActionCoverErase" title="선택 영역의 안개만 제거합니다">가리기 제거</button>
-              <button type="button" id="fogActionBlurPaint" title="선택 영역만 블러 처리합니다">블러</button>
-              <button type="button" id="fogActionBlurErase" title="선택 영역의 블러만 제거합니다">블러 제거</button>
-            </div>
-            <div class="fog-tb-sep"></div>
-            <div class="fog-tb-group">
-              <span class="fog-tb-label">붓</span>
-              <button type="button" id="fogBrushDown">−</button>
-              <span class="fog-tb-size" id="fogBrushSize">3</span>
-              <button type="button" id="fogBrushUp">＋</button>
-            </div>
-            <div class="fog-tb-sep"></div>
-            <button type="button" id="fogFillAll" title="현재 효과를 전체에 적용합니다">전체 적용</button>
-            <button type="button" id="fogClearAll" title="현재 효과를 전체에서 제거합니다">전체 제거</button>
-            <div class="fog-tb-sep"></div>
-            <button type="button" id="fogDone" class="fog-tb-done">완료</button>
-          </div>
           <div class="scene-page-flip" id="scenePageFlip" aria-hidden="true"></div>
         </div>
         <div class="scene-dialogue-layer" id="sceneDialogueLayer" aria-live="polite">
@@ -4928,7 +4907,6 @@ body.chat-open .scene-dashboard {
           <button class="main-action-btn primary" id="mainBtnSheet" type="button" title="캐릭터 시트"><span>📜</span><span class="label">시트</span></button>
           <button class="main-action-btn" id="mainBtnWorld" type="button" title="세계 시트"><span>🌍</span><span class="label">세계</span></button>
           <button class="main-action-btn primary" id="mainBtnRoll" type="button" title="판정 굴림"><span>⚄</span><span class="label">판정</span></button>
-          <button class="main-action-btn fog-action" id="sceneFogToggle" type="button" style="display:none;" title="시야효과 편집 — GM 전용"><span>🌫</span><span class="label">안개</span></button>
           <button class="main-action-btn undo-action" id="mainUndoBtn" type="button" title="되돌리기"><span>↶</span></button>
           <button class="main-action-btn backup-action" id="mainBackupBtn" type="button" title="백업/가져오기"><span>💾</span></button>
           <button class="main-action-btn help-action" id="mainHelpBtn" type="button" title="도움말"><span>?</span></button>
@@ -5252,6 +5230,22 @@ body.chat-open .scene-dashboard {
     <div class="dice-modal" style="position:relative;">
       <button class="dm-close" id="diceModalClose">✕</button>
       <div class="dm-title">⚄ 판정 굴림</div>
+      <div class="dm-section travel-dice-panel">
+        <div class="travel-dice-row">
+          <div>
+            <div class="dm-label">여행 주사위</div>
+            <div class="travel-dice-hint">위협도에 맞는 주사위를 하나 굴립니다.</div>
+          </div>
+          <select class="travel-dice-select" id="travelDieSelect" aria-label="여행 주사위 선택">
+            <option value="6">d6</option>
+            <option value="8">d8</option>
+            <option value="10">d10</option>
+            <option value="12">d12</option>
+            <option value="20">d20</option>
+          </select>
+          <button class="travel-dice-btn" id="travelDieRollBtn" type="button">굴림</button>
+        </div>
+      </div>
 
       <!-- 능력치 1 -->
       <div class="dm-section">
@@ -9264,6 +9258,57 @@ body.chat-open .scene-dashboard {
     $('dmRollBtn').textContent = on ? '📝 로그에 기록' : '🎲 굴림!';
   });
 
+  function getTravelOutcome(result) {
+    if (result === 1) return '뜻밖의 발견';
+    if (result >= 6) return '위험 발생';
+    return '무사 이동';
+  }
+
+  function rollTravelDie() {
+    const sides = parseInt($('travelDieSelect')?.value || '6', 10) || 6;
+    const result = Math.floor(Math.random() * sides) + 1;
+    const outcome = getTravelOutcome(result);
+    const diceDiv = $('rrDice');
+    diceDiv.innerHTML = '';
+
+    const d = document.createElement('div');
+    d.className = 'rr-die hr';
+    d.innerHTML = result + '<span class="die-label">d' + sides + '</span>';
+    diceDiv.appendChild(d);
+
+    $('rrSum').innerHTML = '여행 주사위 d' + sides + '<br><b>' + result + '</b>';
+    const verdict = $('rrVerdict');
+    verdict.className = 'rr-verdict normal';
+    verdict.textContent = '🧭 ' + outcome;
+    $('rrHr').innerHTML = '여행 중 위협 확인 — <b>' + outcome + '</b>';
+    $('rrEffects').innerHTML = '';
+    $('rollResult').classList.add('show');
+    setTimeout(() => { const el = $('rollResult'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 80);
+
+    addDiceLogEntry({
+      type: 'travel',
+      attr1: 'travel',
+      attr2: '',
+      sides1: sides,
+      sides2: 0,
+      r1: result,
+      r2: 0,
+      totalMod: 0,
+      finalSum: result,
+      hr: result,
+      isFumble: false,
+      isCrit: false,
+      checkedItems: [],
+      target: null,
+      success: true,
+      travelDie: 'd' + sides,
+      travelOutcome: outcome,
+      suppressRemotePopup: !!$('dmSuppressRemotePopupCheck')?.checked
+    });
+  }
+
+  $('travelDieRollBtn')?.addEventListener('click', rollTravelDie);
+
   // 굴림 실행
   $('dmRollBtn').addEventListener('click', () => {
     const noRoll = !!$('dmNoRollCheck')?.checked;
@@ -9491,12 +9536,12 @@ body.chat-open .scene-dashboard {
   }
 
   /** 기능: 로컬/원격 주사위 로그에 새 굴림 결과를 추가합니다. */
-  function addDiceLogEntry({ attr1, attr2, sides1, sides2, r1, r2, totalMod, finalSum, hr, isFumble, isCrit, checkedItems, rolledBy, noRoll, target, success, vitalDelta, suppressRemotePopup }) {
+  function addDiceLogEntry({ type, attr1, attr2, sides1, sides2, r1, r2, totalMod, finalSum, hr, isFumble, isCrit, checkedItems, rolledBy, noRoll, target, success, vitalDelta, suppressRemotePopup, travelDie, travelOutcome }) {
     diceLogCounter++;
     const now = new Date();
     const timeStr = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0') + ':' + now.getSeconds().toString().padStart(2,'0');
 
-    const entry = { id: diceLogCounter, timeStr, attr1, attr2, sides1, sides2, r1, r2, totalMod, finalSum, hr, isFumble, isCrit, checkedItems, noRoll: !!noRoll, target, success, vitalDelta, suppressRemotePopup: !!suppressRemotePopup };
+    const entry = { id: diceLogCounter, timeStr, type: type || 'roll', attr1, attr2, sides1, sides2, r1, r2, totalMod, finalSum, hr, isFumble, isCrit, checkedItems, noRoll: !!noRoll, target, success, vitalDelta, suppressRemotePopup: !!suppressRemotePopup, travelDie: travelDie || '', travelOutcome: travelOutcome || '' };
     if (rolledBy) entry.rolledBy = rolledBy;
     /* ★ 중복 방지용 클라이언트 고유 ID — Firebase push 키가 늦게 도착해도 내 굴림을 식별 */
     entry.clientId = 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -9579,6 +9624,62 @@ body.chat-open .scene-dashboard {
       } else {
         list.appendChild(div);
       }
+      return;
+    }
+
+    if (entry.type === 'travel') {
+      const div = document.createElement('div');
+      div.className = 'dl-entry normal';
+      div.dataset.logType = 'roll';
+      if (isRemote) div.style.opacity = '0.88';
+      div.dataset.id = entry.id;
+
+      const numSpan = document.createElement('span');
+      numSpan.className = 'dl-entry-num';
+      numSpan.textContent = '#' + entry.id;
+
+      const meta = document.createElement('div');
+      meta.className = 'dl-meta';
+      const timeEl = document.createElement('span');
+      timeEl.className = 'dl-time';
+      timeEl.textContent = (entry.rolledBy ? entry.rolledBy + ' · ' : '') + entry.timeStr;
+      const badge = document.createElement('span');
+      badge.className = 'dl-badge';
+      badge.textContent = '여행';
+      meta.appendChild(timeEl);
+      meta.appendChild(badge);
+
+      const attrs = document.createElement('div');
+      attrs.className = 'dl-attrs';
+      attrs.textContent = '여행 주사위 ' + (entry.travelDie || ('d' + (entry.sides1 || '?')));
+
+      const diceRow = document.createElement('div');
+      diceRow.className = 'dl-dice-row';
+      const d = document.createElement('div');
+      d.className = 'dl-die hr';
+      d.innerHTML = (entry.r1 || entry.finalSum || '?') + '<div class="dl-die-lbl">' + (entry.travelDie || ('d' + (entry.sides1 || '?'))) + '</div>';
+      diceRow.appendChild(d);
+
+      const resultRow = document.createElement('div');
+      resultRow.className = 'dl-result-row';
+      const total = document.createElement('span');
+      total.className = 'dl-total';
+      total.textContent = entry.finalSum;
+      const hrInfo = document.createElement('span');
+      hrInfo.className = 'dl-hr-info';
+      hrInfo.textContent = entry.travelOutcome || getTravelOutcome(Number(entry.finalSum || entry.r1 || 0));
+      resultRow.appendChild(total);
+      resultRow.appendChild(hrInfo);
+
+      div.appendChild(numSpan);
+      div.appendChild(meta);
+      div.appendChild(attrs);
+      div.appendChild(diceRow);
+      div.appendChild(resultRow);
+
+      if (prepend && list.firstChild) list.insertBefore(div, list.firstChild);
+      else list.appendChild(div);
+      if (window.APPLY_DICE_FILTERS) window.APPLY_DICE_FILTERS();
       return;
     }
 
@@ -9762,6 +9863,8 @@ body.chat-open .scene-dashboard {
       /* 스킬 공개 카드용 필드 */
       skillName: raw.skillName || '',
       skillFx: raw.skillFx || '',
+      travelDie: raw.travelDie || '',
+      travelOutcome: raw.travelOutcome || '',
       rolledBy: raw.rolledBy || '???'
     };
     diceLogEntries.unshift(entry);
@@ -11086,6 +11189,8 @@ body.chat-open .scene-dashboard {
   function syncFogMainButton() {
     const btn = $('sceneFogToggle');
     if (!btn) return;
+    btn.remove();
+    return;
     btn.style.display = isGameMaster ? '' : 'none';
     btn.classList.toggle('primary', !!fogPaintMode);
     btn.setAttribute('title', fogPaintMode ? '시야효과 편집 종료 — GM 전용' : '시야효과 편집 — GM 전용');
@@ -11096,12 +11201,7 @@ body.chat-open .scene-dashboard {
 
   /** 기능: 현재 장면의 안개 마스크를 불러와 캔버스에 그립니다. (모든 참가자) */
   function applySceneFog(sc) {
-    fogMask = fogParse(sc && sc.fogMask);
-    blurMask = fogParse(sc && sc.blurMask);
     syncFogMainButton();
-    if (!isGameMaster) exitFogPaintMode();  /* 플레이어는 편집 불가 */
-    renderFogCanvas();
-    renderSceneBlurMask();
   }
 
   /** 기능: 안개 마스크를 캔버스에 렌더링합니다. GM은 옅게(편집 가능하게), 플레이어는 짙게 가립니다. */
@@ -11208,6 +11308,7 @@ body.chat-open .scene-dashboard {
   }
 
   function requestFogRender(opts) {
+    return;
     if (!opts) {
       fogRafNeedsFog = true;
       fogRafNeedsBlur = true;
@@ -11230,6 +11331,8 @@ body.chat-open .scene-dashboard {
 
   /** 기능: GM이 안개 편집 모드를 켜고 끕니다 (로컬 동작, 마스크만 방에 동기화). */
   function toggleSceneFog() {
+    window.SHEET && window.SHEET.toast && window.SHEET.toast('안개 기능은 제거되었습니다');
+    return;
     if (!isGameMaster) return;
     if (!scenesRef || !activeSceneId) { window.SHEET && window.SHEET.toast('먼저 장면을 선택하세요'); return; }
     if (fogPaintMode) exitFogPaintMode();
@@ -18618,6 +18721,7 @@ body.chat-open .scene-dashboard {
 
   /** 기능: 주사위 결과가 대성공/펌블/일반인지 분류합니다. */
   function classify(entry) {
+    if (entry.type === 'travel') return { kind: 'success', label: '여행' };
     if (entry.isCrit) return { kind: 'crit', label: '대성공' };
     if (entry.success === false || entry.isFumble) return { kind: 'fail', label: '실패' };
     return { kind: 'success', label: '성공' };
@@ -18660,15 +18764,16 @@ body.chat-open .scene-dashboard {
     const total = entry.noRoll ? 'NO ROLL' : (Number.isFinite(Number(entry.finalSum)) ? Number(entry.finalSum) : '—');
     const target = entry.target == null || entry.target === '' ? '' : ' · 목표치 ' + esc(entry.target);
     const by = entry.rolledBy || entry.sender || '누군가';
-    const attrs = entry.noRoll ? '효과 기록' : [entry.attr1, entry.attr2].filter(Boolean).join(' + ').toUpperCase();
-    const detail = (attrs ? esc(attrs) : '주사위 판정') + target;
+    const isTravel = entry.type === 'travel';
+    const attrs = isTravel ? (entry.travelDie || ('d' + (entry.sides1 || '?'))) : (entry.noRoll ? '효과 기록' : [entry.attr1, entry.attr2].filter(Boolean).join(' + ').toUpperCase());
+    const detail = isTravel ? ('여행 주사위 · ' + esc(entry.travelOutcome || '결과 확인')) : ((attrs ? esc(attrs) : '주사위 판정') + target);
 
     const card = document.createElement('div');
     card.className = 'remote-dice-card ' + result.kind;
     card.innerHTML =
       '<div class="remote-dice-sparks"></div>' +
       '<div class="remote-dice-inner">' +
-        '<div class="remote-dice-speaker">' + esc(by) + '의 판정</div>' +
+        '<div class="remote-dice-speaker">' + esc(by) + (isTravel ? '의 여행 주사위' : '의 판정') + '</div>' +
         '<div class="remote-dice-result">' + result.label + '</div>' +
         buildDiceHtml(entry) +
         '<div class="remote-dice-total">' + esc(total) + '</div>' +
