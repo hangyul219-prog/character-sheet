@@ -20346,11 +20346,48 @@ body.chat-open .scene-dashboard {
   line-height: 1.35;
   overflow-wrap: anywhere;
 }
+.main-tracker-row-text {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
 .main-tracker-row-sub {
   color: rgba(205, 214, 238, .72);
   font-size: 11px;
   line-height: 1.35;
   overflow-wrap: anywhere;
+}
+.main-tracker-actor-effects {
+  display: grid;
+  gap: 4px;
+  margin-top: 1px;
+}
+.main-tracker-actor-effect {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 5px;
+  align-items: center;
+  padding: 4px 5px 4px 7px;
+  border: 1px solid rgba(123, 177, 255, .2);
+  border-radius: 7px;
+  background: rgba(49, 76, 124, .18);
+}
+.main-tracker-actor-effect.expired {
+  border-color: rgba(224, 82, 82, .35);
+  background: rgba(112, 36, 46, .18);
+}
+.main-tracker-effect-text {
+  min-width: 0;
+  color: rgba(225, 235, 255, .88);
+  font-size: 11px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.main-tracker-actor-effect .main-tracker-mini-actions button {
+  min-width: 24px;
+  height: 22px;
+  padding: 0 5px;
+  font-size: 10px;
 }
 .main-tracker-mini-actions {
   display: flex;
@@ -21447,15 +21484,30 @@ body.chat-open .scene-dashboard {
     return String(value || fallback || '').replace(/\s+/g, ' ').trim() || fallback || '';
   }
 
+  function trackerNameKey(value) {
+    return cleanTrackerLabel(value, '').toLowerCase().replace(/\s+/g, '');
+  }
+
+  function effectsForActor(trackers, actor) {
+    const actorKey = trackerNameKey(actor && actor.name);
+    if (!actorKey) return [];
+    return sortEntries((trackers && trackers.effects) || {}).filter(([, fx]) => trackerNameKey(fx && fx.target) === actorKey);
+  }
+
+  function unmatchedEffects(trackers, actors) {
+    const actorKeys = new Set((actors || []).map(([, actor]) => trackerNameKey(actor && actor.name)).filter(Boolean));
+    return sortEntries((trackers && trackers.effects) || {}).filter(([, fx]) => !actorKeys.has(trackerNameKey(fx && fx.target)));
+  }
+
   function trackersAfterPatch(patch) {
     const next = normalizeTrackers(JSON.parse(JSON.stringify(state.trackers || {})));
     applyPatch(next, patch || {});
     return normalizeTrackers(next);
   }
 
-  function effectStatusLines(trackers) {
-    return sortEntries((trackers && trackers.effects) || {}).map(([id, fx]) => {
-      const title = cleanTrackerLabel((fx.target ? fx.target + ' · ' : '') + (fx.name || ''), '효과');
+  function effectStatusLinesForActor(trackers, actor) {
+    return effectsForActor(trackers, actor).map(([id, fx]) => {
+      const title = cleanTrackerLabel(fx.name || '', '효과');
       const remaining = Math.max(0, parseInt(fx.remaining, 10) || 0);
       return title + ': ' + remaining + '라운드 남음';
     });
@@ -21480,8 +21532,8 @@ body.chat-open .scene-dashboard {
     if (actor && actor.name) lines.push(cleanTrackerLabel(actor.name, '행동자') + '의 차례가 되었습니다.');
     else lines.push('라운드 ' + Math.max(1, parseInt(trackers && trackers.round, 10) || 1) + '이 시작되었습니다.');
 
-    const effects = effectStatusLines(trackers);
-    if (effects.length) lines.push('상태 / 버프 지속시간: ' + effects.join(' / '));
+    const effects = effectStatusLinesForActor(trackers, actor);
+    if (effects.length) lines.push('상태 / 버프: ' + effects.join(' / '));
     pushPlaySystemMessage(lines.join('\n'));
   }
 
@@ -21614,10 +21666,32 @@ body.chat-open .scene-dashboard {
           const name = document.createElement('div');
           name.className = 'main-tracker-row-name';
           name.textContent = actor.name || '이름 없음';
+          const text = document.createElement('div');
+          text.className = 'main-tracker-row-text';
+          text.appendChild(name);
+          const actorEffects = effectsForActor(state.trackers, actor);
+          if (actorEffects.length) {
+            const fxWrap = document.createElement('div');
+            fxWrap.className = 'main-tracker-actor-effects';
+            actorEffects.forEach(([fxId, fx]) => {
+              const remaining = Math.max(0, parseInt(fx.remaining, 10) || 0);
+              const fxRow = document.createElement('div');
+              fxRow.className = 'main-tracker-actor-effect' + (remaining <= 0 ? ' expired' : '');
+              const fxText = document.createElement('div');
+              fxText.className = 'main-tracker-effect-text';
+              fxText.textContent = cleanTrackerLabel(fx.name || '', '효과') + ' · ' + remaining + '라운드';
+              const fxActs = document.createElement('div');
+              fxActs.className = 'main-tracker-mini-actions';
+              fxActs.append(makeTrackerButton('-1', 'effectMinus', fxId), makeTrackerButton('+1', 'effectPlus', fxId), makeTrackerButton('×', 'effectDelete', fxId, 'danger'));
+              fxRow.append(fxText, fxActs);
+              fxWrap.appendChild(fxRow);
+            });
+            text.appendChild(fxWrap);
+          }
           const acts = document.createElement('div');
           acts.className = 'main-tracker-mini-actions';
           acts.append(makeTrackerButton('선택', 'setActor', id), makeTrackerButton('↑', 'actorUp', id), makeTrackerButton('↓', 'actorDown', id), makeTrackerButton('×', 'actorDelete', id, 'danger'));
-          row.append(name, acts);
+          row.append(text, acts);
           actorList.appendChild(row);
         });
       }
@@ -21626,13 +21700,9 @@ body.chat-open .scene-dashboard {
     const effectList = $('mainEffectList');
     if (effectList) {
       effectList.innerHTML = '';
-      const effects = sortEntries(state.trackers.effects);
-      if (!effects.length) {
-        const empty = document.createElement('div');
-        empty.className = 'main-tracker-empty';
-        empty.textContent = '상태나 버프를 추가하면 라운드 진행 때 자동으로 1씩 줄어듭니다.';
-        effectList.appendChild(empty);
-      } else {
+      const effects = unmatchedEffects(state.trackers, actors);
+      effectList.style.display = effects.length ? '' : 'none';
+      if (effects.length) {
         effects.forEach(([id, fx]) => {
           const remaining = parseInt(fx.remaining, 10) || 0;
           const row = document.createElement('div');
