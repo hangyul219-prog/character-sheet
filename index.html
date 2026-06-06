@@ -18040,7 +18040,9 @@ body.chat-open .scene-dashboard {
   function sheetAccordionViewerKey() {
     const room = (document.getElementById('roomLabel')?.textContent || '').trim();
     const user = (document.getElementById('userInput')?.value || '').trim();
-    const raw = ((room && room[0] !== '(' ? room : 'offline') + '_' + (user || 'viewer')).toLowerCase();
+    let charId = '';
+    try { charId = (typeof activeId !== 'undefined' && activeId) || (typeof myCharId !== 'undefined' && myCharId) || ''; } catch (_) {}
+    const raw = ((room && room[0] !== '(' ? room : 'offline') + '_' + (user || 'viewer') + '_' + (charId || 'sheet')).toLowerCase();
     return raw.replace(/[^a-z0-9가-힣_-]+/g, '_').slice(0, 120) || 'offline_viewer';
   }
 
@@ -18077,7 +18079,9 @@ body.chat-open .scene-dashboard {
     const state = readSheetAccordionState();
     Array.from(body.querySelectorAll(':scope > section.panel.sheet-accordion-panel')).forEach(panel => {
       const key = panel.dataset.sheetAccordionKey;
-      if (key && Object.prototype.hasOwnProperty.call(state, key)) applySheetPanelOpen(panel, !!state[key]);
+      const hasSaved = key && Object.prototype.hasOwnProperty.call(state, key);
+      const fallbackOpen = panel.dataset.sheetAccordionDefaultOpen === '1';
+      applySheetPanelOpen(panel, hasSaved ? !!state[key] : fallbackOpen);
     });
   }
 
@@ -18113,6 +18117,7 @@ body.chat-open .scene-dashboard {
       const shouldOpen = openByDefault.some(k => title.includes(k));
       const stateKey = panel.id || title.slice(0, 60) || ('panel_' + index);
       panel.dataset.sheetAccordionKey = stateKey;
+      panel.dataset.sheetAccordionDefaultOpen = shouldOpen ? '1' : '0';
       panel.classList.add('sheet-accordion-panel');
       panel.classList.toggle('sheet-primary', shouldOpen);
       panel.classList.toggle('sheet-secondary', !shouldOpen);
@@ -20222,6 +20227,9 @@ body.chat-open .scene-dashboard {
   border-radius: 10px;
   background: rgba(0, 0, 0, .16);
 }
+.npc-relation-panel.collapsed > *:not(.npc-relation-title) {
+  display: none !important;
+}
 .npc-relation-title {
   display: flex;
   justify-content: space-between;
@@ -20230,10 +20238,30 @@ body.chat-open .scene-dashboard {
   color: #e8ca76;
   font-size: 13px;
   font-weight: 800;
+  cursor: pointer;
+  user-select: none;
 }
 .npc-relation-title small {
   color: rgba(245, 232, 192, .62);
   font-weight: 500;
+}
+.npc-relation-title-main {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.npc-relation-toggle {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  border: 1px solid rgba(212, 175, 82, .32);
+  background: rgba(0, 0, 0, .22);
+  color: #ffe39a;
+  cursor: pointer;
+  line-height: 1;
 }
 .npc-relation-grid {
   display: grid;
@@ -20544,7 +20572,7 @@ body.chat-open .scene-dashboard {
 .quest-start-fx-main {
   display: block;
   font-family: 'Cinzel', 'Noto Serif KR', serif;
-  font-size: clamp(19px, 5vw, 60px);
+  font-size: clamp(24px, 5.4vw, 74px);
   font-weight: 900;
   letter-spacing: .02em;
   line-height: 1.08;
@@ -20564,9 +20592,9 @@ body.chat-open .scene-dashboard {
 }
 .quest-start-fx-name {
   display: block;
-  margin-top: 16px;
+  margin-top: 18px;
   font-family: 'Noto Serif KR', 'Cinzel', serif;
-  font-size: clamp(20px, 3.1vw, 42px);
+  font-size: clamp(24px, 3.5vw, 50px);
   font-weight: 800;
   line-height: 1.25;
   color: #dbe1ec;
@@ -20576,6 +20604,28 @@ body.chat-open .scene-dashboard {
     0 0 8px rgba(255, 255, 255, .48),
     0 0 20px rgba(179, 194, 219, .62),
     0 2px 0 rgba(12, 14, 20, .82);
+  animation: questNameRise 4.2s ease both;
+}
+.quest-start-fx-detail {
+  display: block;
+  width: min(840px, 86vw);
+  max-height: min(25vh, 180px);
+  margin: 16px auto 0;
+  padding: 12px 16px;
+  border-top: 1px solid rgba(255, 230, 145, .42);
+  border-bottom: 1px solid rgba(255, 230, 145, .26);
+  color: rgba(245, 240, 224, .95);
+  font-family: 'Noto Serif KR', 'Cinzel', serif;
+  font-size: clamp(16px, 1.55vw, 22px);
+  font-weight: 700;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  word-break: keep-all;
+  text-shadow:
+    0 0 10px rgba(255, 255, 255, .32),
+    0 2px 0 rgba(12, 14, 20, .84);
   animation: questNameRise 4.2s ease both;
 }
 .quest-start-fx-spark {
@@ -20618,6 +20668,13 @@ body.chat-open .scene-dashboard {
   .main-tracker-dock { left: 10px; bottom: 72px; width: min(320px, calc(100% - 20px)); }
   .main-effect-form { grid-template-columns: 1fr 1fr; }
   .quest-start-fx-card { padding: 28px 18px 34px; }
+  .quest-start-fx-main { font-size: clamp(22px, 8.5vw, 46px); }
+  .quest-start-fx-name { font-size: clamp(21px, 6.2vw, 34px); }
+  .quest-start-fx-detail {
+    width: min(92vw, 620px);
+    max-height: 24vh;
+    font-size: clamp(15px, 4vw, 18px);
+  }
   .npc-relation-grid { grid-template-columns: 1fr; }
 }
 </style>
@@ -20762,6 +20819,7 @@ body.chat-open .scene-dashboard {
     refs.board = refs.queue = refs.trackers = refs.questFx = null;
     currentRoom = room;
     applyMainTrackerCollapseState();
+    applyNpcRelationCollapsed(isNpcRelationCollapsed(), false);
 
     if (!room || !db) {
       renderCampaignBoard();
@@ -20794,7 +20852,7 @@ body.chat-open .scene-dashboard {
       const key = snap.key || (item.ts + ':' + item.title);
       if (shownQuestFx.has(key)) return;
       shownQuestFx.add(key);
-      showQuestStartOverlay(item.title);
+      showQuestStartOverlay(item.title, item.body || '');
     });
   }
 
@@ -20937,17 +20995,47 @@ body.chat-open .scene-dashboard {
     applyMainTrackerCollapseState();
   }
 
+  function npcRelationCollapseKey() {
+    return 'pf_npc_relation_collapsed_' + localUiViewerKey();
+  }
+
+  function isNpcRelationCollapsed() {
+    try { return localStorage.getItem(npcRelationCollapseKey()) === '1'; }
+    catch (_) { return false; }
+  }
+
+  function applyNpcRelationCollapsed(collapsed, save) {
+    const panel = $('npcRelationPanel');
+    if (!panel) return;
+    panel.classList.toggle('collapsed', !!collapsed);
+    const btn = $('npcRelationToggle');
+    if (btn) {
+      btn.textContent = collapsed ? '\u25b6' : '\u25bc';
+      btn.title = collapsed ? '관계시트 펼치기' : '관계시트 접기';
+    }
+    if (save) {
+      try { localStorage.setItem(npcRelationCollapseKey(), collapsed ? '1' : '0'); } catch (_) {}
+    }
+  }
+
+  function toggleNpcRelationCollapsed() {
+    const panel = $('npcRelationPanel');
+    if (!panel) return;
+    applyNpcRelationCollapsed(!panel.classList.contains('collapsed'), true);
+  }
+
   function ensureNpcRelationUi() {
     const formBody = $('npcFormBody');
-    if (!formBody || $('npcRelationPanel')) return;
+    if (!formBody) return;
+    if ($('npcRelationPanel')) { applyNpcRelationCollapsed(isNpcRelationCollapsed(), false); return; }
     const actions = formBody.querySelector('.npc-form-actions');
     const panel = document.createElement('div');
     panel.className = 'npc-relation-panel';
     panel.id = 'npcRelationPanel';
     panel.innerHTML = `
       <div class="npc-relation-title">
-        <span>NPC 관계도</span>
-        <small>인물 사이의 연결을 바로 기록합니다.</small>
+        <span class="npc-relation-title-main"><span>NPC 관계도</span><small>인물 사이의 연결을 바로 기록합니다.</small></span>
+        <button class="npc-relation-toggle" id="npcRelationToggle" type="button" title="관계시트 접기">\u25bc</button>
       </div>
       <div class="npc-relation-grid">
         <input id="npcRelationFrom" type="text" placeholder="예: 기사단장 아델">
@@ -20962,6 +21050,17 @@ body.chat-open .scene-dashboard {
       <div class="npc-relation-list" id="npcRelationList"></div>`;
     if (actions) actions.insertAdjacentElement('beforebegin', panel);
     else formBody.appendChild(panel);
+    const title = panel.querySelector('.npc-relation-title');
+    title?.addEventListener('click', e => {
+      if (e.target && e.target.closest && e.target.closest('input,select,textarea,button,a')) return;
+      toggleNpcRelationCollapsed();
+    });
+    $('npcRelationToggle')?.addEventListener('click', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleNpcRelationCollapsed();
+    });
+    applyNpcRelationCollapsed(isNpcRelationCollapsed(), false);
   }
 
   function ensureQuestStartFxLayer() {
@@ -21121,7 +21220,7 @@ body.chat-open .scene-dashboard {
       state.board[type][id] = Object.assign({}, state.board[type][id] || {}, editingId ? {} : { createdAt: now, order: now }, data);
       renderCampaignBoard();
     }
-    if (shouldAnnounceQuest) announceQuestStart(data.title);
+    if (shouldAnnounceQuest) announceQuestStart(data.title, data.body);
     cancelBoardEdit(type);
     toast(editingId ? '수정했습니다' : '추가했습니다');
   }
@@ -21154,19 +21253,20 @@ body.chat-open .scene-dashboard {
     toast(editingId ? 'NPC 관계를 수정했습니다' : 'NPC 관계를 추가했습니다');
   }
 
-  function announceQuestStart(title) {
+  function announceQuestStart(title, body) {
     const cleanTitle = (title || '').trim();
+    const cleanBody = (body || '').trim();
     if (!cleanTitle) return;
     closeCampaignModal();
     if (refs.questFx) {
       try {
-        refs.questFx.push({ title: cleanTitle, ts: Date.now(), by: userName() }, err => {
-          if (err) showQuestStartOverlay(cleanTitle);
+        refs.questFx.push({ title: cleanTitle, body: cleanBody, ts: Date.now(), by: userName() }, err => {
+          if (err) showQuestStartOverlay(cleanTitle, cleanBody);
         });
         return;
       } catch (_) {}
     }
-    showQuestStartOverlay(cleanTitle);
+    showQuestStartOverlay(cleanTitle, cleanBody);
   }
 
   function positionQuestStartOverlay(layer) {
@@ -21191,7 +21291,7 @@ body.chat-open .scene-dashboard {
     layer.style.height = '';
   }
 
-  function showQuestStartOverlay(title) {
+  function showQuestStartOverlay(title, body) {
     const layer = ensureQuestStartFxLayer();
     layer.replaceChildren();
     const card = document.createElement('div');
@@ -21207,6 +21307,13 @@ body.chat-open .scene-dashboard {
     name.id = 'questStartFxName';
     name.textContent = title || '이름 없는 퀘스트';
     card.append(spark, main, name);
+    const detailText = (body || '').trim();
+    if (detailText) {
+      const detail = document.createElement('span');
+      detail.className = 'quest-start-fx-detail';
+      detail.textContent = detailText;
+      card.appendChild(detail);
+    }
     layer.appendChild(card);
     clearTimeout(questFxTimer);
     positionQuestStartOverlay(layer);
@@ -21255,6 +21362,7 @@ body.chat-open .scene-dashboard {
       if ($('npcRelationSave')) $('npcRelationSave').textContent = '관계 수정 저장';
       if ($('npcRelationCancel')) $('npcRelationCancel').style.display = 'inline-flex';
       const panel = $('npcRelationPanel');
+      applyNpcRelationCollapsed(false, true);
       if (panel && panel.scrollIntoView) panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
   }
